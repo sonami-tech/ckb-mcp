@@ -1,0 +1,13 @@
+# Cargo build artifacts
+target/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -1,0 +1,25 @@
+[package]
+name = "ckb-tools-server"
+version = "0.1.562"
+edition = "2021"
+
+[[bin]]
+name = "ckb-tools-server"
+path = "src/main.rs"
+
+[dependencies]
+# Workspace dependencies
+shared = { workspace = true }
+tokio = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+clap = { workspace = true }
+reqwest = { workspace = true }
+tokio-stream = { workspace = true }

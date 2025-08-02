@@ -1,0 +1,129 @@
+# CKB Development Tool Recommendations (2024)
+
+## Description
+
+Choose the right CKB development tools for 2024 projects. Learn why CCC SDK is now preferred over Lumos for frontend development, understand the transition from deprecated Capsule to modern ckb-script-templates for smart contracts, and follow migration guides for updating existing projects. Get current recommendations for tool selection, development workflows, and modern CKB application building.
+
+## Current Recommended Stack
+
+### Frontend/Transaction Building: CCC (Recommended)
+```typescript
+// Install CCC - the newest and recommended SDK
+npm install @ckb-ccc/ccc
+```
+
+**Why CCC is recommended:**
+- Modern, actively developed TypeScript/JavaScript SDK
+- Intuitive transaction composition with auto-completion
+- Built-in wallet integration across multiple chains
+- Unified signing interface for seamless interoperability
+- Better developer experience than Lumos
+- Production-ready with comprehensive examples
+
+### Script Development: ckb-script-templates (Current)
+```bash
+# Modern Rust script development (replaces Capsule)
+cargo install ckb-script-templates
+```
+
+**What happened to Capsule:**
+- Capsule is **deprecated** and no longer maintained
+- Functionality split into:
+  - `ckb-script-templates` for project management
+  - `ckb-testtool` for testing (still maintained)
+
+### Testing: ckb-testtool (Active)
+```toml
+[dev-dependencies]
+ckb-testtool = "0.12"
+```
+
+## Legacy Tool Status
+
+### Lumos (Legacy but Supported)
+```typescript
+// Lumos is not deprecated but no longer preferred
+npm install @ckb-lumos/helpers
+```
+
+**Lumos status:**
+- Still functional and maintained
+- CCC provides Lumos compatibility patches
+- Use CCC for new projects
+- Migrate existing Lumos projects when possible
+
+### Migration Path
+```typescript
+// Old Lumos approach
+import { TransactionSkeleton } from "@ckb-lumos/helpers";
+
+// New CCC approach (recommended)
+import { ccc } from "@ckb-ccc/ccc";
+const tx = ccc.Transaction.from({
+  outputs: [{ lock: toLock, capacity: amount }],
+});
+```
+
+## Tool Selection Guidelines
+
+### Use CCC When:
+- Building new dApps or wallets
+- Need modern wallet integration
+- Want simplified transaction construction
+- Require multi-chain support
+- Building production applications
+
+### Use Lumos When:
+- Working with existing Lumos codebases
+- Need specific Lumos-only features
+- Gradual migration from legacy code
+
+### Use ckb-script-templates When:
+- Creating new smart contracts
+- Need modern Rust tooling
+- Building production scripts
+
+### Avoid:
+- **Capsule** (deprecated, use ckb-script-templates)
+- **Old manual toolchains** (use modern Rust)
+
+## Example: Modern CKB Transfer (CCC)
+```typescript
+import { ccc } from "@ckb-ccc/ccc";
+
+const signer = new ccc.SignerCkbPrivateKey(client, privateKey);
+const { script: toLock } = await ccc.Address.fromString(toAddress, client);
+
+// Simple, intuitive transaction building
+const tx = ccc.Transaction.from({
+  outputs: [{ lock: toLock, capacity: ccc.fixedPointFrom(amount) }],
+});
+
+// Auto-complete inputs and fees
+await tx.completeInputsByCapacity(signer);
+await tx.completeFeeBy(signer);
+
+// Send transaction
+const txHash = await signer.sendTransaction(tx);
+```
+
+## Migration Benefits
+
+### From Lumos to CCC:
+- Simpler API surface
+- Better TypeScript support
+- Automatic capacity/fee management
+- Modern wallet integrations
+- Unified development experience
+
+### From Capsule to ckb-script-templates:
+- Modern Rust toolchain support
+- Better project structure
+- Maintained and updated regularly
+- Aligned with current CKB development practices
+
+## Getting Started Resources
+- [CCC Documentation](https://docs.ckbccc.com/)
+- [CCC Playground](https://live.ckbccc.com/)
+- [ckb-script-templates](https://github.com/cryptape/ckb-script-templates)
+- [Official CKB Docs](https://docs.nervos.org/)
