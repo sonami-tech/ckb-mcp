@@ -1,0 +1,117 @@
+[submodule "resources/ccc"]
+	path = resources/ccc
+	url = https://github.com/ckb-devrel/ccc.git
+[submodule "resources/ckb-academy"]
+	path = resources/ckb-academy
+	url = https://github.com/Flouse/ckb-academy.git
+[submodule "resources/ckb-cookbook"]
+	path = resources/ckb-cookbook
+	url = https://github.com/CKBFansDAO/ckb-cookbook.git
+[submodule "resources/ckbfs"]
+	path = resources/ckbfs
+	url = https://github.com/code-monad/ckbfs.git
+[submodule "resources/cota-aggregator"]
+	path = resources/cota-aggregator
+	url = https://github.com/nervina-labs/cota-aggregator.git
+[submodule "resources/cota-docs"]
+	path = resources/cota-docs
+	url = https://github.com/nervina-labs/cota-docs.git
+[submodule "resources/cota-registry-aggregator"]
+	path = resources/cota-registry-aggregator
+	url = https://github.com/nervina-labs/cota-registry-aggregator.git
+[submodule "resources/cota-sdk-js"]
+	path = resources/cota-sdk-js
+	url = https://github.com/nervina-labs/cota-sdk-js.git
+[submodule "resources/developer-training-course-documentation"]
+	path = resources/developer-training-course-documentation
+	url = https://github.com/jordanmack/developer-training-course-documentation.git
+[submodule "resources/developer-training-course-script-examples"]
+	path = resources/developer-training-course-script-examples
+	url = https://github.com/jordanmack/developer-training-course-script-examples.git
+[submodule "resources/docs.nervos.org"]
+	path = resources/docs.nervos.org
+	url = https://github.com/nervosnetwork/docs.nervos.org.git
+[submodule "resources/molecule"]
+	path = resources/molecule
+	url = https://github.com/nervosnetwork/molecule.git
+[submodule "resources/nervos-ckb-nft"]
+	path = resources/nervos-ckb-nft
+	url = https://github.com/jordanmack/nervos-ckb-nft.git
+[submodule "resources/omnilock"]
+	path = resources/omnilock
+	url = https://github.com/cryptape/omnilock.git
+[submodule "resources/rfcs"]
+	path = resources/rfcs
+	url = https://github.com/nervosnetwork/rfcs.git
+[submodule "resources/spore-sdk"]
+	path = resources/spore-sdk
+	url = https://github.com/sporeprotocol/spore-sdk.git
+[submodule "resources/spore-contract"]
+	path = resources/spore-contract
+	url = https://github.com/sporeprotocol/spore-contract.git
+[submodule "resources/spore-docs"]
+	path = resources/spore-docs
+	url = https://github.com/sporeprotocol/spore-docs.git
+[submodule "resources/ickb-whitepaper"]
+	path = resources/ickb-whitepaper
+	url = https://github.com/ickb/whitepaper.git
+[submodule "resources/ickb-contracts"]
+	path = resources/ickb-contracts
+	url = https://github.com/ickb/contracts.git
+[submodule "resources/ickb-bot"]
+	path = resources/ickb-bot
+	url = https://github.com/ickb/bot.git
+[submodule "resources/ickb-sdk"]
+	path = resources/ickb-sdk
+	url = https://github.com/ickb/sdk.git
+[submodule "resources/ckb-miscellaneous-scripts"]
+	path = resources/ckb-miscellaneous-scripts
+	url = https://github.com/nervosnetwork/ckb-miscellaneous-scripts.git
+[submodule "resources/offckb"]
+	path = resources/offckb
+	url = https://github.com/ckb-devrel/offckb.git
+[submodule "resources/ckb-script-templates"]
+	path = resources/ckb-script-templates
+	url = https://github.com/cryptape/ckb-script-templates.git
+[submodule "resources/lumos"]
+	path = resources/lumos
+	url = https://github.com/ckb-js/lumos.git
+[submodule "resources/ckb-sdk-rust"]
+	path = resources/ckb-sdk-rust
+	url = https://github.com/nervosnetwork/ckb-sdk-rust.git
+[submodule "resources/sparse-merkle-tree"]
+	path = resources/sparse-merkle-tree
+	url = https://github.com/nervosnetwork/sparse-merkle-tree.git
+[submodule "resources/nervdao"]
+	path = resources/nervdao
+	url = https://github.com/ckb-devrel/nervdao.git
+[submodule "resources/CKB-Developer-Resource"]
+	path = resources/CKB-Developer-Resource
+	url = https://github.com/ckb-devrel/CKB-Developer-Resource.git
+[submodule "resources/ckb-system-scripts"]
+	path = resources/ckb-system-scripts
+	url = https://github.com/nervosnetwork/ckb-system-scripts.git
+[submodule "resources/ckbfs-api"]
+	path = resources/ckbfs-api
+	url = https://github.com/code-monad/ckbfs-api.git
+[submodule "resources/ckbfs-types"]
+	path = resources/ckbfs-types
+	url = https://github.com/code-monad/ckbfs-types.git
+[submodule "resources/ckbfs-ts"]
+	path = resources/ckbfs-ts
+	url = https://github.com/code-monad/ckbfs-ts.git
+[submodule "resources/ckb-misc-ai-materials"]
+	path = resources/ckb-misc-ai-materials
+	url = https://github.com/jordanmack/ckb-misc-ai-materials.git
+[submodule "resources/ssri-server"]
+	path = resources/ssri-server
+	url = https://github.com/ckb-devrel/ssri-server.git
+[submodule "resources/dob-cookbook"]
+	path = resources/dob-cookbook
+	url = https://github.com/ckb-devrel/dob-cookbook.git
+[submodule "resources/delegate-lock"]
+	path = resources/delegate-lock
+	url = https://github.com/nervape/delegate-lock.git
+[submodule "resources/ckb-proxy-locks"]
+	path = resources/ckb-proxy-locks
+	url = https://github.com/ckb-devrel/ckb-proxy-locks.git
