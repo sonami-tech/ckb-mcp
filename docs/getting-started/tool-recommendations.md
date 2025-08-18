@@ -25,7 +25,8 @@ npm install @ckb-ccc/ccc
 ### Script Development: ckb-script-templates (Current)
 ```bash
 # Modern Rust script development (replaces Capsule)
-cargo install ckb-script-templates
+# Use via cargo generate (not installed as binary)
+cargo generate --git https://github.com/cryptape/ckb-script-templates.git
 ```
 
 **What happened to Capsule:**

@@ -254,7 +254,7 @@ use ckb_sdk::rpc::CkbRpcClient;
 use ckb_sdk::traits::{DefaultCellCollector, SecpCkbRawKeySigner};
 
 // Initialize client for backend service
-let mut ckb_client = CkbRpcClient::new("https://testnet.ckb.dev");
+let mut ckb_client = CkbRpcClient::new("https://testnet.ckb.dev/rpc");
 
 // Build transfer transaction
 let tx = builder

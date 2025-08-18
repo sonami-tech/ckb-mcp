@@ -14,11 +14,11 @@ npm install -g @offckb/cli
 
 ## Core Commands
 
-### Initialize Development Environment
+### Start Development Environment
 ```bash
-offckb init
+offckb node
 ```
-Creates local devnet with:
+Starts local devnet with:
 - CKB node on port 8114
 - Indexer on port 8116  
 - 20 pre-funded accounts (10,000 CKB each)
@@ -70,7 +70,7 @@ offckb create <project-name>
 ### 1. Start Local Environment
 ```bash
 # Start devnet (runs in background)
-offckb init
+offckb node
 
 # Verify node is running
 curl -X POST http://localhost:8114 \
@@ -88,12 +88,15 @@ npm run dev
 
 ### 3. Use Pre-funded Accounts
 ```javascript
-// In your app
-import { accounts } from './offckb.config.js';
+// In your app with CCC
+import { ccc } from "@ckb-ccc/core";
+import offckb from './offckb.config.ts';
 
-const testAccount = accounts[0];
+const testAccount = offckb.accounts[0];
+const client = new ccc.ClientPublicTestnet();
+const signer = new ccc.SignerCkbPrivateKey(client, testAccount.privateKey);
+
 console.log('Address:', testAccount.address);
-console.log('Private Key:', testAccount.privateKey);
 // Balance: 10,000 CKB
 ```
 
@@ -115,23 +118,26 @@ offckb deploy --network devnet
 
 ### 5. Interact with Scripts
 ```javascript
-// Use deployed script in transaction
+// Use deployed script in transaction with CCC
+import { ccc } from "@ckb-ccc/core";
+
 const typeScript = {
   codeHash: deploymentInfo.codeHash,
   hashType: deploymentInfo.hashType,
   args: '0x'
 };
 
-const tx = helpers.TransactionSkeleton({});
-tx = await common.transfer(
-  tx,
-  [testAccount.address],
-  recipientAddress,
-  BigInt(100 * 10**8),
-  undefined,
-  undefined,
-  { config: OFFCKB_CONFIG }
-);
+// Build transaction with CCC
+const tx = ccc.Transaction.from({
+  outputs: [{
+    lock: recipientLock,
+    capacity: ccc.fixedPointFrom(100), // 100 CKB
+    type: typeScript
+  }]
+});
+
+await tx.completeInputsByCapacity(signer);
+await tx.completeFeeBy(signer);
 ```
 
 ## Configuration
@@ -198,7 +204,7 @@ beforeAll(async () => {
 
 test('deploy and interact with contract', async () => {
   // Deploy contract
-  const deployment = await deployContract('./build/release/my-contract');
+  const deployment = await deployContract('./build/my-contract');
   
   // Create transaction using deployed contract
   const tx = await createTransaction({
@@ -304,7 +310,7 @@ offckb export-config > deployments.json
 ## Best Practices
 
 1. **Use Test Accounts**: Never use mainnet private keys in development.
-2. **Reset State**: Run `offckb clean && offckb init` to reset blockchain state.
+2. **Reset State**: Run `offckb clean && offckb node` to reset blockchain state.
 3. **Version Control**: Add `.offckb/` to `.gitignore`.
 4. **Script Caching**: Cache deployed script info in `offckb.config.js`.
 5. **Parallel Testing**: Use different account indices for parallel tests.

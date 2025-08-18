@@ -259,6 +259,7 @@ This script ensures all documentation files maintain the required Description fo
 4. **Validate documentation**: Run `python3 utils/verify_descriptions.py` before committing doc changes.
 5. Use descriptive commit messages.
 6. Ensure all tests pass before submitting changes.
+7. **Create git commits**: Make a git commit for every major group of changes (e.g., feature implementation, documentation updates, bug fixes). This helps maintain clear project history and facilitates easier rollbacks if needed.
 
 ## Resources
 
