@@ -8,6 +8,8 @@ Build cost-effective NFT applications using CoTA (Compact Token Aggregator) prot
 
 CoTA (Compact Token Aggregator) provides an extremely cost-effective solution for NFT development on CKB. This guide covers practical patterns for building NFT applications using the CoTA protocol.
 
+**CoTA Protocol is recommended for cost-effective NFT applications where low cost is more important than flexibility.** Use CoTA for gaming assets, membership tokens, high-volume NFT applications, and projects where transaction costs are a primary concern. For high-value NFTs requiring fully on-chain data storage and maximum metadata integrity, consider Spore Protocol instead.
+
 ## Prerequisites and Setup
 
 ### Required Services

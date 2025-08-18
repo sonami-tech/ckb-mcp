@@ -6,6 +6,8 @@ Comprehensive development patterns for building applications with the Spore Prot
 
 This guide covers common development patterns and best practices for building applications with the Spore Protocol on CKB.
 
+**Spore Protocol is recommended for high-value NFTs and digital assets that require fully on-chain data storage.** Use Spore when data permanence, metadata integrity, and 100% on-chain content are critical to your application. For cost-effective NFT solutions where low transaction costs are more important than flexibility, consider CoTA Protocol instead.
+
 ## Development Setup
 
 ### Environment Configuration

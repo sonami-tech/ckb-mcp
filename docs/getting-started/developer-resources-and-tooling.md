@@ -2,56 +2,93 @@
 
 ## Description
 
-Discover essential CKB development tools, frameworks, and SDKs to build blockchain applications efficiently. This comprehensive guide covers Capsule for smart contracts, CKB-SDK-Rust for blockchain interactions, CCC for modern TypeScript development, OffCKB for rapid prototyping, and protocol-specific tools like Omnilock, Spore, and CoTA. Learn modern development workflows, testing frameworks, security best practices, and performance optimization techniques for professional CKB development.
+Discover essential CKB development tools, frameworks, and SDKs to build blockchain applications efficiently. This comprehensive guide covers ckb-script-templates for smart contracts, CKB-SDK-Rust for backend services, CCC as the primary SDK for application development, OffCKB for rapid prototyping, and protocol-specific tools like Omnilock, Spore, and CoTA. Learn modern development workflows, testing frameworks, security best practices, and performance optimization techniques for professional CKB development.
 
-This comprehensive guide covers all available CKB development resources, tools, and frameworks. **Modern CKB development emphasizes Rust** for smart contracts while supporting multiple languages for different use cases.
+This comprehensive guide covers all available CKB development resources, tools, and frameworks. **Modern CKB development uses OffCKB for project initialization and ckb-script-templates for smart contracts**, with CCC as the primary SDK for application development.
 
 ## Essential Development Tools
 
-### 1. Capsule Framework (Primary Development Tool)
+### 1. OffCKB Development Environment (Recommended Starting Point)
 
-**Purpose:** Official CKB smart contract development framework with **Rust-first approach**.
+**Purpose:** Rapid project initialization and full-stack development environment for CKB dApps.
 
 **Key Features:**
-- **Multi-language Support**: Rust (primary), C, AssemblyScript, C++, Lua
-- **Project Templates**: Pre-configured project structures
-- **Testing Framework**: Comprehensive contract testing
-- **Deployment Tools**: Mainnet/testnet deployment automation
-- **Debugging Support**: Transaction simulation and debugging
+- **Local Devnet**: Instant blockchain with 20 pre-funded test accounts
+- **Project Templates**: Next.js, React, Remix integration with CKB
+- **Built-in Scripts**: xUDT, Omnilock, AnyoneCanPay, Spore contracts
+- **Hot Reload**: Automatic contract redeployment on changes
+- **Modern Workflow**: Integration with ckb-script-templates and CCC SDK
 
-**Installation:**
+**Installation & Usage:**
 ```bash
-# Install Capsule
-cargo install ckb-capsule
+# Install OffCKB
+npm install -g @offckb/cli
 
-# Create new Rust project
-capsule new my-contract --template=rust
-cd my-contract
+# Create new full-stack project
+offckb create my-dapp-project
+# Select Next.js or Remix template when prompted
 
-# Build contract
-capsule build
+# Or create script-only project
+offckb create --script my-script-project
 
-# Run tests
-capsule test
+# Start local development blockchain
+offckb node
 
-# Deploy to testnet
-capsule deploy --address <your-address> --fee 0.1
+# Deploy contracts to devnet/testnet
+offckb deploy --network devnet
 ```
 
 **Project Structure:**
 ```
-my-contract/
-├── contracts/
-│   └── my-contract/
-│       ├── src/
-│       │   └── main.rs          # Main contract logic (Rust)
-│       └── Cargo.toml
-├── tests/
-│   └── src/
-│       └── tests.rs             # Integration tests
-├── deployment.toml              # Deployment configuration
-└── capsule.toml                # Project configuration
+my-dapp-project/
+├── contracts/           # Smart contracts (ckb-script-templates)
+│   └── hello-world/
+│       └── src/main.rs
+├── frontend/           # Next.js/React frontend
+│   ├── app/
+│   └── offckb.config.ts
+└── Makefile           # Build automation
 ```
+
+**Reference:** Official Nervos Quick Start Guide
+
+### 2. ckb-script-templates (Current Smart Contract Development)
+
+**Purpose:** Modern Rust smart contract development framework (replaces deprecated Capsule).
+
+**Key Features:**
+- **Production-ready Templates**: Workspace, basic contract, atomics support
+- **Modern Rust Tooling**: Cargo workspaces and advanced patterns
+- **Integration**: Works seamlessly with OffCKB environment
+- **Performance Optimized**: Efficient RISC-V compilation
+
+**Usage:**
+```bash
+# Generate new contract from template
+cargo generate --git https://github.com/cryptape/ckb-script-templates.git
+
+# Available templates:
+# 1. workspace - Multi-contract workspace (recommended)
+# 2. contract - Single Rust contract
+# 3. atomics-contract - Atomic operations support
+# 4. c-wrapper-crate - C integration patterns
+
+# Within OffCKB project:
+make generate  # Add new contract
+make build     # Build contracts
+make test      # Run tests
+```
+
+**Reference:** `resources/ckb-script-templates/`
+
+### 3. Capsule Framework (Deprecated)
+
+**Status:** No longer maintained - **migrate to ckb-script-templates for new projects**.
+
+**Migration Path:**
+- **New Projects**: Use OffCKB + ckb-script-templates workflow
+- **Existing Projects**: Consider migrating to ckb-script-templates for continued support
+- **Legacy Support**: Still functional but not recommended
 
 **Reference:** `resources/CKB-Developer-Resource/README.md`
 
@@ -104,67 +141,42 @@ ckb-debugger --tx-file <transaction.json> --mode gdb
 
 ## Software Development Kits (SDKs)
 
-### 1. CKB-SDK-Rust (Primary Rust SDK)
+### 1. CCC (Common Chain Connector) - TypeScript/JavaScript (Primary SDK)
 
-**Purpose:** **Primary SDK for Rust developers** - comprehensive blockchain interaction library.
-
-**Key Features:**
-- **Transaction Building**: High-level transaction construction
-- **Cell Collection**: Automated UTXO management
-- **Script Integration**: Support for all major script types
-- **Wallet Integration**: HD wallet and key management
-- **Network Abstraction**: Mainnet/testnet/devnet support
-
-**Installation:**
-```toml
-[dependencies]
-ckb-sdk = "3.0"
-ckb-types = "0.118"
-```
-
-**Basic Usage:**
-```rust
-use ckb_sdk::{
-    CkbRpcClient, HttpRpcClient,
-    traits::{DefaultCellCollector, DefaultTransactionDependencyProvider},
-    tx_builder::CapacityBalancer,
-    unlock::SecpCkbRawKeySigner,
-    Address, NetworkType,
-};
-
-// Initialize SDK
-let mut sdk = CkbSdkManager::new("http://localhost:8114", NetworkType::Dev);
-
-// Build and send transaction
-let tx = sdk.build_transfer_transaction(
-    &from_address,
-    &to_address, 
-    1000000000, // 10 CKB
-    1000,       // fee rate
-    private_key,
-).await?;
-
-let tx_hash = sdk.send_transaction(&tx).await?;
-```
-
-**Reference:** `resources/ckb-sdk-rust/`
-
-### 2. CCC (Common Chain Connector) - TypeScript/JavaScript
-
-**Purpose:** **Modern JavaScript/TypeScript SDK** for frontend applications.
+**Purpose:** **Highly recommended as the primary CKB development tool** for both frontend and backend applications.
 
 **Key Features:**
+- **Universal Platform**: Works in Node.js (backend) and browsers (frontend)
 - **Multi-wallet Support**: MetaMask, Unisat, OKX, JoyID integration
 - **React Integration**: Hooks and components for React applications
 - **Type Safety**: Full TypeScript support with CKB types
 - **Cross-chain**: Bitcoin/Ethereum wallet compatibility via Omnilock
+- **Transaction Building**: Complete transaction construction and management
 
-**Installation:**
+**For Backend Development (Node.js):**
+```typescript
+import { ccc } from "@ckb-ccc/core";
+
+// Initialize client for backend services
+const client = new ccc.ClientPublicTestnet();
+const signer = new ccc.SignerCkbPrivateKey(client, privateKey);
+
+// Build and send transaction
+const tx = ccc.Transaction.from({
+    outputs: [{ lock: toLock, capacity: ccc.fixedPointFrom(amount) }],
+});
+
+await tx.completeInputsByCapacity(signer);
+await tx.completeFeeBy(signer);
+const txHash = await signer.sendTransaction(tx);
+```
+
+**For Frontend Development (React):**
+
 ```bash
 npm install @ckb-ccc/core @ckb-ccc/connector-react
 ```
 
-**React Integration:**
 ```typescript
 import { ccc } from "@ckb-ccc/connector-react";
 
@@ -218,68 +230,117 @@ function TransferComponent() {
 
 **Reference:** `resources/nervdao/` (production example)
 
-### 3. Lumos Framework (Legacy - Maintenance Mode)
+### 2. CKB-SDK-Rust (Backend/Server Development)
 
-**Status:** Maintenance mode - **use CCC for new projects**.
+**Purpose:** **Rust SDK for backend applications and server-side blockchain interaction** (not for smart contract development).
 
-**Purpose:** Comprehensive TypeScript framework for CKB development.
+**Key Features:**
+- **Transaction Building**: High-level transaction construction for applications
+- **Cell Collection**: Automated UTXO management for backends
+- **RPC Client**: Comprehensive CKB node interaction
+- **Wallet Integration**: HD wallet and key management for services
+- **Network Abstraction**: Mainnet/testnet/devnet support
 
-**Note:** While still functional, new projects should use CCC for better wallet integration and modern TypeScript patterns.
+**Installation:**
+```toml
+[dependencies]
+ckb-sdk = "3.2.0"
+ckb-types = "0.118"
+```
+
+**Basic Usage:**
+```rust
+use ckb_sdk::rpc::CkbRpcClient;
+use ckb_sdk::traits::{DefaultCellCollector, SecpCkbRawKeySigner};
+
+// Initialize client for backend service
+let mut ckb_client = CkbRpcClient::new("https://testnet.ckb.dev");
+
+// Build transfer transaction
+let tx = builder
+    .build_unlocked(
+        &mut cell_collector,
+        &cell_dep_resolver,
+        &header_dep_resolver,
+        &tx_dep_provider,
+        &balancer,
+        &unlockers,
+    )
+    .unwrap();
+```
+
+**Note:** For smart contract development, use ckb-script-templates with ckb-std, not CKB-SDK-Rust.
+
+**Reference:** `resources/ckb-sdk-rust/`
+
+### 3. Lumos Framework (Legacy - Deprecated)
+
+**Status:** **No longer actively recommended for new projects** - migrate to CCC.
+
+**Official Notice:** Per Nervos documentation: "Lumos is no longer actively recommended for new projects. For a more robust development experience, consider using the Common Chain Connector (CCC)."
+
+**Migration Path:**
+- **New Projects**: Use CCC for both frontend and backend TypeScript/JavaScript development
+- **Existing Projects**: Consider migrating to CCC for better wallet integration and modern patterns
+- **Legacy Support**: Still functional but in maintenance mode
 
 **Reference:** `resources/lumos/`
 
-## Development Frameworks and Templates
+### 4. Alternative Language Support
 
-### 1. OffCKB Development Environment
+**For Non-Rust/TypeScript Backends:**
+- **Direct RPC**: Any language with HTTP client can call CKB JSON-RPC API
+- **Python, Go, Java**: Use direct RPC calls for blockchain interaction
+- **Community SDKs**: Check ecosystem for language-specific implementations
 
-**Purpose:** **Rapid prototyping and development** with pre-configured environment.
+## Modern Development Workflow
 
-**Features:**
-- **Local Devnet**: Instant blockchain with 20 pre-funded accounts
-- **Project Templates**: Next.js, React, Remix integration
-- **Built-in Scripts**: xUDT, Omnilock, AnyoneCanPay, Spore
-- **Hot Reload**: Automatic contract redeployment
+### Recommended Development Path
 
-**Setup:**
+**For New Projects:**
+1. **Initialize**: Use OffCKB to create full-stack project
+2. **Smart Contracts**: Develop with ckb-script-templates (Rust)
+3. **Frontend/Backend**: Build with CCC SDK (TypeScript/JavaScript)
+4. **Testing**: Use built-in testing frameworks and local devnet
+5. **Deployment**: Deploy to testnet, then mainnet
+
+### Full-Stack Development with OffCKB
+
+**Purpose:** Complete development environment following official Nervos Quick Start guide.
+
+**Modern Workflow:**
 ```bash
-# Install OffCKB
-npm install -g @offckb/cli
+# Create full-stack dApp (recommended)
+offckb create my-dapp-project
+# Choose Next.js or Remix template
 
-# Create new project
-offckb init my-dapp --template nextjs
-cd my-dapp
+# Or create script-only project
+offckb create --script my-script-project
 
-# Start development environment
-offckb node &  # Start local blockchain
-npm run dev    # Start frontend
+# Start local blockchain with pre-funded accounts
+offckb node
+
+# In separate terminal, start frontend
+cd frontend
+npm i && npm run dev
+
+# Contract development commands
+make generate  # Add new contract
+make build     # Build contracts
+make test      # Run tests
+
+# Deploy to networks
+offckb deploy --network devnet
+offckb deploy --network testnet
 ```
 
-**Reference:** `resources/offckb/`
+**Integration Benefits:**
+- **Pre-configured**: CCC SDK + ckb-script-templates integration
+- **Live Reload**: Contract changes automatically deployed
+- **Built-in Scripts**: Omnilock, Spore, xUDT contracts included
+- **Testing Environment**: 20 pre-funded accounts for testing
 
-### 2. CKB Script Templates
-
-**Purpose:** Production-ready **Rust contract templates** with advanced features.
-
-**Available Templates:**
-- **Basic Contract**: Standard RISC-V contract structure
-- **Workspace**: Multi-contract development environment
-- **Atomics Contract**: Atomic operations without hardware support
-- **C Wrapper**: FFI integration patterns
-- **Stack Reorder**: Custom memory management
-
-**Usage:**
-```bash
-# Generate new contract from template
-cargo generate --git https://github.com/cryptape/ckb-script-templates.git
-
-# Select template:
-# 1. workspace - Multi-contract workspace
-# 2. contract - Single Rust contract
-# 3. atomics-contract - Atomic operations
-# 4. c-wrapper-crate - C integration
-```
-
-**Reference:** `resources/ckb-script-templates/`
+**Reference:** Official Nervos Quick Start Documentation
 
 ## Protocol-Specific Tools and SDKs
 
@@ -311,7 +372,12 @@ let lock_script = omnilock_config.build_script();
 
 ### 2. Spore Protocol SDK
 
-**Purpose:** Digital object protocol for NFTs and digital assets.
+**Purpose:** Digital object protocol for high-value NFTs and digital assets requiring fully on-chain data.
+
+**Recommended for:**
+- **Art NFTs**: High-value collectibles where data permanence is critical
+- **Premium Digital Assets**: Content requiring 100% on-chain storage
+- **Digital Collectibles**: Items where metadata integrity is essential
 
 **Features:**
 - **Content Storage**: On-chain content with content-type specification
@@ -343,7 +409,13 @@ const txHash = await signer.sendTransaction(tx);
 
 ### 3. CoTA NFT Development
 
-**Purpose:** Compact Token Aggregator for efficient NFT management.
+**Purpose:** Compact Token Aggregator for cost-effective NFT management where low cost is prioritized over flexibility.
+
+**Recommended for:**
+- **Gaming Assets**: In-game items and collectibles requiring low cost
+- **Membership Tokens**: Access tokens and utility NFTs
+- **High-Volume Applications**: Projects minting thousands of NFTs
+- **Cost-Sensitive Projects**: Where transaction costs are a primary concern
 
 **Features:**
 - **Aggregation**: Batch multiple NFTs into single cells
@@ -371,7 +443,16 @@ const mintTx = await cota.mint({
 
 **Reference:** `resources/cota-sdk-js/`
 
-### 4. RGB++ Asset Protocol
+### 4. Deprecated NFT Standards
+
+**mNFT (Multi-purpose NFT)**
+- **Status**: No longer in development, not recommended for new projects
+- **Alternative**: Choose between Spore Protocol (high-value, fully on-chain) or CoTA Protocol (cost-effective, gaming)
+- **Migration**: Existing mNFT projects should consider migrating to supported protocols
+
+**Note**: This deprecation is reflected in the current ecosystem recommendations where Spore and CoTA are the supported NFT standards.
+
+### 5. RGB++ Asset Protocol
 
 **Purpose:** Bitcoin-compatible asset issuance on CKB.
 
@@ -470,44 +551,43 @@ mod integration_tests {
 
 ### 1. **Language Selection Guidelines**
 
-**Rust** (Recommended for smart contracts):
-- Type safety and memory safety
-- Excellent tooling and package ecosystem
-- ckb-std crate provides CKB-specific functionality
-- Growing ecosystem of Rust-based contracts
+**Smart Contracts** (ckb-script-templates + ckb-std):
+- **Rust**: Recommended for all new smart contracts
+- **C**: System-level development, maximum performance
+- **Assembly**: Low-level optimizations when needed
 
-**C** (System-level development):
-- Maximum performance for critical paths
-- Used in system scripts for deterministic execution
-- Lower-level control when needed
+**Application Development**:
+- **TypeScript/JavaScript**: CCC SDK for frontend and backend
+- **Rust**: CKB-SDK-Rust for backend services
+- **Other Languages**: Direct RPC for Python, Go, Java, etc.
 
-**TypeScript/JavaScript** (Frontend and application layer):
-- Rich wallet integration ecosystem
-- React/Next.js development patterns
-- Modern web development practices
+### 2. **Modern Development Workflow**
 
-### 2. **Development Workflow**
-
-1. **Planning**: Use CKB's UTXO model considerations in design
-2. **Prototyping**: Start with OffCKB for rapid iteration
-3. **Development**: Use Capsule with Rust templates
-4. **Testing**: Comprehensive unit and integration tests
-5. **Deployment**: Testnet validation before mainnet
-6. **Monitoring**: Transaction tracking and error handling
+1. **Planning**: Design around CKB's UTXO model and cell patterns
+2. **Initialization**: Use OffCKB to create project structure
+3. **Smart Contracts**: Develop with ckb-script-templates (Rust)
+4. **Frontend/Backend**: Build with CCC SDK (TypeScript) or CKB-SDK-Rust
+5. **Local Testing**: Use OffCKB devnet with pre-funded accounts
+6. **Integration Testing**: Test contract + frontend integration
+7. **Testnet Deployment**: Validate on public testnet
+8. **Mainnet Deployment**: Production deployment with monitoring
 
 ### 3. **Security Considerations**
 
-- **Input Validation**: Always validate script arguments and witness data
-- **Integer Overflow**: Use checked arithmetic operations
-- **Gas Limits**: Optimize for cycle efficiency
-- **Reentrancy**: Consider transaction atomicity
-- **Key Management**: Secure private key handling
+- **Smart Contracts**: Always validate script arguments and witness data
+- **Integer Overflow**: Use checked arithmetic operations in Rust
+- **Cycle Efficiency**: Optimize contracts for gas limits
+- **Transaction Atomicity**: Consider multi-step operation safety
+- **Key Management**: Secure private key handling in applications
+- **Wallet Integration**: Use CCC's secure wallet connection patterns
 
 ### 4. **Performance Optimization**
 
-- **Cell Collection**: Efficient UTXO selection algorithms
+- **Contract Development**: Minimize syscalls and optimize RISC-V compilation
+- **Cell Collection**: Efficient UTXO selection with CCC/CKB-SDK-Rust
 - **Batch Operations**: Group multiple operations when possible
-- **Caching**: Cache frequently accessed data
-- **Minimal Syscalls**: Reduce blockchain interaction overhead
+- **Frontend**: Use CCC's optimized transaction building
+- **Caching**: Cache frequently accessed blockchain data
+- **Local Development**: Use OffCKB for fast iteration cycles
 
-This comprehensive guide provides everything needed to start CKB development with modern tools and best practices, emphasizing Rust development while supporting the full ecosystem of available tools and frameworks.
+This comprehensive guide provides everything needed to start CKB development with modern tools and best practices, following the official Nervos documentation recommendations for OffCKB initialization, ckb-script-templates for contracts, and CCC as the primary SDK for applications.

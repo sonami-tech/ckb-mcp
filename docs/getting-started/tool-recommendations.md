@@ -13,12 +13,14 @@ npm install @ckb-ccc/ccc
 ```
 
 **Why CCC is recommended:**
+- **Official Standard**: All official Nervos examples now use CCC exclusively
 - Modern, actively developed TypeScript/JavaScript SDK
 - Intuitive transaction composition with auto-completion
 - Built-in wallet integration across multiple chains
 - Unified signing interface for seamless interoperability
 - Better developer experience than Lumos
 - Production-ready with comprehensive examples
+- **Primary SDK**: Positioned as "highly recommended as the primary CKB development tool"
 
 ### Script Development: ckb-script-templates (Current)
 ```bash
@@ -40,17 +42,18 @@ ckb-testtool = "0.12"
 
 ## Legacy Tool Status
 
-### Lumos (Legacy but Supported)
+### Lumos (Legacy - Not Recommended)
 ```typescript
-// Lumos is not deprecated but no longer preferred
+// Lumos is no longer actively recommended for new projects
 npm install @ckb-lumos/helpers
 ```
 
 **Lumos status:**
-- Still functional and maintained
-- CCC provides Lumos compatibility patches
-- Use CCC for new projects
-- Migrate existing Lumos projects when possible
+- **Official Notice**: "No longer actively recommended for new projects" (per Nervos docs)
+- Still functional but in maintenance mode
+- **Migration Required**: Official docs recommend using CCC for "more robust development experience"
+- Use CCC for all new projects
+- **Note**: Quick Start guide erroneously mentions Lumos but all examples use CCC
 
 ### Migration Path
 ```typescript
@@ -67,16 +70,18 @@ const tx = ccc.Transaction.from({
 ## Tool Selection Guidelines
 
 ### Use CCC When:
-- Building new dApps or wallets
+- **All new projects** (strongly recommended by Nervos)
+- Building dApps or wallets
 - Need modern wallet integration
 - Want simplified transaction construction
 - Require multi-chain support
 - Building production applications
+- Following official Nervos examples and tutorials
 
 ### Use Lumos When:
-- Working with existing Lumos codebases
-- Need specific Lumos-only features
-- Gradual migration from legacy code
+- **Legacy maintenance only**: Working with existing Lumos codebases
+- Gradual migration from legacy code (migrate to CCC when possible)
+- **Not recommended for**: Any new development or features
 
 ### Use ckb-script-templates When:
 - Creating new smart contracts

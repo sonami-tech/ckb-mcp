@@ -60,9 +60,9 @@ offckb create <project-name>
 
 # Templates available:
 # - next-js: Next.js + CCC SDK
-# - vite-react: Vite + React + CCC
+# - remix-vite: Remix + Vite + CCC SDK
 # - node-script: Node.js script template
-# - rust-contract: Capsule contract template
+# - script-only: Rust contract template (ckb-script-templates)
 ```
 
 ## Development Workflow
@@ -101,10 +101,10 @@ console.log('Private Key:', testAccount.privateKey);
 ```bash
 # Build contract
 cd contracts/my-contract
-capsule build --release
+make build
 
 # Deploy to local devnet
-offckb deploy --file build/release/my-contract
+offckb deploy --network devnet
 
 # Output:
 # Contract deployed!
@@ -181,7 +181,7 @@ export const config = {
 ```bash
 # Run contract tests
 cd contracts/my-contract
-capsule test
+make test
 
 # Run integration tests
 npm test
@@ -253,11 +253,11 @@ offckb init --ckb-port 8115 --indexer-port 8117
 **Script Deployment Failed**
 ```bash
 # Check binary is RISC-V
-file build/release/my-contract
+file build/my-contract
 # Should show: ELF 64-bit LSB executable, UCB RISC-V
 
 # Verify script size
-ls -lh build/release/my-contract
+ls -lh build/my-contract
 # Should be < 600KB
 ```
 
@@ -291,9 +291,11 @@ const tx = await createTransaction({
 
 ### Multi-Contract Projects
 ```bash
-# Deploy multiple contracts
-offckb deploy --file build/release/lock_script
-offckb deploy --file build/release/type_script
+# Build all contracts in workspace
+make build
+
+# Deploy all contracts
+offckb deploy --network devnet
 
 # Export deployment info
 offckb export-config > deployments.json

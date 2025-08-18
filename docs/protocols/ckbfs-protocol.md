@@ -2,7 +2,7 @@
 
 ## Description
 
-A witness-based content storage system for permanent, immutable file storage on CKB blockchain. Covers file publication patterns, checksum validation with Adler-32, branching and forking mechanisms, transaction structures, security considerations, and practical implementation examples for decentralized content publishing and data persistence.
+Comprehensive guide to the CKBFS (CKB File System) protocol for decentralized file storage on CKB blockchain. Covers file publishing, versioning, content integrity verification, and API integration. Includes practical examples for building file storage applications, content management systems, and data archival solutions. Essential for developers needing blockchain-based file storage with witness-based storage patterns and Adler-32 checksum validation.
 
 ## Overview
 
@@ -224,6 +224,173 @@ fn transfer_file(
     
     // 3. Build transfer transaction
     build_transfer_transaction(current_cell, new_cell)
+}
+```
+
+## TypeScript SDK Integration
+
+### CKBFS API Library
+
+The CKBFS TypeScript SDK provides a comprehensive client library for file operations:
+
+```typescript
+import { CKBFS, NetworkType, ProtocolVersion } from "ckbfs-api";
+
+// Initialize CKBFS client
+const ckbfs = new CKBFS(
+  'your-private-key',
+  NetworkType.Testnet,
+  {
+    version: ProtocolVersion.V2,
+    chunkSize: 30 * 1024,  // 30KB chunks
+    useTypeID: false
+  }
+);
+```
+
+### Publishing Files with TypeScript
+
+```typescript
+// Publish file from filesystem
+const txHash = await ckbfs.publishFile('./document.pdf', {
+  contentType: 'application/pdf',
+  filename: 'document.pdf'
+});
+
+// Publish content directly
+const content = new TextEncoder().encode("Hello, CKBFS!");
+const txHash = await ckbfs.publishContent(content, {
+  contentType: 'text/plain',
+  filename: 'greeting.txt',
+  capacity: 300n * 100000000n  // 300 CKB
+});
+```
+
+### File Appending Operations
+
+```typescript
+// Append content to existing file
+const ckbfsCell = await findCKBFSCell(originalTxHash);
+const appendTxHash = await ckbfs.appendContent(
+  "Additional content",
+  ckbfsCell
+);
+
+// Append binary data
+const additionalData = new Uint8Array([1, 2, 3, 4]);
+const appendTxHash = await ckbfs.appendContent(
+  additionalData,
+  ckbfsCell
+);
+```
+
+### Multiple Retrieval Methods
+
+```typescript
+// Method 1: Retrieve from blockchain by OutPoint
+const outPoint = { txHash: "0x...", index: 0 };
+const content = await getFileContentFromChain(client, outPoint, ckbfsData);
+
+// Method 2: Direct witness decoding (faster)
+const decoded = decodeWitnessContent(witnessHex);
+
+// Method 3: Generic identifier interface
+const fileData = await getFileContentFromChainByIdentifier(
+  client,
+  'ckbfs://type-id-or-outpoint',
+  { network: 'testnet', version: ProtocolVersion.V2 }
+);
+```
+
+### Identifier Formats
+
+CKBFS supports multiple identifier formats for flexible file access:
+
+```typescript
+// TypeID hex format
+const typeIdHex = "0xbce89252cece632ef819943bed9cd0e2576f8ce26f9f02075b621b1c9a28056a";
+
+// CKBFS TypeID URI
+const typeIdUri = "ckbfs://bce89252cece632ef819943bed9cd0e2576f8ce26f9f02075b621b1c9a28056a";
+
+// CKBFS OutPoint URI
+const outPointUri = "ckbfs://431c9d668c1815d26eb4f7ac6256eb350ab351474daea8d588400146ab228780i0";
+
+// Use any format
+const content = await getFileContentFromChainByIdentifier(client, typeIdUri);
+```
+
+### Version Control with TypeScript
+
+```typescript
+class FileVersionManager {
+  async getVersionHistory(identifier: string): Promise<Version[]> {
+    const versions = [];
+    let current = identifier;
+    
+    while (current) {
+      const fileData = await getFileContentFromChainByIdentifier(
+        client, 
+        current
+      );
+      
+      versions.push({
+        identifier: current,
+        content: fileData.content,
+        timestamp: fileData.timestamp,
+        checksum: fileData.checksum
+      });
+      
+      // Follow backlink to previous version
+      current = fileData.backlinks?.[0];
+    }
+    
+    return versions.reverse(); // Oldest first
+  }
+}
+```
+
+### Application Integration Patterns
+
+```typescript
+// Content Management System
+class DecentralizedCMS {
+  private ckbfs: CKBFS;
+  
+  constructor(privateKey: string) {
+    this.ckbfs = new CKBFS(privateKey, NetworkType.Mainnet);
+  }
+  
+  async publishArticle(article: Article): Promise<string> {
+    const content = JSON.stringify(article);
+    const encodedContent = new TextEncoder().encode(content);
+    
+    return this.ckbfs.publishContent(encodedContent, {
+      contentType: 'application/json',
+      filename: `article-${article.id}.json`
+    });
+  }
+}
+
+// Data Archival System
+class DataArchive {
+  async archiveData(data: any, metadata: ArchiveMetadata): Promise<ArchiveRecord> {
+    const compressed = await compress(JSON.stringify(data));
+    
+    const txHash = await ckbfs.publishContent(compressed, {
+      contentType: 'application/gzip',
+      filename: metadata.filename
+    });
+    
+    return {
+      id: txHash,
+      originalSize: JSON.stringify(data).length,
+      compressedSize: compressed.length,
+      checksum: calculateAdler32(compressed),
+      timestamp: Date.now(),
+      metadata
+    };
+  }
 }
 ```
 

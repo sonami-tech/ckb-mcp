@@ -47,7 +47,18 @@ Comprehensive directory of CKB ecosystem projects, tools, and resources organize
   - Website: https://spore.pro/
   - Docs: https://docs.spore.pro/
   - GitHub: https://github.com/sporeprotocol
-  - **Use Case**: NFTs, digital collectibles, on-chain content
+  - **Use Case**: High-value NFTs, digital collectibles requiring fully on-chain data
+  - **Recommended for**: Art NFTs, collectibles where data permanence is critical
+
+- **CoTA Protocol**: Compact Token Aggregator
+  - GitHub: https://github.com/nervina-labs/cota-nft
+  - Docs: https://github.com/nervina-labs/cota-docs
+  - **Use Case**: Cost-effective NFT solution where low cost is more important than flexibility
+  - **Recommended for**: Gaming assets, membership tokens, high-volume NFT applications
+
+- **mNFT (Deprecated)**: Multi-purpose NFT standard
+  - **Status**: No longer in development, not recommended for new projects
+  - **Alternative**: Use Spore Protocol for high-value NFTs or CoTA Protocol for cost-effective NFTs
 
 - **xUDT**: Extensible User Defined Tokens
   - **Use Case**: Fungible tokens, custom assets
@@ -169,7 +180,8 @@ const txHash = await signer.sendTransaction(tx);
 3. **Legacy tools**: Evaluate modern alternatives
 
 ### For Specific Use Cases:
-- **NFTs/Digital Assets**: Spore Protocol
+- **High-Value NFTs/On-Chain Art**: Spore Protocol (fully on-chain data)
+- **Cost-Effective NFTs/Gaming**: CoTA Protocol (optimized for low cost)
 - **Fungible Tokens**: xUDT standard
 - **Bitcoin Integration**: RGB++ protocol
 - **DeFi**: UTXO Swap, iCKB patterns
