@@ -13,6 +13,65 @@ This project uses Docker containers for deployment with automatic updates. All t
 - **Container Registry**: GitHub Container Registry (ghcr.io)
 - **Auto-Updates**: Shepherd for Docker Compose-aware updates
 
+## Docker File Structure
+
+This project includes multiple Docker configuration files for different environments:
+
+### Core Docker Files
+
+- **`Dockerfile`**: Multi-stage build configuration
+  - Builder stage: Compiles Rust binaries with dependencies
+  - Runtime stage: Debian bookworm-slim with Supervisor process manager
+  - Includes health checks for all three servers
+
+- **`.dockerignore`**: Excludes unnecessary files from build context
+  - Skips target/, .git/, node_modules/, etc.
+  - Reduces build time and image size
+
+### Docker Compose Files
+
+- **`docker-compose.yml`**: Local development environment
+  - Builds from local Dockerfile
+  - Uses `RUST_LOG=debug` for detailed logging
+  - Mounts code for development workflow
+
+- **`docker/docker-compose.staging.yml`**: Staging deployment
+  - Uses `ghcr.io/sonami-tech/ckb-mcp:dev-latest` image
+  - Auto-deploys from `develop` branch pushes
+  - Includes Shepherd labels for auto-updates
+  - Uses `RUST_LOG=info` for production-like logging
+
+- **`docker/docker-compose.production.yml`**: Production deployment
+  - Uses `ghcr.io/sonami-tech/ckb-mcp:latest` image
+  - Deploys from version tags (v1.0.0, etc.)
+  - Production-grade configuration and monitoring
+
+- **`docker/docker-compose.shepherd.yml`**: Auto-updater service
+  - Monitors Docker images for updates every 5 minutes
+  - Automatically pulls and deploys new images
+  - Works with both staging and production containers
+
+### Supervisor Configuration
+
+- **`docker/supervisord.conf`**: Process manager configuration
+  - Manages all three MCP servers in a single container
+  - Configures logging, auto-restart, and environment variables
+  - Uses shell command wrappers for environment variable substitution
+
+### Environment Configuration
+
+All compose files support these environment variables:
+- **`CKB_RPC_URL`**: CKB node RPC endpoint (default: http://127.0.0.1:8114)
+- **`RUST_LOG`**: Logging level (debug/info/warn/error)
+- **`TZ`**: Timezone (set to America/Los_Angeles for US West)
+
+Override via `.env` files or environment variables:
+```bash
+# Example .env file
+CKB_RPC_URL=http://192.168.0.73:18114
+RUST_LOG=debug
+```
+
 ## Prerequisites
 
 - Docker and Docker Compose installed
@@ -250,6 +309,85 @@ curl -f http://localhost:8003/health
 ### Log Monitoring
 
 Application logs are forwarded to Docker's logging system. Configure log aggregation as needed for your infrastructure.
+
+## Monitoring Auto-Updates
+
+### Understanding Shepherd Behavior
+
+Shepherd logs can be confusing. Here's what the messages actually mean:
+
+**Normal Operation (No Updates Available):**
+```
+Tue Aug 19 21:45:27 PDT 2025 Timezone set to America/Los_Angeles
+Tue Aug 19 21:45:27 PDT 2025 Enabling synchronous service updates
+Error response from daemon: This node is not a swarm manager...
+Tue Aug 19 21:45:27 PDT 2025 Sleeping 5m before next update
+```
+
+**Translation:**
+- ✅ Shepherd is running and checking for updates
+- ⚠️ "Swarm manager" error is **normal** (Shepherd tries swarm first, then falls back to regular Docker)
+- ✅ "Sleeping 5m" means no updates needed - container is current
+
+**When an Update Happens:**
+```
+Tue Aug 19 22:05:27 PDT 2025 Checking for new images...
+Tue Aug 19 22:05:30 PDT 2025 Found new image for ckb-mcp-staging
+Tue Aug 19 22:05:35 PDT 2025 Stopping ckb-mcp-staging
+Tue Aug 19 22:05:40 PDT 2025 Starting ckb-mcp-staging
+```
+
+### Verifying Container Currency
+
+Check if your container is running the latest available image:
+
+```bash
+# Pull latest to ensure local registry is current
+docker pull ghcr.io/sonami-tech/ckb-mcp:dev-latest
+
+# Compare running container vs available image
+echo "Running: $(docker inspect ckb-mcp-staging --format='{{.Image}}' | cut -c8-19)"
+echo "Available: $(docker images ghcr.io/sonami-tech/ckb-mcp:dev-latest --format='{{.ID}}')"
+
+# If IDs match, container is current
+# If different, update is pending or needed
+```
+
+### Testing the Update Pipeline
+
+To verify Shepherd is working:
+
+1. **Make a small change** and push to develop branch
+2. **Wait 5-10 minutes** for GitHub Actions to build new image
+3. **Watch Shepherd logs** for update activity:
+   ```bash
+   docker logs -f ckb-mcp-shepherd
+   ```
+4. **Verify container restart** with `docker ps` (look for recent "Up X minutes")
+
+### Troubleshooting Shepherd
+
+**Shepherd Not Updating:**
+```bash
+# Check if Shepherd can see labeled containers
+docker exec ckb-mcp-shepherd docker ps --filter "label=shepherd.enable=true"
+
+# Should show your staging container
+```
+
+**Force Shepherd to Check:**
+```bash
+# Restart Shepherd to trigger immediate check
+docker restart ckb-mcp-shepherd
+docker logs -f ckb-mcp-shepherd
+```
+
+**Manual Update (if needed):**
+```bash
+# Pull and restart manually
+docker compose -f docker/docker-compose.staging.yml pull
+docker compose -f docker/docker-compose.staging.yml up -d
+```
 
 ## Troubleshooting
 
