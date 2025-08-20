@@ -96,11 +96,42 @@ claude mcp add --scope project --transport http ckb-tools http://localhost:8003/
 # List configured MCP servers
 claude mcp list
 
+# Test server connectivity
+curl http://localhost:8001/health
+curl http://localhost:8002/health  
+curl http://localhost:8003/health
+
 # Remove servers if needed
 claude mcp remove --scope project ckb-rpc
 claude mcp remove --scope project ckb-docs
 claude mcp remove --scope project ckb-tools
 ```
+
+### Using the MCP Servers
+
+Once configured, Claude Code can access CKB development resources:
+
+**Query blockchain data:**
+```
+"What's the current tip block number on CKB?"
+"Show me the transaction details for hash 0x123..."
+```
+
+**Access documentation:**
+```
+"How do I create a lock script in CKB?"
+"Show me examples of UDT token creation"
+"What are the CKB syscalls available?"
+```
+
+**Generate and manage contracts:**
+```
+"Create a new lock script template"
+"Compile my CKB contract and run tests"
+"Generate a Capsule project for NFT development"
+```
+
+The servers provide context-aware assistance for CKB development workflows.
 
 ## Server Details
 
