@@ -2,7 +2,7 @@
 
 ## Description
 
-Comprehensive deployment documentation for CKB MCP servers using Docker containers. Covers staging and production environments with automated updates via Shepherd. Essential for DevOps teams deploying CKB blockchain development tools.
+Comprehensive deployment documentation for CKB MCP servers using Docker containers. Covers staging and production environments with automated updates via Watchtower. Essential for DevOps teams deploying CKB blockchain development tools.
 
 ## Overview
 
@@ -11,7 +11,7 @@ This project uses Docker containers for deployment with automatic updates. All t
 - **Staging Environment**: Auto-deploys from `develop` branch
 - **Production Environment**: Auto-deploys from tagged releases
 - **Container Registry**: GitHub Container Registry (ghcr.io)
-- **Auto-Updates**: Shepherd for Docker Compose-aware updates
+- **Auto-Updates**: Watchtower for Docker Compose container updates
 
 ## Docker File Structure
 
@@ -38,7 +38,7 @@ This project includes multiple Docker configuration files for different environm
 - **`docker/docker-compose.staging.yml`**: Staging deployment
   - Uses `ghcr.io/sonami-tech/ckb-mcp:dev-latest` image
   - Auto-deploys from `develop` branch pushes
-  - Includes Shepherd labels for auto-updates
+  - Includes Watchtower labels for auto-updates
   - Uses `RUST_LOG=info` for production-like logging
 
 - **`docker/docker-compose.production.yml`**: Production deployment
@@ -46,7 +46,7 @@ This project includes multiple Docker configuration files for different environm
   - Deploys from version tags (v1.0.0, etc.)
   - Production-grade configuration and monitoring
 
-- **`docker/docker-compose.shepherd.yml`**: Auto-updater service
+- **`docker/docker-compose.watchtower.yml`**: Auto-updater service
   - Monitors Docker images for updates every 5 minutes
   - Automatically pulls and deploys new images
   - Works with both staging and production containers
@@ -144,9 +144,9 @@ cd /opt/ckb-mcp
 docker compose -f docker/docker-compose.staging.yml up -d
 ```
 
-3. Start Shepherd auto-updater:
+3. Start Watchtower auto-updater:
 ```bash
-docker compose -f docker/docker-compose.shepherd.yml up -d
+docker compose -f docker/docker-compose.watchtower.yml up -d
 ```
 
 ### Custom CKB Node Configuration
@@ -173,8 +173,8 @@ curl http://staging-server:8001/health
 curl http://staging-server:8002/health
 curl http://staging-server:8003/health
 
-# Check Shepherd logs
-docker logs ckb-mcp-shepherd
+# Check Watchtower logs
+docker logs ckb-mcp-watchtower
 ```
 
 ## Production Deployment
@@ -194,9 +194,9 @@ cd /opt/ckb-mcp
 docker compose -f docker/docker-compose.production.yml up -d
 ```
 
-3. Start Shepherd auto-updater:
+3. Start Watchtower auto-updater:
 ```bash
-docker compose -f docker/docker-compose.shepherd.yml up -d
+docker compose -f docker/docker-compose.watchtower.yml up -d
 ```
 
 ### Custom CKB Node Configuration
@@ -226,16 +226,16 @@ curl http://production-server:8003/health
 
 ## Automatic Updates
 
-Shepherd monitors for new Docker images and automatically updates containers:
+Watchtower monitors for new Docker images and automatically updates containers:
 
 - **Check Interval**: Every 5 minutes
 - **Update Trigger**: New image tags in registry
 - **Cleanup**: Automatically removes old images
 - **Zero Downtime**: Rolling updates preserve service availability
 
-### Shepherd Configuration
+### Watchtower Configuration
 
-Shepherd only updates containers with the `shepherd.enable=true` label, which is set in both staging and production compose files.
+Watchtower only updates containers with the `com.centurylinklabs.watchtower.enable=true` label, which is set in both staging and production compose files.
 
 ## Manual Operations
 
@@ -260,8 +260,8 @@ docker compose -f docker/docker-compose.staging.yml logs -f
 # Specific service
 docker logs ckb-mcp-staging -f
 
-# Shepherd logs
-docker logs ckb-mcp-shepherd -f
+# Watchtower logs
+docker logs ckb-mcp-watchtower -f
 ```
 
 ### Stop Services
@@ -270,8 +270,8 @@ docker logs ckb-mcp-shepherd -f
 # Stop application
 docker compose -f docker/docker-compose.staging.yml down
 
-# Stop Shepherd
-docker compose -f docker/docker-compose.shepherd.yml down
+# Stop Watchtower
+docker compose -f docker/docker-compose.watchtower.yml down
 ```
 
 ## Release Process
@@ -280,7 +280,7 @@ docker compose -f docker/docker-compose.shepherd.yml down
 
 1. Push changes to `develop` branch
 2. GitHub Actions builds and pushes `dev-latest` image
-3. Shepherd detects new image and updates staging server
+3. Watchtower detects new image and updates staging server
 
 ### Production Release
 
@@ -291,7 +291,7 @@ git push origin v1.0.0
 ```
 
 2. GitHub Actions builds and pushes `latest` image
-3. Shepherd detects new image and updates production server
+3. Watchtower detects new image and updates production server
 
 ## Monitoring
 
@@ -312,29 +312,28 @@ Application logs are forwarded to Docker's logging system. Configure log aggrega
 
 ## Monitoring Auto-Updates
 
-### Understanding Shepherd Behavior
+### Understanding Watchtower Behavior
 
-Shepherd logs can be confusing. Here's what the messages actually mean:
+Watchtower provides clear logging about its update activities:
 
 **Normal Operation (No Updates Available):**
 ```
-Tue Aug 19 21:45:27 PDT 2025 Timezone set to America/Los_Angeles
-Tue Aug 19 21:45:27 PDT 2025 Enabling synchronous service updates
-Error response from daemon: This node is not a swarm manager...
-Tue Aug 19 21:45:27 PDT 2025 Sleeping 5m before next update
+time="2025-08-19T21:45:27-07:00" level=info msg="Checking containers for updated images"
+time="2025-08-19T21:45:28-07:00" level=debug msg="Pulling image for container /ckb-mcp-staging"
+time="2025-08-19T21:45:30-07:00" level=info msg="Container /ckb-mcp-staging is up to date"
 ```
 
 **Translation:**
-- ✅ Shepherd is running and checking for updates
-- ⚠️ "Swarm manager" error is **normal** (Shepherd tries swarm first, then falls back to regular Docker)
-- ✅ "Sleeping 5m" means no updates needed - container is current
+- ✅ Watchtower is checking for updates
+- ✅ Debug logging shows registry pulls and comparisons
+- ✅ "up to date" means no update needed
 
 **When an Update Happens:**
 ```
-Tue Aug 19 22:05:27 PDT 2025 Checking for new images...
-Tue Aug 19 22:05:30 PDT 2025 Found new image for ckb-mcp-staging
-Tue Aug 19 22:05:35 PDT 2025 Stopping ckb-mcp-staging
-Tue Aug 19 22:05:40 PDT 2025 Starting ckb-mcp-staging
+time="2025-08-19T22:05:27-07:00" level=info msg="Found new image for container /ckb-mcp-staging"
+time="2025-08-19T22:05:30-07:00" level=info msg="Stopping container /ckb-mcp-staging"
+time="2025-08-19T22:05:35-07:00" level=info msg="Creating new container /ckb-mcp-staging"
+time="2025-08-19T22:05:40-07:00" level=info msg="Starting container /ckb-mcp-staging"
 ```
 
 ### Verifying Container Currency
@@ -355,31 +354,31 @@ echo "Available: $(docker images ghcr.io/sonami-tech/ckb-mcp:dev-latest --format
 
 ### Testing the Update Pipeline
 
-To verify Shepherd is working:
+To verify Watchtower is working:
 
 1. **Make a small change** and push to develop branch
 2. **Wait 5-10 minutes** for GitHub Actions to build new image
-3. **Watch Shepherd logs** for update activity:
+3. **Watch Watchtower logs** for update activity:
    ```bash
-   docker logs -f ckb-mcp-shepherd
+   docker logs -f ckb-mcp-watchtower
    ```
 4. **Verify container restart** with `docker ps` (look for recent "Up X minutes")
 
-### Troubleshooting Shepherd
+### Troubleshooting Watchtower
 
-**Shepherd Not Updating:**
+**Watchtower Not Updating:**
 ```bash
-# Check if Shepherd can see labeled containers
-docker exec ckb-mcp-shepherd docker ps --filter "label=shepherd.enable=true"
+# Check if Watchtower can see labeled containers
+docker exec ckb-mcp-watchtower docker ps --filter "label=com.centurylinklabs.watchtower.enable=true"
 
 # Should show your staging container
 ```
 
-**Force Shepherd to Check:**
+**Force Watchtower to Check:**
 ```bash
-# Restart Shepherd to trigger immediate check
-docker restart ckb-mcp-shepherd
-docker logs -f ckb-mcp-shepherd
+# Restart Watchtower to trigger immediate check
+docker restart ckb-mcp-watchtower
+docker logs -f ckb-mcp-watchtower
 ```
 
 **Manual Update (if needed):**
@@ -422,16 +421,16 @@ docker exec ckb-mcp-staging supervisorctl tail -f ckb-docs-server
 docker exec ckb-mcp-staging supervisorctl tail -f ckb-tools-server
 ```
 
-### Shepherd Not Updating
+### Watchtower Not Updating
 
-1. Check Shepherd configuration:
+1. Check Watchtower configuration:
 ```bash
-docker logs ckb-mcp-shepherd
+docker logs ckb-mcp-watchtower
 ```
 
 2. Verify container labels:
 ```bash
-docker inspect ckb-mcp-staging | grep shepherd
+docker inspect ckb-mcp-staging | grep watchtower
 ```
 
 3. Manual image pull test:
@@ -457,6 +456,6 @@ ckb-mcp/
 │   ├── supervisord.conf                 # Process manager configuration
 │   ├── docker-compose.staging.yml       # Staging environment
 │   ├── docker-compose.production.yml    # Production environment
-│   └── docker-compose.shepherd.yml      # Auto-updater configuration
+│   └── docker-compose.watchtower.yml    # Auto-updater configuration
 └── docker-compose.yml                   # Local development
 ```

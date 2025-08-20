@@ -1,0 +1,24 @@
+# Watchtower auto-updater Docker Compose configuration
+# Usage: docker compose -f docker/docker-compose.watchtower.yml up -d
+
+services:
+  watchtower:
+    image: containrrr/watchtower
+    container_name: ckb-mcp-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      # Check for updates every 5 minutes (300 seconds)
+      - WATCHTOWER_POLL_INTERVAL=300
+      # Only update containers with enable label
+      - WATCHTOWER_LABEL_ENABLE=true
+      # Clean up old images after update
+      - WATCHTOWER_CLEANUP=true
+      # Enable debug logging to see registry checks
+      - WATCHTOWER_DEBUG=true
+      # Set timezone to US West (Pacific Time)
+      - TZ=America/Los_Angeles
+      # Enable notifications (optional)
+      - WATCHTOWER_NOTIFICATIONS=shoutrrr
+      - WATCHTOWER_NOTIFICATION_URL=logger://

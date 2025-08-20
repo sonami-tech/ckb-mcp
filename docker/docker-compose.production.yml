@@ -21,6 +21,5 @@ services:
       retries: 3
       start_period: 40s
     labels:
-      # Enable Shepherd auto-updates
-      - "shepherd.enable=true"
-      - "shepherd.autoupdate=true"
+      # Enable Watchtower auto-updates
+      - "com.centurylinklabs.watchtower.enable=true"

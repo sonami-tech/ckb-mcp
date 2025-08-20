@@ -216,7 +216,7 @@ checksum = "9555578bc9e57714c812a1f84e4fc5b4d21fcb063490c624de019f7464c91268"
 
 [[package]]
 name = "ckb-docs-server"
-version = "0.2.2"
+version = "0.2.6"
 dependencies = [
  "anyhow",
  "axum",
@@ -235,7 +235,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-rpc-server"
-version = "0.2.2"
+version = "0.2.6"
 dependencies = [
  "anyhow",
  "axum",
@@ -255,7 +255,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-tools-server"
-version = "0.2.2"
+version = "0.2.6"
 dependencies = [
  "anyhow",
  "axum",

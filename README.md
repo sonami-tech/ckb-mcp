@@ -307,7 +307,7 @@ For production deployment using Docker containers, see **[DEPLOY.md](DEPLOY.md)*
 
 - Docker container setup
 - Staging and production environments
-- Automatic updates with Shepherd
+- Automatic updates with Watchtower
 - Health monitoring and troubleshooting
 
 ## License
