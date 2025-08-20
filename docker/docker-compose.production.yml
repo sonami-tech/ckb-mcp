@@ -12,6 +12,7 @@ services:
     environment:
       - RUST_LOG=info
       - CKB_RPC_URL=${CKB_RPC_URL:-http://127.0.0.1:8114}
+      - TZ=America/Los_Angeles
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "sh", "-c", "curl -f http://localhost:8001/health && curl -f http://localhost:8002/health && curl -f http://localhost:8003/health"]
