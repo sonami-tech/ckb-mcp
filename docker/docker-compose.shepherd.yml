@@ -8,7 +8,6 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /opt/ckb-mcp:/opt/ckb-mcp:ro
     environment:
       # Check for updates every 5 minutes
       - SLEEP_TIME=5m
