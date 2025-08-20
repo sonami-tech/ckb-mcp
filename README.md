@@ -270,6 +270,15 @@ To add new documentation:
 4. Verify format: `python3 utils/verify_descriptions.py`
 5. Restart server to load new resources.
 
+## Deployment
+
+For production deployment using Docker containers, see **[DEPLOY.md](DEPLOY.md)** for comprehensive deployment documentation including:
+
+- Docker container setup
+- Staging and production environments
+- Automatic updates with Shepherd
+- Health monitoring and troubleshooting
+
 ## License
 
 MIT License - see LICENSE file for details.
