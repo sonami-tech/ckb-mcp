@@ -11,7 +11,7 @@ services:
       - "8003:8003"  # Tools server
     environment:
       - RUST_LOG=info
-      - CKB_RPC_URL=http://127.0.0.1:8114
+      # - CKB_RPC_URL=http://127.0.0.1:8114  # Use .env file or environment variable instead
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "sh", "-c", "curl -f http://localhost:8001/health && curl -f http://localhost:8002/health && curl -f http://localhost:8003/health"]
