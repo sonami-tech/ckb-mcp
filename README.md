@@ -40,7 +40,10 @@ ckb-mcp/
 # Build all servers
 cargo build --release
 
-# Run all servers (starts on ports 8001, 8002, 8003)
+# Development: Auto-rebuild and run on changes
+cargo watch -x "build --workspace" -i "crates/*/Cargo.toml" -s 'parallel --line-buffer ::: "target/debug/ckb-docs-server" "target/debug/ckb-rpc-server --ckb-rpc http://192.168.0.73:18114" "target/debug/ckb-tools-server"'
+
+# Simple run (starts on ports 8001, 8002, 8003)
 cargo run --bin ckb-rpc-server & \
 cargo run --bin ckb-docs-server & \
 cargo run --bin ckb-tools-server & \
