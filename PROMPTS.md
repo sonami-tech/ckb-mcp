@@ -21,7 +21,7 @@ I want to create a new CKB smart contract project using modern Rust tooling. Ple
 4. Explain the modern development workflow emphasizing Rust over C.
 5. Reference ckb-dev-context://patterns/development-tools-and-templates for best practices.
 
-Focus on using ckb-script-templates and modern Rust patterns, avoiding deprecated tools like Capsule.
+Focus on using ckb-script-templates and modern Rust patterns with current tooling.
 ```
 
 ### Project Migration and Modernization
@@ -142,7 +142,7 @@ I need to integrate CKB transactions into my web application. Please:
 6. Reference ckb-dev-context://patterns/dao-development-patterns for DAO integration.
 7. Include testing patterns for frontend integration.
 
-Avoid deprecated Lumos patterns in favor of modern CCC implementations.
+Use modern CCC implementations for all frontend components.
 ```
 
 ## 4. Protocol Integration Prompts

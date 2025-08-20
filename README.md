@@ -32,7 +32,7 @@ ckb-mcp/
 
 - Rust 1.70+.
 - CKB node running (for RPC server).
-- Capsule framework (for tools server).
+- CKB development tools (for tools server).
 
 ### Build All Servers
 
@@ -128,7 +128,7 @@ Once configured, Claude Code can access CKB development resources:
 ```
 "Create a new lock script template"
 "Compile my CKB contract and run tests"
-"Generate a Capsule project for NFT development"
+"Generate a contract template for NFT development"
 ```
 
 The servers provide context-aware assistance for CKB development workflows.
@@ -225,7 +225,7 @@ ckb-docs-server [OPTIONS]
 - `run_tests` - Execute contract tests.
 - `deploy_contract` - Deploy to network.
 - `format_code` - Code formatting.
-- `create_project` - Create new Capsule project.
+- `create_project` - Create new contract project.
 
 **Usage**:
 ```bash

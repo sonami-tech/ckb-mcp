@@ -88,7 +88,7 @@ cargo build --workspace --release
 ### CKB-Specific
 
 - CKB node connection for RPC queries.
-- Capsule framework for contract development.
+- Modern CKB development tooling and SDKs.
 - Molecule serialization for CKB data types.
 
 ## Documentation Integration
@@ -173,7 +173,7 @@ The ckb-docs-server automatically extracts these descriptions for the MCP resour
 ### Contract Development Integration
 
 1. Use ckb-tools-server for contract operations.
-2. Leverage Capsule framework integration.
+2. Use modern CKB development tools and frameworks.
 3. Follow CKB development best practices.
 4. Test on both testnet and mainnet configurations.
 
