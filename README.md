@@ -34,31 +34,18 @@ ckb-mcp/
 - CKB node running (for RPC server).
 - CKB development tools (for tools server).
 
-### Build All Servers
+### Build and Run
 
 ```bash
+# Build all servers
 cargo build --release
+
+# Run all servers (starts on ports 8001, 8002, 8003)
+cargo run --bin ckb-rpc-server & \
+cargo run --bin ckb-docs-server & \
+cargo run --bin ckb-tools-server & \
+wait
 ```
-
-### Build and Run All Servers
-
-To build and run all three servers simultaneously with auto-rebuild on changes:
-
-```bash
-cargo watch -x "build --workspace" -i "crates/*/Cargo.toml" -s 'parallel --line-buffer ::: "target/debug/ckb-docs-server" "target/debug/ckb-rpc-server --ckb-rpc http://192.168.0.73:18114" "target/debug/ckb-tools-server"'
-```
-
-Or for a simple one-time build and run:
-
-```bash
-cargo build && \
-  cargo run --bin ckb-rpc-server & \
-  cargo run --bin ckb-docs-server & \
-  cargo run --bin ckb-tools-server & \
-  wait
-```
-
-This will start all servers on their default ports (8001, 8002, 8003).
 
 ### Run Individual Servers
 
