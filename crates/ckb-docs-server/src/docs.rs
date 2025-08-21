@@ -119,6 +119,7 @@ impl DocsProvider {
 			("ckb-dev-context://concepts/advanced-cell-concepts", "concepts/advanced-cell-concepts.md"),
 			("ckb-dev-context://concepts/cell-model", "concepts/cell-model.md"),
 			("ckb-dev-context://concepts/ckb-syscalls-and-sources", "concepts/ckb-syscalls-and-sources.md"),
+			("ckb-dev-context://concepts/ckb-network-history", "concepts/ckb-network-history.md"),
 			("ckb-dev-context://concepts/molecule-serialization", "concepts/molecule-serialization.md"),
 			("ckb-dev-context://concepts/script-groups-and-execution", "concepts/script-groups-and-execution.md"),
 			("ckb-dev-context://concepts/transaction-structure", "concepts/transaction-structure.md"),
