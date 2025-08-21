@@ -24,12 +24,12 @@ extension_data: bytes (optional, based on flags)
 ## xUDT Flags
 
 32-bit flags control enabled extensions:
-- `0x00000000`: Basic sUDT compatibility mode
-- `0x00000001`: Reserved
-- `0x00000002`: Reserved
-- `0x20000000`: Extension data in input cell
-- `0x40000000`: Extension data in output cell
-- `0x80000000`: Extension data in witness
+- `0x00000000`: Basic sUDT compatibility mode.
+- `0x00000001`: Reserved.
+- `0x00000002`: Reserved.
+- `0x20000000`: Extension data in input cell.
+- `0x40000000`: Extension data in output cell.
+- `0x80000000`: Extension data in witness.
 
 ## Standard Extensions
 

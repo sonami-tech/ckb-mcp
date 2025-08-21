@@ -13,10 +13,10 @@ The Spore Protocol is a comprehensive framework for creating, managing, and tran
 ### Digital Object Backing (DOB)
 
 Spore implements true on-chain asset storage where:
-- All content data is encoded directly on the blockchain
-- Assets have intrinsic value through CKB capacity requirements
-- Content is immutable and permanently accessible
-- No external dependencies for asset integrity
+- All content data is encoded directly on the blockchain.
+- Assets have intrinsic value through CKB capacity requirements.
+- Content is immutable and permanently accessible.
+- No external dependencies for asset integrity.
 
 ### Value Mechanism
 
@@ -134,9 +134,9 @@ When `cluster_id` is set in a Spore:
 ### Immortal Spores
 
 Spores marked with `immortal=true` parameter:
-- Cannot be destroyed or melted
-- Permanent on-chain storage guaranteed
-- Higher capacity requirements for permanence
+- Cannot be destroyed or melted.
+- Permanent on-chain storage guaranteed.
+- Higher capacity requirements for permanence.
 
 ### DOB/0 Protocol Integration
 
@@ -159,9 +159,9 @@ Enhanced Spores with decoder configuration:
 ### Mutant Support
 
 Extension mechanism for dynamic content:
-- Mutant scripts can modify Spore content
-- Preserves original data integrity
-- Enables programmable NFT behavior
+- Mutant scripts can modify Spore content.
+- Preserves original data integrity.
+- Enables programmable NFT behavior.
 
 ## Capacity Economics
 
@@ -282,50 +282,50 @@ if let Some(cluster_id) = spore_data.cluster_id() {
 
 ### Content Validation
 
-- MIME type format validation
-- Content size limits
-- Malicious content detection
-- Resource consumption limits
+- MIME type format validation.
+- Content size limits.
+- Malicious content detection.
+- Resource consumption limits.
 
 ### Authorization
 
-- Lock script security
-- Cluster permission model
-- Proxy authorization patterns
-- Multi-signature support
+- Lock script security.
+- Cluster permission model.
+- Proxy authorization patterns.
+- Multi-signature support.
 
 ### Economic Security
 
-- Spam prevention through capacity costs
-- Value preservation mechanisms
-- Network resource utilization
-- Long-term sustainability
+- Spam prevention through capacity costs.
+- Value preservation mechanisms.
+- Network resource utilization.
+- Long-term sustainability.
 
 ## Protocol Extensions
 
 ### Custom Content Types
 
 Developers can extend content types:
-- Custom MIME parameters
-- Application-specific formats
-- Cross-protocol compatibility
-- Metadata standards
+- Custom MIME parameters.
+- Application-specific formats.
+- Cross-protocol compatibility.
+- Metadata standards.
 
 ### Mutant Integration
 
 Dynamic content modification:
-- Programmable NFT behavior
-- State transitions
-- Interactive experiences
-- Composable functionality
+- Programmable NFT behavior.
+- State transitions.
+- Interactive experiences.
+- Composable functionality.
 
 ### Cross-Chain Compatibility
 
 Bridge mechanisms:
-- Asset representation
-- Value preservation
-- Metadata translation
-- Protocol interoperability
+- Asset representation.
+- Value preservation.
+- Metadata translation.
+- Protocol interoperability.
 
 ## Implementation Status
 

@@ -82,47 +82,47 @@ pub fn main() -> Result<(), Error> {
 ## Common Type Scripts
 
 ### sUDT/xUDT
-- **Args**: owner_lock_hash (32 bytes) [+ flags (4 bytes) for xUDT]
-- **Data**: amount (u128, 16 bytes, little-endian)
-- **Validation**: Conservation unless owner mode
+- **Args**: owner_lock_hash (32 bytes) [+ flags (4 bytes) for xUDT].
+- **Data**: amount (u128, 16 bytes, little-endian).
+- **Validation**: Conservation unless owner mode.
 
 ### Omnilock
-- **Args**: 21-byte auth + optional config
-- **Supports**: Bitcoin, Ethereum, Nostr signatures
-- **Witness**: Signature in lock field of WitnessArgs
+- **Args**: 21-byte auth + optional config.
+- **Supports**: Bitcoin, Ethereum, Nostr signatures.
+- **Witness**: Signature in lock field of WitnessArgs.
 
 ### Spore
-- **Type ID**: Unique via hash(first_input | output_index)
-- **Data**: SporeData with content_type, content, cluster_id
-- **Immutable**: Content cannot change after creation
+- **Type ID**: Unique via hash(first_input | output_index).
+- **Data**: SporeData with content_type, content, cluster_id.
+- **Immutable**: Content cannot change after creation.
 
 ### Digital Objects (DOB)
-- **Based on**: Spore protocol extension
-- **Content Type**: "dob/0" or "dob/1"
-- **Data**: JSON with DNA field for trait generation
-- **Cluster**: Contains pattern and decoder configuration
+- **Based on**: Spore protocol extension.
+- **Content Type**: "dob/0" or "dob/1".
+- **Data**: JSON with DNA field for trait generation.
+- **Cluster**: Contains pattern and decoder configuration.
 
 ## Proxy Lock Patterns
 
 ### Delegate Lock
-- **Args**: flags (1 byte) + delegate_hash (32 bytes) [+ data_hash (32 bytes)]
-- **Purpose**: Ownership delegation with conditions
-- **Flags**: delegate_type | forbid_trade | self_destruction | restrict_data
+- **Args**: flags (1 byte) + delegate_hash (32 bytes) [+ data_hash (32 bytes)].
+- **Purpose**: Ownership delegation with conditions.
+- **Flags**: delegate_type | forbid_trade | self_destruction | restrict_data.
 
 ### Time Lock
-- **Args**: required_lock_hash (32 bytes) + since_value (8 bytes)
-- **Purpose**: Time-based + lock-based authorization
-- **Since**: Block number, epoch, or timestamp
+- **Args**: required_lock_hash (32 bytes) + since_value (8 bytes).
+- **Purpose**: Time-based + lock-based authorization.
+- **Since**: Block number, epoch, or timestamp.
 
 ### Type Proxy Locks
-- **Input Type**: Unlock when type script in inputs
-- **Output Type**: Unlock when type script in outputs
-- **Type Burn**: Unlock when type script burned
-- **Args**: target_type_hash (32 bytes)
+- **Input Type**: Unlock when type script in inputs.
+- **Output Type**: Unlock when type script in outputs.
+- **Type Burn**: Unlock when type script burned.
+- **Args**: target_type_hash (32 bytes).
 
 ### Single Use Lock
-- **Args**: required_outpoint (36 bytes: 32-byte tx_hash + 4-byte index)
-- **Purpose**: One-time unlock by consuming specific outpoint
+- **Args**: required_outpoint (36 bytes: 32-byte tx_hash + 4-byte index).
+- **Purpose**: One-time unlock by consuming specific outpoint.
 
 ## Cell Capacity Requirements
 
@@ -195,34 +195,34 @@ table Script {
 ## Key Functions
 
 ### CKB Syscalls
-- `load_script()`: Current script
-- `load_cell_data(index, source)`: Cell data
-- `load_cell_lock_hash(index, source)`: Lock script hash
-- `load_witness(index, source)`: Witness data
-- `verify_signature(sig, msg, pubkey)`: Secp256k1 verification
+- `load_script()`: Current script.
+- `load_cell_data(index, source)`: Cell data.
+- `load_cell_lock_hash(index, source)`: Lock script hash.
+- `load_witness(index, source)`: Witness data.
+- `verify_signature(sig, msg, pubkey)`: Secp256k1 verification.
 
 ### Sources
-- `Source::Input`: Input cells
-- `Source::Output`: Output cells
-- `Source::GroupInput`: Input cells with same type
-- `Source::GroupOutput`: Output cells with same type
+- `Source::Input`: Input cells.
+- `Source::Output`: Output cells.
+- `Source::GroupInput`: Input cells with same type.
+- `Source::GroupOutput`: Output cells with same type.
 
 ## Transaction Lifecycle
 
-1. **Build**: Construct outputs, select inputs
-2. **Balance**: Add change output if needed
-3. **Sign**: Generate witnesses for each input
-4. **Send**: Submit to mempool
-5. **Confirm**: Wait for block inclusion
+1. **Build**: Construct outputs, select inputs.
+2. **Balance**: Add change output if needed.
+3. **Sign**: Generate witnesses for each input.
+4. **Send**: Submit to mempool.
+5. **Confirm**: Wait for block inclusion.
 
 ## Common Pitfalls
 
-1. **Capacity underflow**: Always check inputs >= outputs
-2. **Data encoding**: Use consistent endianness (little-endian)
-3. **Script args length**: Validate before parsing
-4. **Witness format**: Use proper WitnessArgs structure
-5. **Group vs All sources**: Type scripts use Group, locks use specific cell
-6. **Memory allocation**: Use default_alloc! for heap
+1. **Capacity underflow**: Always check inputs >= outputs.
+2. **Data encoding**: Use consistent endianness (little-endian).
+3. **Script args length**: Validate before parsing.
+4. **Witness format**: Use proper WitnessArgs structure.
+5. **Group vs All sources**: Type scripts use Group, locks use specific cell.
+6. **Memory allocation**: Use default_alloc! for heap.
 
 ## Quick Data Patterns
 
@@ -277,9 +277,9 @@ fn test_script() {
 
 ## Best Practices
 
-1. **Always validate capacity**: outputs <= inputs
-2. **Use group sources**: For type script validation
-3. **Check data length**: Before parsing
-4. **Owner mode**: Verify lock hash matches
-5. **Error early**: Return specific error codes
-6. **Test thoroughly**: Use OffCKB for local testing
+1. **Always validate capacity**: outputs <= inputs.
+2. **Use group sources**: For type script validation.
+3. **Check data length**: Before parsing.
+4. **Owner mode**: Verify lock hash matches.
+5. **Error early**: Return specific error codes.
+6. **Test thoroughly**: Use OffCKB for local testing.

@@ -126,10 +126,10 @@ const { txSkeleton, outputIndex } = await createCluster({
 ```
 
 **Trait Rules:**
-- Each trait has a unique `name` as identifier
-- Multiple same-name traits are combined into arrays
-- Single-element `traits` arrays represent single values
-- Each trait element has exactly one key-value pair for type and value
+- Each trait has a unique `name` as identifier.
+- Multiple same-name traits are combined into arrays.
+- Single-element `traits` arrays represent single values.
+- Each trait element has exactly one key-value pair for type and value.
 
 ### DOB/0 Development Examples
 
@@ -400,16 +400,16 @@ const spores = await sporeClient.query(query, {
 ## When to Use Spore Protocol
 
 ### Perfect for:
-- **Digital art** with guaranteed on-chain storage
-- **Documents** requiring immutable archival
-- **Certificates** needing permanent verification
-- **Content creation** platforms with true ownership
-- **Gaming assets** with intrinsic value
+- **Digital art** with guaranteed on-chain storage.
+- **Documents** requiring immutable archival.
+- **Certificates** needing permanent verification.
+- **Content creation** platforms with true ownership.
+- **Gaming assets** with intrinsic value.
 
 ### Consider alternatives for:
-- **Large files** (>500KB) - use IPFS + metadata
-- **High-frequency trading** - consider simpler UDT
-- **Temporary content** - traditional storage may be cheaper
+- **Large files** (>500KB) - use IPFS + metadata.
+- **High-frequency trading** - consider simpler UDT.
+- **Temporary content** - traditional storage may be cheaper.
 
 ## Resources and Tools
 

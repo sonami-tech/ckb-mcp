@@ -173,9 +173,9 @@ const aggregatorConfig = {
 ```
 
 ### Global Registry
-- Ensures one CoTA cell per address to prevent double-spending
-- Maintains global SMT of all registered addresses
-- Provides registration proofs for new users
+- Ensures one CoTA cell per address to prevent double-spending.
+- Maintains global SMT of all registered addresses.
+- Provides registration proofs for new users.
 
 ## Advanced Features
 

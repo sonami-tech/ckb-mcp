@@ -11,18 +11,18 @@ The CCC SDK provides a unified interface for integrating multiple blockchain wal
 ## Supported Wallet Types
 
 ### Bitcoin Wallets
-- OKX Wallet
-- UniSat
-- Xverse
-- UTXO Global (multi-chain UTXO support)
+- OKX Wallet.
+- UniSat.
+- Xverse.
+- UTXO Global (multi-chain UTXO support).
 
 ### Ethereum Wallets
-- EIP-6963 compliant wallets
-- MetaMask and other standard Ethereum wallets
+- EIP-6963 compliant wallets.
+- MetaMask and other standard Ethereum wallets.
 
 ### Other Protocols
-- JoyID (WebAuthn-based)
-- Nostr (NIP-07 protocol)
+- JoyID (WebAuthn-based).
+- Nostr (NIP-07 protocol).
 
 ## Unified Signer Interface
 
