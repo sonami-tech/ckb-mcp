@@ -113,6 +113,7 @@ impl DocsProvider {
 			("ckb-dev-context://api-reference/sdk-examples-and-patterns", "api-reference/sdk-examples-and-patterns.md"),
 			("ckb-dev-context://api-reference/spore-sdk-examples", "api-reference/spore-sdk-examples.md"),
 			("ckb-dev-context://api-reference/syscalls-quick-ref", "api-reference/syscalls-quick-ref.md"),
+			("ckb-dev-context://api-reference/well-known-hashes", "api-reference/well-known-hashes.md"),
 			("ckb-dev-context://api-reference/ccc-sdk-cross-chain", "api-reference/ccc-sdk-cross-chain.md"),
 			("ckb-dev-context://api-reference/ccc-sdk-ssri", "api-reference/ccc-sdk-ssri.md"),
 			("ckb-dev-context://concepts/advanced-cell-concepts", "concepts/advanced-cell-concepts.md"),
