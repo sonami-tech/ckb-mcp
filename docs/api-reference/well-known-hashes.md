@@ -210,7 +210,7 @@ This document provides a centralized reference for all well-known hashes in the 
 **Mainnet - Deprecated**
 - **Code Hash**: `0xd369597ff47f29fbc0d47d2e3775370d1250b85140c670e4718af712983a2354`
 - **Hash Type**: `type`
-- **Note**: Earlier deployment, use current version above
+- **Note**: Earlier deployment, use current version above.
 
 ## NFT and Digital Objects
 
@@ -224,12 +224,38 @@ This document provides a centralized reference for all well-known hashes in the 
 ### CoTA (Compact Token Aggregator)
 
 **Mainnet**
-- **TX Hash**: `0x71a7ba8fc96349fea0ed3a5c47992e3b4084b031a42264a018e0072e8172e46c`
+- **Code Hash**: `0x1122a4fb54697cf2e6e3a96c9d80fd398a936559b90954c6e88eb7ba0cf652df`
+- **Hash Type**: `type`
+- **Args**: `0x`
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0xabaa25237554f0d6c586dc010e7e85e6870bcfd9fb8773257ecacfbe1fd738a0`
 - **Index**: `0x0`
+- **Dep Type**: `depGroup`
 
 **Testnet**
-- **TX Hash**: `0xf8de3bb47d055cdf460d93a2a6e1b05f7432f9777c8c474abf4eec1d4aee5d37`
+- **Code Hash**: `0x89cd8003a0eaf8e65e0c31525b7d1d5c1becefd2ea75bb4cff87810ae37764d8`
+- **Hash Type**: `type`
+- **Args**: `0x`
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0x636a786001f87cb615acfcf408be0f9a1f077001f0bbc75ca54eadfe7e221713`
 - **Index**: `0x0`
+- **Dep Type**: `depGroup`
+
+### CoTA Registry
+
+**Mainnet**
+- **Code Hash**: `0x90ca618be6c15f5857d3cbd09f9f24ca6770af047ba9ee70989ec3b229419ac7`
+- **Hash Type**: `type`
+- **Args**: `0x563631b49cee549f3585ab4dde5f9d590f507f1f`
+
+**Testnet**
+- **Code Hash**: `0x9302db6cc1344b81a5efee06962abcb40427ecfcbe69d471b01b2658ed948075`
+- **Hash Type**: `type`
+- **Args**: `0xf9910364e0ca81a0e074f3aa42fe78cfcc880da6`
+
+**Source**: [nervina-labs/cota-sdk-js constants](https://github.com/nervina-labs/cota-sdk-js/blob/develop/src/constants/index.ts)
 
 ## Storage and File Systems
 
@@ -282,10 +308,27 @@ This document provides a centralized reference for all well-known hashes in the 
 
 ### Type ID Script
 
-**Pattern**: Used for unique type script identification
-- **Code Hash**: Generated from first input outpoint + output index
+**Pattern**: Used for unique type script identification.
+- **Code Hash**: Generated from first input outpoint + output index.
 - **Hash Type**: `type`
-- **Args**: 32-byte calculated type ID
+- **Args**: 32-byte calculated type ID.
+
+### Always Success Lock Script
+
+**Mainnet**
+- **Code Hash**: `0xd483925160e4232b2cb29f012e8380b7b612d71cf4e79991476b6bcf610735f6`
+- **Hash Type**: `data`
+- **Args**: `0x`
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0x81e22f4bb39080b112e5efb18e3fad65ebea735eac2f9c495b7f4d3b4faa377d`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+**Testnet**
+- **Code Hash**: `0x1157470ca9de091c21c262bf0754b777f3529e10d2728db8f6b4e04cfc2fbb5f`
+- **Hash Type**: `data`
+- **Args**: `0x`
 
 ### Zero Lock (Always Fail)
 
@@ -293,7 +336,7 @@ This document provides a centralized reference for all well-known hashes in the 
 - **Code Hash**: `0x0000000000000000000000000000000000000000000000000000000000000000`
 - **Hash Type**: `data`
 - **Args**: `0x`
-- **Note**: This lock always fails because no cell can have an all-zero data hash, making it impossible to unlock
+- **Note**: This lock always fails because no cell can have an all-zero data hash, making it impossible to unlock.
 
 ## Common Cell Dependencies
 
@@ -307,23 +350,23 @@ This document provides a centralized reference for all well-known hashes in the 
 ## Usage Notes
 
 ### Hash Type Values
-- `type`: Upgradable smart contract using type script verification (most commonly Type ID system)
-- `data`: Script identified by data hash using CKB VM v0 (Lina)
-- `data1`: Script identified by data hash using CKB VM v1 (CKB2021 hardfork, Mirana)
-- `data2`: Script identified by data hash using CKB VM v2 (CKB2023 hardfork, Meepo)
+- `type`: Upgradable smart contract using type script verification (most commonly Type ID system).
+- `data`: Script identified by data hash using CKB VM v0 (Lina).
+- `data1`: Script identified by data hash using CKB VM v1 (CKB2021 hardfork, Mirana).
+- `data2`: Script identified by data hash using CKB VM v2 (CKB2023 hardfork, Meepo).
 
 ### Integration Guidelines
 
-1. **Always verify hash values** against the latest network deployments
-2. **Use Type ID hashes** for production deployments when available
-3. **Check network compatibility** before using specific hashes
-4. **Reference transaction hashes** for deployment verification
+1. **Always verify hash values** against the latest network deployments.
+2. **Use Type ID hashes** for production deployments when available.
+3. **Check network compatibility** before using specific hashes.
+4. **Reference transaction hashes** for deployment verification.
 
 ### Version Considerations
 
-- Hashes from the reference pw-core constants (circa 2021) serve as the baseline
-- Recent documentation takes precedence for conflicting values
-- Always verify current deployments for production use
+- Hashes from the reference pw-core constants (circa 2021) serve as the baseline.
+- Recent documentation takes precedence for conflicting values.
+- Always verify current deployments for production use.
 
 ## References
 
