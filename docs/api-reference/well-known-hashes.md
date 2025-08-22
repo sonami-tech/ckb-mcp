@@ -6,6 +6,26 @@ Comprehensive reference of well-known script hashes, code hashes, transaction ha
 
 This document provides a centralized reference for all well-known hashes in the CKB ecosystem, organized by network and script type for easy lookup during development.
 
+## Script Structure Overview
+
+### Script Definition
+
+A CKB script consists of three essential components:
+
+- **Code Hash**: The hash identifying the script code (either data hash or type script hash).
+- **Hash Type**: Specifies how the code hash should be interpreted (`type`, `data`, `data1`, `data2`).
+- **Args**: Additional parameters passed to the script (can be empty `0x` or contain specific data).
+
+### Cell Dependencies
+
+Every script requires at least one cell dependency to function. Cell dependencies specify where the script code is located on-chain:
+
+- **TX Hash**: Transaction hash containing the script code cell.
+- **Index**: Output index of the script code cell within the transaction.
+- **Dep Type**: How the dependency should be loaded (`code`, `dep_group`).
+
+Scripts cannot execute without their corresponding cell dependencies being included in the transaction's `cell_deps` field.
+
 ## System Scripts
 
 ### SECP256K1_BLAKE160 (Fallback Lock Script)
@@ -15,8 +35,7 @@ This document provides a centralized reference for all well-known hashes in the 
 **Mainnet**
 - **Code Hash**: `0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8`
 - **Hash Type**: `type`
-- **TX Hash**: `0xe2fb199810d49a4d8beec56718ba2593b665db9d52299a0f9e6e75416d73ff5c`
-- **Index**: `0x1`
+- **Args**: Contains the 20-byte Blake160 hash of the public key.
 
 **Official Documentation**:
 - [CKB System Scripts - secp256k1_blake160_sighash_all.c](https://github.com/nervosnetwork/ckb-system-scripts/blob/master/c/secp256k1_blake160_sighash_all.c)
@@ -31,8 +50,7 @@ This document provides a centralized reference for all well-known hashes in the 
 **Testnet**
 - **Code Hash**: `0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8`
 - **Hash Type**: `type`
-- **TX Hash**: `0x8f8c79eb6671709633fe6a46de93c0fedc9c1b8a6527a18d3983879542635c9f`
-- **Index**: `0x1`
+- **Args**: Contains the 20-byte Blake160 hash of the public key.
 
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0xf8de3bb47d055cdf460d93a2a6e1b05f7432f9777c8c474abf4eec1d4aee5d37`
@@ -44,8 +62,7 @@ This document provides a centralized reference for all well-known hashes in the 
 **Mainnet**
 - **Code Hash**: `0x5c5069eb0857efc65e1bca0c07df34c31663b3622fd3876c876320fc9634e2a8`
 - **Hash Type**: `type`
-- **TX Hash**: `0xe2fb199810d49a4d8beec56718ba2593b665db9d52299a0f9e6e75416d73ff5c`
-- **Index**: `0x4`
+- **Args**: Contains multisig configuration and public key hashes.
 
 **Official Documentation**:
 - [CKB System Scripts - secp256k1_blake160_multisig_all.c](https://github.com/nervosnetwork/ckb-system-scripts/blob/master/c/secp256k1_blake160_multisig_all.c)
@@ -59,8 +76,7 @@ This document provides a centralized reference for all well-known hashes in the 
 **Testnet**
 - **Code Hash**: `0x5c5069eb0857efc65e1bca0c07df34c31663b3622fd3876c876320fc9634e2a8`
 - **Hash Type**: `type`
-- **TX Hash**: `0x8f8c79eb6671709633fe6a46de93c0fedc9c1b8a6527a18d3983879542635c9f`
-- **Index**: `0x4`
+- **Args**: Contains multisig configuration and public key hashes.
 
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0xf8de3bb47d055cdf460d93a2a6e1b05f7432f9777c8c474abf4eec1d4aee5d37`
@@ -102,7 +118,7 @@ This document provides a centralized reference for all well-known hashes in the 
 **Mainnet**
 - **Code Hash**: `0x5e7a36a77e68eecc013dfa2fe6a23f3b6c344b04005808694ae6dd45eea4cfd5`
 - **Hash Type**: `type`
-- **TX Hash**: `0xc7813f6a415144643970c2e88e0bb6ca6a8edc5dd7c1022746f628284a9936d5`
+- **Args**: Contains the owner's lock script hash (32 bytes).
 
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0xc7813f6a415144643970c2e88e0bb6ca6a8edc5dd7c1022746f628284a9936d5`
@@ -112,7 +128,7 @@ This document provides a centralized reference for all well-known hashes in the 
 **Testnet**
 - **Code Hash**: `0xc5e5dcf215925f7ef4dfaf5f4b4f105bc321c02776d6e7d52a1db3fcd9d011a4`
 - **Hash Type**: `type`
-- **TX Hash**: `0xe12877ebd2c3c364dc46c5c992bcfaf4fee33fa13eebdf82c591fc9825aab769`
+- **Args**: Contains the owner's lock script hash (32 bytes).
 
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0xe12877ebd2c3c364dc46c5c992bcfaf4fee33fa13eebdf82c591fc9825aab769`
@@ -124,7 +140,7 @@ This document provides a centralized reference for all well-known hashes in the 
 **Mainnet**
 - **Code Hash**: `0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95`
 - **Hash Type**: `data1`
-- **TX Hash**: `0xc07844ce21b38e4b071dd0e1ee3b0e27afd8d7532491327f39b786343f558ab7`
+- **Args**: Contains the owner's lock script hash (32 bytes).
 
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0xc07844ce21b38e4b071dd0e1ee3b0e27afd8d7532491327f39b786343f558ab7`
@@ -134,7 +150,7 @@ This document provides a centralized reference for all well-known hashes in the 
 **Testnet**
 - **Code Hash**: `0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95`
 - **Hash Type**: `data1`
-- **TX Hash**: `0xbf6fb538763efec2a70a6a3dcb7242787087e1030c4e7d86585bc63a9d337f5f`
+- **Args**: Contains the owner's lock script hash (32 bytes).
 
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0xbf6fb538763efec2a70a6a3dcb7242787087e1030c4e7d86585bc63a9d337f5f`
@@ -148,7 +164,12 @@ This document provides a centralized reference for all well-known hashes in the 
 **Mainnet**
 - **Code Hash**: `0x79f90bb5e892d80dd213439eeab551120eb417678824f453d0c94b0c15dc3c8c`
 - **Hash Type**: `type`
+- **Args**: Flexible args supporting various authentication methods (Ethereum, Bitcoin, etc).
+
+**Cell Dependency (Mainnet)**
 - **TX Hash**: `0x71a7ba8fc96349fea0ed3a5c47992e3b4084b031a42264a018e0072e8172e46c`
+- **Index**: `0x0`
+- **Dep Type**: `dep_group`
 
 **Official Documentation**:
 - [Omnilock RFC](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0042-omnilock/0042-omnilock.md)
@@ -158,7 +179,7 @@ This document provides a centralized reference for all well-known hashes in the 
 **Testnet**
 - **Code Hash**: `0x79f90bb5e892d80dd213439eeab551120eb417678824f453d0c94b0c15dc3c8c`
 - **Hash Type**: `type`
-- **TX Hash**: `0x57a62003daeab9d54aa29b944fc3b451213a5ebdf2e232216a3cfed0dde61b38`
+- **Args**: Flexible args supporting various authentication methods (Ethereum, Bitcoin, etc).
 
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0x57a62003daeab9d54aa29b944fc3b451213a5ebdf2e232216a3cfed0dde61b38`
@@ -178,18 +199,19 @@ This document provides a centralized reference for all well-known hashes in the 
 **Mainnet**
 - **Code Hash**: `0xbf43c3602455798c1a61a596e0d95278864c552fafe231c063b3fabf97a8febc`
 - **Hash Type**: `type`
+- **Args**: Contains authentication data for PW-SDK compatibility.
 
 **Testnet**
 - **Code Hash**: `0x58c5f491aba6d61678b7cf7edf4910b1f5e00ec0cde2f42e0abb4fd9aff25a63`
 - **Hash Type**: `type`
+- **Args**: Contains authentication data for PW-SDK compatibility.
 
 ### ACP (Anyone Can Pay) Lock Script
 
 **Mainnet**
 - **Code Hash**: `0x9b819793a64463aed77c615d6cb226eea5487ccfc0783043a587254cda2b6f26`
 - **Hash Type**: `type`
-- **TX Hash**: `0xc76edf469816aa22f416503c38d0b533d2a018e253e379f134c3985b3472c842`
-- **Index**: `0x0`
+- **Args**: Optional args for additional restrictions on payment conditions.
 
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0xc76edf469816aa22f416503c38d0b533d2a018e253e379f134c3985b3472c842`
@@ -199,8 +221,7 @@ This document provides a centralized reference for all well-known hashes in the 
 **Testnet**
 - **Code Hash**: `0xf329effd1c475a2978453c8600e1eaf0bc2087ee093c3ee64cc96ec6847752cb`
 - **Hash Type**: `type`
-- **TX Hash**: `0x3d4296df1bd2cc2bd3f483f61ab7ebeac462a2f336f2b944168fe6ba5d81c014`
-- **Index**: `0x0`
+- **Args**: Optional args for additional restrictions on payment conditions.
 
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0x3d4296df1bd2cc2bd3f483f61ab7ebeac462a2f336f2b944168fe6ba5d81c014`
@@ -216,10 +237,51 @@ This document provides a centralized reference for all well-known hashes in the 
 
 ### Spore Protocol
 
-**Code Hashes**
-- **SPORE**: `0x4a4dce1df3dffff7f8b2cd7dff7303df3b6150c9788cb75dcf6747247132b9f5`
-- **CLUSTER**: `0x7366a61534fa7c7e6225ecc0d828ea3b5366adec2b58206f2ee84995fe030075`
+**Mainnet**
+- **Code Hash**: `0x4a4dce1df3dffff7f8b2cd7dff7303df3b6150c9788cb75dcf6747247132b9f5`
 - **Hash Type**: `type`
+- **Args**: Type ID or empty for standard Spore NFT deployment.
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0x96b198fb5ddbd1eed57ed667068f1f1e55d07907b4c0dbd38675a69ea1b69824`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+**Testnet**
+- **Code Hash**: `0xbbad126377d45f90a8ee120da988a2d7332c78ba8fd679aab478a19d6c133494`
+- **Hash Type**: `data1`
+- **Args**: Type ID or empty for standard Spore NFT deployment.
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0xfd694382e621f175ddf81ce91ce2ecf8bfc027d53d7d31b8438f7d26fc37fd19`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+### Cluster Protocol
+
+**Mainnet**
+- **Code Hash**: `0x7366a61534fa7c7e6225ecc0d828ea3b5366adec2b58206f2ee84995fe030075`
+- **Hash Type**: `type`
+- **Args**: Type ID or empty for standard Cluster deployment.
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0xe464b7fb9311c5e2820e61c99afc615d6b98bdefbe318c34868c010cbd0dc938`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+**Testnet**
+- **Code Hash**: `0x598d793defef36e2eeba54a9b45130e4ca92822e1d193671f490950c3b856080`
+- **Hash Type**: `data1`
+- **Args**: Type ID or empty for standard Cluster deployment.
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0x49551a20dfe39231e7db49431d26c9c08ceec96a29024eef3acc936deeb2ca76`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+**Sources**:
+- **Mainnet**: [Spore Docs - Contracts](https://docs.spore.pro/resources/contracts)
+- **Testnet**: [sporeprotocol/spore-sdk](https://github.com/sporeprotocol/spore-sdk/blob/main/packages/core/src/config/predefined.ts)
 
 ### CoTA (Compact Token Aggregator)
 
@@ -285,8 +347,9 @@ This document provides a centralized reference for all well-known hashes in the 
 ### JoyID Lock Script
 
 **Mainnet**
-- **TX Hash**: `0xf05188e5f3a6767fc4687faf45ba5f1a6e25d3ada6129dae8722cb282f262493`
-- **Index**: `0x0`
+- **Code Hash**: `0xd00c84f0ec8fd441c38bc3f87a371f547190f2fcff88e642bc5bf54b9e318323`
+- **Hash Type**: `type`
+- **Args**: Contains JoyID-specific authentication parameters.
 
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0xf05188e5f3a6767fc4687faf45ba5f1a6e25d3ada6129dae8722cb282f262493`
@@ -294,8 +357,9 @@ This document provides a centralized reference for all well-known hashes in the 
 - **Dep Type**: `dep_group`
 
 **Testnet**
-- **TX Hash**: `0x759f281588c96979764cb21c196478cf8e13ea81fede7f4ba26d1ff29dbc6a81`
-- **Index**: `0x0`
+- **Code Hash**: `0xd00c84f0ec8fd441c38bc3f87a371f547190f2fcff88e642bc5bf54b9e318323`
+- **Hash Type**: `type`
+- **Args**: Contains JoyID-specific authentication parameters.
 
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0x759f281588c96979764cb21c196478cf8e13ea81fede7f4ba26d1ff29dbc6a81`
