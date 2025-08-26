@@ -1,14 +1,26 @@
-# CKB MCP Rust Workspace
+# CKB MCP
 
-A collection of Model Context Protocol (MCP) servers for Nervos CKB development, built in Rust.
+A collection of Model Context Protocol (MCP) servers for Nervos CKB development.
+
+## Current Development Status
+
+| Server | Status | Description |
+|--------|--------|-------------|
+| **ckb-docs-server** | **Alpha** | Ready for early use but pending data refinement and corrections. |
+| **ckb-rpc-server** | **Alpha** | Operational but incomplete. |  
+| **ckb-tools-server** | **Early Development** | Basic implementation in progress, not suitable for usage. |
+
+⚠️ **Note**: These servers are under active development. Expect breaking changes and incomplete functionality.
 
 ## Overview
 
 This workspace provides multiple specialized MCP servers to help AI assistants build Nervos CKB smart contracts and applications:
 
-- **ckb-rpc-server**: Query CKB blockchain data via RPC.
-- **ckb-docs-server**: Access CKB development documentation and resources.
-- **ckb-tools-server**: Generate, compile, test, and deploy CKB contracts.
+| Server | Description | Status |
+|--------|-------------|--------|
+| **ckb-rpc-server** | Query CKB blockchain data via RPC. | Alpha stage usable |
+| **ckb-docs-server** | Access CKB development documentation and resources. | Alpha stage usable |
+| **ckb-tools-server** | Generate, compile, test, and deploy CKB contracts. | Early development, unusable |
 
 ## Architecture
 
@@ -37,13 +49,13 @@ ckb-mcp/
 ### Build and Run
 
 ```bash
-# Build all servers
+# Build all servers.
 cargo build --release
 
-# Development: Auto-rebuild and run on changes
-cargo watch -x "build --workspace" -i "crates/*/Cargo.toml" -s 'parallel --line-buffer ::: "target/debug/ckb-docs-server" "target/debug/ckb-rpc-server --ckb-rpc http://192.168.0.73:18114" "target/debug/ckb-tools-server"'
+# Development: Auto-rebuild and run on changes.
+cargo watch --why -x "build --workspace" -i "crates/**/Cargo.*" -i "Cargo.lock" -s 'killall ckb-rpc-server ckb-docs-server ckb-tools-server 2>/dev/null || true; sleep 1; parallel --line-buffer ::: "target/debug/ckb-docs-server" "target/debug/ckb-rpc-server --ckb-rpc http://192.168.0.73:18114" "target/debug/ckb-tools-server"'
 
-# Simple run (starts on ports 8001, 8002, 8003)
+# Simple run (starts on ports 8001, 8002, 8003).
 cargo run --bin ckb-rpc-server & \
 cargo run --bin ckb-docs-server & \
 cargo run --bin ckb-tools-server & \
