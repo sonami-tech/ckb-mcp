@@ -16,11 +16,9 @@ A collection of Model Context Protocol (MCP) servers for Nervos CKB development.
 
 This workspace provides multiple specialized MCP servers to help AI assistants build Nervos CKB smart contracts and applications:
 
-| Server | Description | Status |
-|--------|-------------|--------|
-| **ckb-rpc-server** | Query CKB blockchain data via RPC. | Alpha stage usable |
-| **ckb-docs-server** | Access CKB development documentation and resources. | Alpha stage usable |
-| **ckb-tools-server** | Generate, compile, test, and deploy CKB contracts. | Early development, unusable |
+- **ckb-rpc-server**: Query CKB blockchain data via RPC.
+- **ckb-docs-server**: Access CKB development documentation and resources.
+- **ckb-tools-server**: Generate, compile, test, and deploy CKB contracts.
 
 ## Architecture
 
