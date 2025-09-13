@@ -1,5 +1,3 @@
-# Spore Protocol: Digital Objects (DOBs) Development
-
 ## Description
 
 Protocol for true on-chain digital objects with complete ownership, redeemable value, and zero-fee transfers. Covers DOB/0 protocol family, decoder configurations, trait systems, content management, cluster organization, GraphQL integration, and practical implementation patterns for immutable digital assets.

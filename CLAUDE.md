@@ -126,10 +126,19 @@ Documentation is served via the ckb-docs-server with URI scheme `ckb-dev-context
 **IMPORTANT**: All markdown documentation files MUST include a `## Description` section immediately after the main title. This section should:
 
 - Be placed right after the `# Title` heading
-- Contain a comprehensive description under 1,024 characters
+- Contain a description under 1,024 characters
 - Serve dual purpose: document introduction AND MCP resource description
 - Use action-oriented language highlighting practical value
 - Summarize key topics, code examples, and use cases
+- **AVOID verbose phrases**: No "comprehensive", "provides", "this guide covers", "essential for", "learn", "discover", "master"
+- **Use direct, concise language**: Start with topic directly, avoid transition phrases
+- **Redundancy is acceptable**: Description can repeat content details since it describes what's available through MCP
+
+**AI-Optimized Documentation Guidelines**:
+- **Target audience**: AI assistants exclusively, not human readers
+- **Concise style**: Remove verbose transitions, explanatory padding, and redundant qualifiers
+- **Direct statements**: Replace "This guide covers X" with "X" 
+- **Information density**: Maximize technical content, minimize prose
 
 Example format:
 ```markdown
@@ -137,7 +146,7 @@ Example format:
 
 ## Description
 
-Comprehensive guide explaining [topic]. Provides [key features/code examples]. Covers [main concepts]. Essential for developers [use case]. Includes [practical examples] and [integration patterns].
+Token creation patterns for CKB blockchain. Production-ready Rust code for fungible tokens with owner-controlled minting/burning. Token amount encoding (u128 as 16 bytes), conservation validation logic, and multi-cell token operations.
 
 ## Next Section
 ...

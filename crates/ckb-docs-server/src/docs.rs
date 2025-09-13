@@ -124,6 +124,7 @@ impl DocsProvider {
 			("ckb-dev-context://concepts/script-groups-and-execution", "concepts/script-groups-and-execution.md"),
 			("ckb-dev-context://concepts/transaction-structure", "concepts/transaction-structure.md"),
 			("ckb-dev-context://concepts/header-dependencies-and-time-access", "concepts/header-dependencies-and-time-access.md"),
+			("ckb-dev-context://concepts/lock-value-relationships", "concepts/lock-value-relationships.md"),
 			("ckb-dev-context://concepts-for-coding/cell-lifecycle", "concepts-for-coding/cell-lifecycle.md"),
 			("ckb-dev-context://concepts-for-coding/transaction-lifecycle", "concepts-for-coding/transaction-lifecycle.md"),
 			("ckb-dev-context://deployment/binary-deployment", "deployment/binary-deployment.md"),
@@ -176,7 +177,13 @@ impl DocsProvider {
 			("ckb-dev-context://troubleshooting/common-script-errors", "troubleshooting/common-script-errors.md"),
 			("ckb-dev-context://troubleshooting/ickb-debugging", "troubleshooting/ickb-debugging.md"),
 			("ckb-dev-context://troubleshooting/rust-script-development-issues", "troubleshooting/rust-script-development-issues.md"),
+			("ckb-dev-context://troubleshooting/omnilock-errors", "troubleshooting/omnilock-errors.md"),
+			("ckb-dev-context://troubleshooting/xudt-errors", "troubleshooting/xudt-errors.md"),
+			("ckb-dev-context://troubleshooting/transaction-building-errors", "troubleshooting/transaction-building-errors.md"),
+			("ckb-dev-context://troubleshooting/spore-errors", "troubleshooting/spore-errors.md"),
 			("ckb-dev-context://tools/ssri-server", "tools/ssri-server.md"),
+			("ckb-dev-context://api-reference/omnilock-ethereum-example", "api-reference/omnilock-ethereum-example.md"),
+			("ckb-dev-context://api-reference/xudt-minting-example", "api-reference/xudt-minting-example.md"),
 		];
 
 		for (uri, file_path) in resource_mappings.iter() {

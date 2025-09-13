@@ -1,10 +1,6 @@
-# CoBuild Integration Patterns
-
 ## Description
 
 Integrate CoBuild protocol into CKB applications for enhanced user experience and transaction composability. Learn to define action schemas, implement message validation, build transactions with BuildingPacket, handle multi-party signatures, and support wallet integration. Covers migration strategies, cross-script interactions, and best practices for building user-friendly blockchain applications.
-
-This guide demonstrates how to integrate CoBuild protocol into CKB applications for enhanced user experience and composability.
 
 ## Overview
 

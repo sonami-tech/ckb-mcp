@@ -1,5 +1,3 @@
-# Simple CKB Transfer Pattern (CCC - Recommended)
-
 ## Description
 
 Modern frontend pattern for transferring CKB using the CCC SDK (recommended over Lumos). Demonstrates account generation, balance checking, intuitive transaction construction, automatic fee handling, and transaction sending with TypeScript type safety and simplified APIs for dApp development.

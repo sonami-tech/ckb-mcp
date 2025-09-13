@@ -1,5 +1,3 @@
-# Omnilock: Universal Interoperability Lock
-
 ## Description
 
 A comprehensive guide to implementing cross-chain interoperability with Omnilock, CKB's universal lock script that enables native support for Bitcoin, Ethereum, and other blockchain signature schemes. This guide covers authentication methods, multi-chain wallet integration, regulatory compliance features, and advanced modes like time-locks and supply control.

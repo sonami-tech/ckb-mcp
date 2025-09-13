@@ -1,25 +1,16 @@
-# CKB Script Development Patterns
-
 ## Description
 
 Advanced patterns for developing CKB scripts based on battle-tested production implementations. Covers core patterns including UDT tokens, composable locks, HTLC contracts, open transactions, dual-mode scripts, cryptographic primitives, and build system optimizations with practical examples from real-world projects.
 
-This guide covers advanced patterns for developing CKB scripts, based on production implementations from ckb-miscellaneous-scripts and ckb-script-templates.
 
 ## Core Script Patterns
 
 ### 1. Simple UDT (User Defined Token) Pattern
 
-The most fundamental token pattern in CKB. Implements a 128-bit token with overflow protection.
-
 **Key Features:**
 - 128-bit token amounts with overflow checks
 - Cell-based token balance validation
 - Input/output sum verification
-
-**Reference Implementation:** `resources/ckb-miscellaneous-scripts/rust/simple_udt`
-
-**Pattern:**
 ```rust
 use ckb_std::{ckb_constants::Source, high_level::*};
 
@@ -51,8 +42,6 @@ fn validate_token_transfer() -> Result<(), Error> {
 ```
 
 ### 2. Composable Lock Scripts (OR/AND Logic)
-
-Enable complex authorization patterns by combining multiple lock scripts.
 
 **OR Lock Pattern:**
 ```rust
@@ -90,10 +79,6 @@ fn and_lock_main() -> Result<(), Error> {
 **Reference:** `resources/ckb-miscellaneous-scripts/rust/composable_locks`
 
 ### 3. Hash Time Locked Contracts (HTLC)
-
-Enables atomic swaps and time-locked transactions.
-
-**Pattern:**
 ```rust
 use ckb_std::{since::Since, high_level::*};
 use blake2b_rs::Blake2bBuilder;
@@ -133,9 +118,7 @@ fn htlc_main() -> Result<(), Error> {
 
 ### 4. Open Transaction Pattern
 
-Flexible transaction verification allowing dynamic transaction composition.
-
-**Key Concept:** Script validates transaction structure rather than specific values, enabling transaction templates.
+Script validates transaction structure rather than specific values, enabling transaction templates.
 
 ```rust
 fn open_transaction_main() -> Result<(), Error> {
@@ -164,10 +147,6 @@ fn open_transaction_main() -> Result<(), Error> {
 **Reference:** `resources/ckb-miscellaneous-scripts/rust/open_transaction`
 
 ### 5. Dual-Mode Scripts
-
-Scripts that can operate standalone or as dynamic libraries.
-
-**Pattern:**
 ```rust
 #[cfg(feature = "dual-mode")]
 use ckb_std::dynamic_loading_c_impl;
@@ -211,8 +190,6 @@ fn main() -> i8 {
 
 ### 1. Alternative Elliptic Curves
 
-Support for secp256r1 (P-256) in addition to secp256k1.
-
 ```rust
 use p256::{ecdsa::{Signature, VerifyingKey}, PublicKey};
 
@@ -249,8 +226,6 @@ fn secp256r1_verify() -> Result<(), Error> {
 **Reference:** `resources/ckb-miscellaneous-scripts/rust/secp256r1_lock`
 
 ### 2. RSA Signature Support
-
-Large integer RSA verification on RISC-V.
 
 ```rust
 use rsa::{PublicKey, RsaPublicKey, PaddingScheme};
@@ -291,8 +266,6 @@ fn rsa_verify() -> Result<(), Error> {
 **Reference:** `resources/ckb-miscellaneous-scripts/rust/rsa_lock`
 
 ### 3. BLS Signature Aggregation
-
-Enable signature aggregation for efficiency.
 
 ```rust
 use bls12_381::{G1Affine, G2Affine, Scalar};
@@ -341,8 +314,6 @@ fn bls_verify() -> Result<(), Error> {
 
 ### 1. Contract Template Structure (Rust)
 
-Standard structure for Rust-based contracts.
-
 ```rust
 use ckb_std::{
     ckb_constants::Source,
@@ -377,8 +348,6 @@ fn panic(_info: &PanicInfo) -> ! {
 
 ### 2. Testing Framework Integration
 
-Comprehensive testing with simulators.
-
 ```rust
 #[cfg(test)]
 mod tests {
@@ -412,8 +381,6 @@ mod tests {
 
 ### 3. Memory Management Patterns
 
-Advanced memory layout control for RISC-V contracts.
-
 ```rust
 // Custom memory layout
 #[link_section = ".text.custom"]
@@ -442,8 +409,6 @@ pub unsafe extern "C" fn entry() -> i8 {
 **Reference:** `resources/ckb-script-templates/stack-reorder-contract/`
 
 ### 4. External Library Integration Pattern
-
-FFI patterns for integrating external libraries when necessary.
 
 ```rust
 // For cases where external libraries are absolutely required
@@ -605,4 +570,3 @@ int safe_buffer_access(uint8_t* buffer, size_t buffer_len, size_t offset, size_t
 }
 ```
 
-These patterns provide a solid foundation for developing robust, efficient, and secure CKB scripts. Each pattern has been battle-tested in production environments and follows CKB best practices.

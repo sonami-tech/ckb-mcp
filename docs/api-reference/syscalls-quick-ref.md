@@ -1,5 +1,3 @@
-# CKB Syscalls Complete Reference
-
 ## Description
 
 Complete CKB syscalls reference with high-level function mappings, core load operations, and practical script development patterns. Features comprehensive tables mapping ckb-std high-level functions to syscalls, source constants, cell field constants, error handling patterns, and common validation examples. Essential for CKB smart contract development and script optimization.

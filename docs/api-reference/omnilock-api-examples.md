@@ -1,5 +1,3 @@
-# Omnilock API Reference and Examples
-
 ## Description
 
 Practical Omnilock API examples for cross-chain CKB integration, covering script construction for Ethereum, Bitcoin, multi-signature, and advanced modes (RCE, ACP, time-lock). Includes witness generation, transaction building, error handling, and validation patterns. Based on production Omnilock implementation with comprehensive JavaScript and Rust code examples.

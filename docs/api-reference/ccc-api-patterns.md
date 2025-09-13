@@ -1,10 +1,6 @@
-# CCC SDK API Patterns
-
 ## Description
 
-Practical API patterns for CCC SDK (CKB Common Chains Connector), covering client initialization, transaction construction, multi-wallet integration, and cross-chain compatibility. Includes TypeScript examples for address operations, balance queries, script building, error handling, and advanced transaction patterns. Essential reference for modern CKB dApp development with support for Ethereum, Bitcoin, and other blockchain wallets.
-
-CCC (CKB Common Chains Connector) is a modern TypeScript SDK for CKB blockchain development with multi-wallet support.
+Practical API patterns for CCC SDK (CKB Common Chains Connector), covering client initialization, transaction construction, multi-wallet integration, and cross-chain compatibility. Includes TypeScript examples for address operations, balance queries, script building, error handling, and advanced transaction patterns. Modern CKB dApp development with support for Ethereum, Bitcoin, and other blockchain wallets.
 
 ## Client Initialization
 ```typescript

@@ -1,8 +1,12 @@
-# Omnilock Protocol
-
 ## Description
 
 CKB's universal lock script enabling cross-blockchain interoperability with native support for Bitcoin, Ethereum, Tron, Dogecoin signatures and wallets. Covers authentication methods, administrator compliance modes, anyone-can-pay features, time locks, supply management, witness structures, deployment information, and multi-chain wallet integration patterns.
+
+## Related Resources
+
+- Development Guide: ckb-dev-context://patterns/omnilock-development
+- API Examples: ckb-dev-context://api-reference/omnilock-api-examples
+- Interoperability Patterns: ckb-dev-context://patterns/omnilock-interoperability
 
 ## Overview
 

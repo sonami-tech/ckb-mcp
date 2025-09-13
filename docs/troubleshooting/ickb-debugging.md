@@ -1,8 +1,13 @@
-# iCKB Protocol Debugging Guide
-
 ## Description
 
 Specialized debugging guide for iCKB protocol development covering liquidity pool issues, conversion failures, order management problems, and integration troubleshooting. Provides diagnostic tools, error analysis techniques, and step-by-step solutions for common iCKB implementation challenges. Includes code examples for pool state monitoring, transaction debugging, slippage analysis, and SDK integration issues. Essential resource for developers building iCKB-based applications and resolving protocol-specific errors.
+
+## Related Resources
+
+- [ckb-dev-context://protocols/ickb-protocol](ckb-dev-context://protocols/ickb-protocol) - Revolutionary liquidity protocol tokenizing NervosDAO deposits
+- [ckb-dev-context://patterns/ickb-development](ckb-dev-context://patterns/ickb-development) - Build applications with iCKB liquid staking protocol for enhanced CKB yield
+- [ckb-dev-context://patterns/ickb-liquidity-patterns](ckb-dev-context://patterns/ickb-liquidity-patterns) - Advanced iCKB liquidity management with automated rebalancing algorithms
+- [ckb-dev-context://api-reference/ickb-sdk-examples](ckb-dev-context://api-reference/ickb-sdk-examples) - iCKB SDK reference with TypeScript examples for conversions and order management
 
 This guide covers common issues, debugging techniques, and troubleshooting patterns specific to the iCKB protocol implementation.
 

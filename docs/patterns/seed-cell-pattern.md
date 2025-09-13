@@ -1,5 +1,3 @@
-# Seed Cell Pattern
-
 ## Description
 
 A fundamental CKB pattern for generating guaranteed unique identifiers using cell outpoints and Blake2b hashing. This pattern leverages the inherent uniqueness of cell outpoints to create deterministic, collision-resistant IDs essential for NFTs, DIDs, certificates, and any application requiring guaranteed uniqueness.

@@ -1,5 +1,3 @@
-# Common Script Errors and Solutions
-
 ## Description
 
 Comprehensive troubleshooting guide for CKB script development covering common runtime errors, debugging techniques, and practical solutions. Addresses frequent issues like IndexOutOfBound, ItemMissing, and InvalidData errors with detailed code examples showing both problematic and corrected approaches. Includes error code explanations, syscall debugging patterns, capacity calculation issues, and transaction validation failures. Essential reference for developers debugging CKB smart contracts and understanding error handling best practices in the CKB-VM environment.

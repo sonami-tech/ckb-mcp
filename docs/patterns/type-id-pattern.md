@@ -1,5 +1,3 @@
-# Type ID Pattern
-
 ## Description
 
 Fundamental CKB pattern for creating singleton cells and upgradeable scripts. Demonstrates Type ID calculation, validation rules, transaction patterns for creation/transfer/burning, upgradeable contract implementation, unique asset registries, security considerations, and testing strategies for maintaining uniqueness and enabling script upgrades.

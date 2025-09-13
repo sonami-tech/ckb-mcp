@@ -1,12 +1,7 @@
-# Omnilock Development Guide
-
 ## Description
 
 Integrate Omnilock universal lock script for cross-chain wallet compatibility on CKB. Learn Ethereum, Bitcoin, and multi-signature implementations, advanced modes including administrator RCE, anyone-can-pay, and time locks. Covers testing patterns, production deployment guidelines, security considerations, and monitoring strategies for robust cross-chain applications.
 
-## Overview
-
-This guide provides practical examples and patterns for integrating Omnilock into CKB applications. Omnilock enables users from different blockchain ecosystems to interact with CKB using their native wallets and signature methods.
 
 ## Basic Integration Patterns
 
@@ -677,18 +672,18 @@ describe('Cross-Chain Wallet Integration', () => {
 
 ### Security Checklist
 
-1. **Signature Verification**: Validate all signature formats according to blockchain specifications
-2. **Script Arguments**: Ensure proper args format and length validation
-3. **Mode Validation**: Verify enabled modes match expected functionality
-4. **RCE Proof Validation**: Thoroughly validate SMT proofs in administrator mode
-5. **Time Lock Verification**: Confirm time lock constraints are properly enforced
+- Validate all signature formats according to blockchain specifications
+- Ensure proper args format and length validation
+- Verify enabled modes match expected functionality
+- Thoroughly validate SMT proofs in administrator mode
+- Confirm time lock constraints are properly enforced
 
 ### Performance Optimization
 
-1. **Batch Operations**: Group multiple signature verifications
-2. **Caching**: Cache compiled scripts and RCE proofs
-3. **Witness Size**: Minimize witness data to reduce transaction fees
-4. **Connection Pooling**: Pool connections to external blockchain RPCs
+- Group multiple signature verifications
+- Cache compiled scripts and RCE proofs
+- Minimize witness data to reduce transaction fees
+- Pool connections to external blockchain RPCs
 
 ### Monitoring and Alerting
 
@@ -756,4 +751,3 @@ class OmnilockMonitor {
 }
 ```
 
-Omnilock development requires careful attention to the specific requirements of each blockchain ecosystem while maintaining compatibility with CKB's transaction model. Following these patterns ensures robust, secure, and performant cross-chain applications.

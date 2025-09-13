@@ -1,8 +1,12 @@
-# SSRI Server Integration
-
 ## Description
 
 Comprehensive integration guide for SSRI (Server-Side Rich Information) server enabling off-chain CKB script execution and enhanced blockchain data access. Covers server setup, VM environment configuration, enhanced syscall APIs, and method-based script interaction patterns. Provides examples of complex queries, data processing, and integration with CKB applications without on-chain execution costs. Essential tool for building data-intensive CKB applications.
+
+## Related Resources
+
+- [ckb-dev-context://protocols/ssri](ckb-dev-context://protocols/ssri) - Extension protocol enabling CKB scripts to provide rich information through off-chain execution
+- [ckb-dev-context://patterns/ssri-implementation](ckb-dev-context://patterns/ssri-implementation) - Implementation guide for Script-Sourced Rich Information in CKB smart contracts
+- [ckb-dev-context://api-reference/ccc-sdk-ssri](ckb-dev-context://api-reference/ccc-sdk-ssri) - Guide to Script-Sourced Rich Information framework in the CCC SDK
 
 The SSRI Server provides off-chain execution capabilities for CKB scripts, enabling rich information queries and complex computations without on-chain gas costs.
 

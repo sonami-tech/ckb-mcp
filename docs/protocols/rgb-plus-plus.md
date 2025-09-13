@@ -1,5 +1,3 @@
-# RGB++ Protocol: Bitcoin Smart Contracts via CKB
-
 ## Description
 
 Innovative protocol bringing Turing-complete smart contracts to Bitcoin via isomorphic bindings between Bitcoin UTXOs and CKB Cells. Covers technical architecture, transaction flows, validation processes, fungible/non-fungible asset types, transaction folding, non-interactive transfers, and development patterns for Bitcoin DeFi applications.

@@ -115,3 +115,6 @@
 [submodule "resources/ckb-proxy-locks"]
 	path = resources/ckb-proxy-locks
 	url = https://github.com/ckb-devrel/ckb-proxy-locks.git
+[submodule "resources/lock-value-relationships-demo"]
+	path = resources/lock-value-relationships-demo
+	url = https://github.com/sonami-tech/lock-value-relationships-demo.git

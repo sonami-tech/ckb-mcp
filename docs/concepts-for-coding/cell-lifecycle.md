@@ -1,5 +1,3 @@
-# Cell Lifecycle for Developers
-
 ## Description
 
 Practical cell lifecycle management for CKB developers, covering live and dead cell states, creation patterns, consumption mechanics, data updates, and capacity requirements. Features complete code examples for state machines, validation logic, and cell dependency patterns. Essential for understanding CKB's UTXO-based cell model and building robust applications.

@@ -1,5 +1,3 @@
-# Proxy Lock Patterns
-
 ## Description
 
 Advanced lock script patterns for CKB providing delegation, time-based constraints, and conditional unlocking mechanisms. Covers delegate locks, proxy locks, time locks, single-use locks, type-based locks, and ownership delegation patterns. Essential for building sophisticated authorization systems, vesting schedules, token-gated access, and hierarchical permission structures.

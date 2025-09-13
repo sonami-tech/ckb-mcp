@@ -1,10 +1,14 @@
-# Spore SDK API Reference and Examples
-
 ## Description
 
-Comprehensive Spore SDK reference with TypeScript examples for digital object creation, management, and NFT operations on CKB. Covers createSpore, transferSpore, meltSpore, cluster management, content optimization, batch operations, and advanced patterns. Essential for building Spore-based applications with proper error handling and transaction monitoring.
+Spore SDK reference with TypeScript examples for digital object creation, management, and NFT operations on CKB. createSpore, transferSpore, meltSpore, cluster management, content optimization, batch operations, and advanced patterns for building Spore-based applications with error handling and transaction monitoring.
 
-This reference provides comprehensive examples of using the Spore SDK for building applications with the Spore Protocol on CKB.
+## Related Resources
+
+- [ckb-dev-context://protocols/spore-protocol](ckb-dev-context://protocols/spore-protocol) - Core protocol specification for Spore digital objects on CKB blockchain
+- [ckb-dev-context://patterns/spore-development](ckb-dev-context://patterns/spore-development) - Development patterns for building applications with the Spore Protocol
+- [ckb-dev-context://protocols/spore-digital-objects](ckb-dev-context://protocols/spore-digital-objects) - Spore digital objects protocol specification
+
+Examples of using the Spore SDK for building applications with the Spore Protocol on CKB.
 
 ## Installation and Setup
 
@@ -648,4 +652,4 @@ interface ClusterQueryResult {
 }
 ```
 
-This API reference provides comprehensive examples for integrating the Spore Protocol into your CKB applications. Use these patterns as starting points and adapt them to your specific use cases.
+Examples for integrating the Spore Protocol into CKB applications. Use these patterns as starting points and adapt them to specific use cases.

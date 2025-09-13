@@ -1,8 +1,12 @@
-# CoTA Infrastructure Deployment and Management
-
 ## Description
 
 Comprehensive deployment guide for CoTA (Compact Token Aggregator) infrastructure covering aggregator server setup, registry configuration, and API endpoint deployment. Provides step-by-step instructions for setting up CoTA services, configuring database connections, managing token metadata, and establishing cross-chain bridges. Includes Docker deployment examples, monitoring setup, scaling considerations, and integration patterns for NFT marketplaces and wallet applications.
+
+## Related Resources
+
+- [ckb-dev-context://protocols/cota-protocol](ckb-dev-context://protocols/cota-protocol) - Layer-1.5 account-based token management solution using Sparse Merkle Trees
+- [ckb-dev-context://patterns/cota-nft-development](ckb-dev-context://patterns/cota-nft-development) - Build cost-effective NFT applications using CoTA protocol
+- [ckb-dev-context://api-reference/cota-sdk-examples](ckb-dev-context://api-reference/cota-sdk-examples) - CoTA SDK JavaScript implementation guide with production-ready examples
 
 ## Complete CoTA Infrastructure Stack
 

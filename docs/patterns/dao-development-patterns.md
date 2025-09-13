@@ -1,10 +1,8 @@
-# CKB DAO Development Patterns
-
 ## Description
 
 Develop applications using the Nervos DAO system for CKB staking and rewards. Learn Rust transaction building, TypeScript frontend integration with CCC, multi-wallet support, and advanced patterns including iCKB integration and analytics. Covers deposit/withdrawal workflows, compensation calculations, testing strategies, and production-ready DAO application development.
 
-This guide covers comprehensive patterns for developing with the Nervos DAO, based on production implementations from nervdao and ckb-system-scripts. **Modern DAO development should use Rust** for smart contracts and TypeScript/JavaScript for frontend applications.
+**Modern DAO development uses Rust** for smart contracts and TypeScript/JavaScript for frontend applications.
 
 ## Core DAO Concepts
 

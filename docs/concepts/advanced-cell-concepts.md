@@ -1,5 +1,3 @@
-# Advanced Cell and Transaction Concepts
-
 ## Description
 
 Deep exploration of CKB's cell architecture, storage economics, capacity management, and advanced transaction patterns. Covers cell lifecycle, state transitions, multi-input operations, complex transaction patterns, script execution contexts, and optimization techniques. Essential for building sophisticated CKB applications with efficient cell management and transaction orchestration.

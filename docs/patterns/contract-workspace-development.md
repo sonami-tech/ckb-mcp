@@ -1,5 +1,3 @@
-# Contract Workspace Development
-
 ## Description
 
 Comprehensive guide to modern CKB smart contract development using Rust-based workspace templates. Covers project setup, build automation, testing frameworks, and deployment patterns using the latest ckb-script-templates. Includes memory optimization, cross-platform development, and reproducible builds. Essential for professional CKB contract development workflows.

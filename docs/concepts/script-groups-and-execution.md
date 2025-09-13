@@ -1,5 +1,3 @@
-# Script Groups and Execution
-
 ## Description
 
 Comprehensive guide to CKB's script grouping optimization mechanism, covering how identical scripts are batched for single execution, GroupInput/GroupOutput sources, performance benefits, and development patterns. Features practical examples, testing strategies, debugging techniques, and best practices for efficient script development with group-aware design patterns.

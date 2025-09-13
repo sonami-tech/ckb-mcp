@@ -1,8 +1,12 @@
-# Spore Protocol
-
 ## Description
 
 Core protocol specification for Spore digital objects on CKB blockchain defining structure, validation rules, and interaction patterns for on-chain digital assets. Covers cluster creation, spore minting, content addressing, metadata management, and ownership transfer mechanisms. Includes technical specifications for content validation, data encoding, capacity requirements, and cross-compatibility with other CKB protocols. Essential reference for developers implementing Spore-compatible applications.
+
+## Related Resources
+
+- [ckb-dev-context://patterns/spore-development](ckb-dev-context://patterns/spore-development) - Development patterns for building applications with the Spore Protocol
+- [ckb-dev-context://api-reference/spore-sdk-examples](ckb-dev-context://api-reference/spore-sdk-examples) - Spore SDK reference with TypeScript examples for digital object creation
+- [ckb-dev-context://protocols/spore-digital-objects](ckb-dev-context://protocols/spore-digital-objects) - Spore digital objects protocol specification
 
 ## Overview
 

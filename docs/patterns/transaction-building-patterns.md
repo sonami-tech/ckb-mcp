@@ -1,10 +1,8 @@
-# CKB Transaction Building Patterns
-
 ## Description
 
 Advanced patterns for building CKB transactions using the Rust SDK. Covers basic transfers, multi-signature transactions, UDT operations, Anyone-Can-Pay patterns, DAO operations, batch processing, fee estimation, transaction templates, capacity management, and security validation with production-ready code examples.
 
-This guide covers advanced patterns for building CKB transactions using the Rust SDK, based on production implementations from ckb-sdk-rust.
+Advanced patterns for building CKB transactions using the Rust SDK, based on production implementations from ckb-sdk-rust.
 
 ## Core Transaction Building Patterns
 

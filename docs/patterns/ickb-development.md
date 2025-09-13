@@ -1,10 +1,15 @@
-# iCKB Development Patterns
-
 ## Description
 
-Build applications with iCKB liquid staking protocol for enhanced CKB yield and liquidity. Learn system state management, conversion estimation, order lifecycle management, automated trading strategies, and portfolio rebalancing. Covers advanced patterns for liquidity provision, error handling, testing strategies, and production deployment of iCKB-integrated applications.
+Build applications with iCKB liquid staking protocol for enhanced CKB yield and liquidity. System state management, conversion estimation, order lifecycle management, automated trading strategies, and portfolio rebalancing. Advanced patterns for liquidity provision, error handling, testing strategies, and production deployment of iCKB-integrated applications.
 
-This guide covers development patterns and best practices for building applications with the iCKB protocol on CKB.
+## Related Resources
+
+- [ckb-dev-context://protocols/ickb-protocol](ckb-dev-context://protocols/ickb-protocol) - Revolutionary liquidity protocol tokenizing NervosDAO deposits
+- [ckb-dev-context://patterns/ickb-liquidity-patterns](ckb-dev-context://patterns/ickb-liquidity-patterns) - Advanced iCKB liquidity management with automated rebalancing algorithms
+- [ckb-dev-context://api-reference/ickb-sdk-examples](ckb-dev-context://api-reference/ickb-sdk-examples) - iCKB SDK reference with TypeScript examples for conversions and order management
+- [ckb-dev-context://troubleshooting/ickb-debugging](ckb-dev-context://troubleshooting/ickb-debugging) - Specialized debugging guide for iCKB protocol development
+
+Development patterns and best practices for building applications with the iCKB protocol on CKB.
 
 ## Development Setup
 

@@ -1,12 +1,6 @@
-# Rust Script Development Patterns
-
 ## Description
 
 Comprehensive guide to developing secure and efficient CKB scripts using Rust, covering project structure, error handling patterns, common script implementations (UDT, state machines, lock scripts), advanced cryptographic patterns, performance optimization, and testing strategies with production-ready examples.
-
-## Overview
-
-This guide provides comprehensive patterns and best practices for developing CKB scripts in Rust. Rust is the recommended language for CKB script development due to its safety, performance, and excellent ecosystem support through the `ckb-std` library.
 
 ## Project Structure and Setup
 

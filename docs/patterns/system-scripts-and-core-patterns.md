@@ -1,10 +1,8 @@
-# CKB System Scripts and Core Patterns
-
 ## Description
 
 Comprehensive guide to CKB's core system scripts and fundamental blockchain development patterns. Covers signature verification (secp256k1, multisig), Type ID implementation, advanced lock patterns, gas optimization, security best practices, and testing frameworks, with modern Rust implementations for reference and development.
 
-This guide covers CKB's core system scripts and fundamental patterns for blockchain development. **While system scripts are implemented in C for performance, modern smart contract development should use Rust** with these patterns as reference implementations.
+**While system scripts are implemented in C for performance, modern smart contract development should use Rust** with these patterns as reference implementations.
 
 ## Core System Scripts Overview
 
@@ -796,4 +794,3 @@ fn validate_lock_witness_format(witness_data: &[u8]) -> Result<(), Error> {
 - Implement proper Type ID calculation
 - Follow multisig configuration standards
 
-This guide provides comprehensive patterns for building secure, efficient smart contracts that integrate properly with CKB's core system functionality while leveraging modern Rust development practices.

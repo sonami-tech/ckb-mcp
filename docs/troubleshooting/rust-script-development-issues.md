@@ -1,12 +1,10 @@
-# Rust Script Development Troubleshooting
-
 ## Description
 
-Practical troubleshooting guide for CKB script development in Rust addressing compilation issues, target architecture problems, memory management challenges, and debugging techniques. Covers RISC-V compilation setup, no_std environment configuration, syscall integration, dependency management, and performance optimization. Includes solutions for common build errors, memory allocation issues, and deployment problems specific to CKB-VM development environment.
+Troubleshooting guide for CKB script development in Rust addressing compilation issues, target architecture problems, memory management challenges, and debugging techniques. RISC-V compilation setup, no_std environment configuration, syscall integration, dependency management, and performance optimization. Solutions for common build errors, memory allocation issues, and deployment problems specific to CKB-VM development environment.
 
 ## Overview
 
-This guide addresses common issues encountered when developing CKB scripts in Rust, providing solutions and best practices based on real-world development experience.
+Common issues when developing CKB scripts in Rust, with solutions and best practices based on real-world development experience.
 
 ## Build and Compilation Issues
 

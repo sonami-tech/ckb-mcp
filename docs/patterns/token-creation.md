@@ -1,16 +1,11 @@
-# SUDT Token Creation Pattern
-
 ## Description
 
-Complete implementation guide for Simple User Defined Tokens (SUDT) on CKB blockchain. Provides production-ready Rust code for creating fungible tokens with owner-controlled minting/burning capabilities. Covers token amount encoding (u128 as 16 bytes), conservation validation logic, owner mode verification using lock hash authentication, and multi-cell token operations. Includes error handling, deployment instructions, and transaction examples for minting, burning, and transferring tokens. Essential resource for developers implementing custom tokens, DeFi protocols, or any application requiring fungible asset management on CKB. Features complete test suite and integration patterns with popular CKB SDKs.
+Implementation guide for Simple User Defined Tokens (SUDT) on CKB blockchain. Production-ready Rust code for fungible tokens with owner-controlled minting/burning. Token amount encoding (u128 as 16 bytes), conservation validation logic, owner mode verification using lock hash authentication, and multi-cell token operations. Error handling, deployment instructions, and transaction examples for minting, burning, and transferring tokens. Test suite and integration patterns with CKB SDKs.
 
-## Purpose
-Complete SUDT (Simple User Defined Token) implementation from CKB developer training course. This pattern demonstrates:
-- Owner mode for minting/burning tokens
-- Token conservation validation
-- Proper data encoding/decoding
-- Multi-cell token operations
-- Lock hash verification
+## Related Resources
+
+- [ckb-dev-context://protocols/xudt-protocol](ckb-dev-context://protocols/xudt-protocol) - eXtensible User Defined Token protocol extending sUDT with modular extension capabilities
+- [ckb-dev-context://patterns/udt-tokens](ckb-dev-context://patterns/udt-tokens) - UDT token development patterns and best practices
 
 ## Complete Working Implementation
 

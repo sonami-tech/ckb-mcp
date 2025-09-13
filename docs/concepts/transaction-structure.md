@@ -1,33 +1,29 @@
-# CKB Transaction Structure
-
 ## Description
 
-Comprehensive guide to CKB's transaction-oriented programming model, covering transaction anatomy, cell dependencies, lock/type scripts, witness structure, and validation processes. Contrasts with contract-oriented models, explains capacity conservation, script resolution, and provides practical development examples. Essential for understanding CKB's deterministic, parallel-processing architecture.
+CKB's transaction-oriented programming model, covering transaction anatomy, cell dependencies, lock/type scripts, witness structure, and validation processes. Contrasts with contract-oriented models, explains capacity conservation, script resolution, and practical development examples for understanding CKB's deterministic, parallel-processing architecture.
 
-## Overview
-
-CKB transactions are the fundamental unit of state transition on the Nervos network. Unlike account-based blockchains, CKB uses a transaction-oriented programming model with a UTXO-like cell model, enabling parallel processing, deterministic execution, and failure-free transactions.
+CKB uses a transaction-oriented programming model with a UTXO-like cell model, enabling parallel processing, deterministic execution, and failure-free transactions.
 
 ## Transaction-Oriented vs Contract-Oriented Programming
 
 ### CKB's Transaction-Oriented Model
 
-Nervos uses a transaction-oriented paradigm where developers describe the desired state change rather than calling contract methods. The transaction fully describes both the current state (inputs) and the desired resulting state (outputs) before execution.
+Developers describe the desired state change rather than calling contract methods. The transaction fully describes both the current state (inputs) and the desired resulting state (outputs) before execution.
 
 **Key characteristics:**
-- **Generation**: Transaction logic runs off-chain to compute desired state
-- **Validation**: Scripts run on-chain to validate the proposed state change
-- **Deterministic**: Transaction outcome is known before network submission
-- **No Failed Transactions**: Invalid transactions are rejected without cost
+- Transaction logic runs off-chain to compute desired state
+- Scripts run on-chain to validate the proposed state change
+- Transaction outcome is known before network submission
+- Invalid transactions are rejected without cost
 
 ### Traditional Contract-Oriented Model (e.g., Ethereum)
 
-In contract-oriented systems, developers call contract methods that execute on-chain to modify state.
+Developers call contract methods that execute on-chain to modify state.
 
 **Key characteristics:**
-- **Execution**: Contract methods run on-chain to compute state changes
-- **Non-deterministic**: Side effects and gas exhaustion can cause unexpected outcomes
-- **Failed Transactions**: Failed executions still consume resources and fees
+- Contract methods run on-chain to compute state changes
+- Side effects and gas exhaustion can cause unexpected outcomes
+- Failed executions still consume resources and fees
 
 ### Comparative Example: Counter Increment
 
@@ -68,11 +64,11 @@ Transaction {
 
 ### Advantages of Transaction-Oriented Model
 
-1. **Scalability**: Generation (computationally intensive) happens off-chain
-2. **Deterministic**: Exact outcome known before submission  
-3. **No Erroneous Transactions**: Invalid transactions rejected without cost
-4. **Parallel Processing**: Independent transactions can execute simultaneously
-5. **Failure-Free**: No risk of partial execution or unexpected state changes
+- Generation (computationally intensive) happens off-chain
+- Exact outcome known before submission  
+- Invalid transactions rejected without cost
+- Independent transactions can execute simultaneously
+- No risk of partial execution or unexpected state changes
 
 ## Core Transaction Structure
 
@@ -89,36 +85,6 @@ struct Transaction {
 }
 ```
 
-### Transaction Flow
-
-```mermaid
-graph TB
-    subgraph "Previous State"
-        IC1[Input Cell 1]
-        IC2[Input Cell 2]
-        DC[Dep Cell]
-    end
-    
-    subgraph "Transaction"
-        T[Transaction Logic]
-        LockScript[Lock Scripts]
-        TypeScript[Type Scripts]
-    end
-    
-    subgraph "New State"
-        OC1[Output Cell 1]
-        OC2[Output Cell 2]
-    end
-    
-    IC1 --> T
-    IC2 --> T
-    DC -.-> T
-    T --> OC1
-    T --> OC2
-    
-    LockScript --> T
-    TypeScript --> T
-```
 
 ## Cell Dependencies (cell_deps)
 
@@ -140,8 +106,6 @@ enum DepType {
 ```
 
 ### Dep Group Pattern
-
-Dep Groups allow bundling multiple dependencies into a single reference:
 
 ```rust
 // Dep Group cell data contains OutPoint list
@@ -176,10 +140,10 @@ struct OutPoint {
 
 ### Input Processing
 
-1. **Cell Reference**: Each input points to a previously created cell
-2. **Liveness Check**: Referenced cells must be live (not already consumed)
-3. **Lock Validation**: Lock scripts must authorize the spending
-4. **Since Validation**: Time-lock constraints must be satisfied
+- Each input points to a previously created cell
+- Referenced cells must be live (not already consumed)
+- Lock scripts must authorize the spending
+- Time-lock constraints must be satisfied
 
 ## Output Structure
 
@@ -228,15 +192,9 @@ enum HashType {
 
 ### Code Resolution Process
 
-```mermaid
-graph TD
-    A[Script Execution] --> B{Hash Type?}
-    B -->|Data/Data1| C[Find cell_dep with matching data hash]
-    B -->|Type| D[Find cell_dep with matching type script hash]
-    C --> E[Load cell data as code]
-    D --> E
-    E --> F[Execute in CKB-VM]
-```
+1. **Data/Data1**: Find cell_dep with matching data hash
+2. **Type**: Find cell_dep with matching type script hash
+3. Load cell data as code and execute in CKB-VM
 
 ## Lock Scripts
 
@@ -290,10 +248,10 @@ pub fn type_script_main() -> Result<(), Error> {
 
 ### Type Script Use Cases
 
-- **Token Logic**: UDT transfer and minting rules
-- **State Machines**: Contract state transitions
-- **NFTs**: Unique asset validation
-- **DAOs**: Governance and treasury management
+- UDT transfer and minting rules
+- Contract state transitions
+- Unique asset validation
+- Governance and treasury management
 
 ## Witness Structure
 
@@ -342,30 +300,19 @@ let input_header = load_header(input_index, Source::Input)?;
 
 ### Use Cases
 
-- **Time-based Logic**: Contracts needing timestamp access
-- **DAO Withdrawals**: Calculate interest based on deposit block
-- **Proof Systems**: Verify historical chain state
+- Time-based logic: Contracts needing timestamp access
+- DAO withdrawals: Calculate interest based on deposit block
+- Proof systems: Verify historical chain state
 
 ## Transaction Validation Process
 
-```mermaid
-graph TD
-    A[Transaction Submitted] --> B[Basic Structure Check]
-    B --> C[Cell Existence Check]
-    C --> D[Capacity Conservation]
-    D --> E[Script Resolution]
-    E --> F[Lock Script Execution]
-    F --> G[Type Script Execution]
-    G --> H[Final Validation]
-    H --> I[Transaction Accepted]
-    
-    B -->|Invalid| Z[Rejected]
-    C -->|Missing| Z
-    D -->|Violation| Z
-    E -->|Not Found| Z
-    F -->|Failed| Z
-    G -->|Failed| Z
-```
+1. Basic Structure Check
+2. Cell Existence Check
+3. Capacity Conservation
+4. Script Resolution
+5. Lock Script Execution
+6. Type Script Execution
+7. Final Validation
 
 ## Hash Calculation
 
@@ -525,19 +472,19 @@ pub fn main() -> Result<(), Error> {
 
 ### Transaction Construction
 
-1. **Capacity Planning**: Ensure sufficient capacity for cell storage
-2. **Dependency Management**: Include all required cell_deps  
-3. **Script Arguments**: Use consistent arg layouts across scripts
-4. **Witness Optimization**: Minimize witness data size
-5. **Parallel Compatibility**: Avoid unnecessary input overlaps
+- Ensure sufficient capacity for cell storage
+- Include all required cell_deps  
+- Use consistent arg layouts across scripts
+- Minimize witness data size
+- Avoid unnecessary input overlaps
 
 ### Security Considerations
 
-1. **Input Validation**: Verify all input cells exist and are live
-2. **Script Verification**: Ensure proper script resolution
-3. **Capacity Conservation**: Prevent token inflation attacks
-4. **Witness Integrity**: Validate witness data authenticity
-5. **Time-lock Compliance**: Respect since field constraints
+- Verify all input cells exist and are live
+- Ensure proper script resolution
+- Prevent token inflation attacks
+- Validate witness data authenticity
+- Respect since field constraints
 
 ### Performance Optimization
 
@@ -557,4 +504,3 @@ let all_inputs = (0..input_count)
     .collect::<Result<Vec<_>, _>>()?;
 ```
 
-CKB's transaction structure provides a flexible foundation for building complex decentralized applications while maintaining security, determinism, and the ability for parallel processing. Understanding these fundamentals is essential for effective CKB development.

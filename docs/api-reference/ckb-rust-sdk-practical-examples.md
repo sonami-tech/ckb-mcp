@@ -1,12 +1,10 @@
-# CKB Rust SDK Practical Examples
-
 ## Description
 
 Production-ready CKB Rust SDK examples covering transfers, UDT tokens, multi-signature transactions, Omnilock integration, and DAO operations. Features complete code with error handling, transaction building patterns, and utility functions. Based on real ecosystem implementations with comprehensive examples for capacity balancing, witness generation, and advanced transaction patterns.
 
 ## Overview
 
-This guide provides practical, production-ready examples using the CKB Rust SDK. All examples are based on real implementations from the CKB ecosystem and follow current best practices as of 2024.
+All examples are based on real implementations from the CKB ecosystem and follow current best practices as of 2024.
 
 ## Quick Start Examples
 
@@ -881,3 +879,7 @@ These examples provide a solid foundation for building CKB applications using th
 **Type Scripts**: Use specialized builders for UDT, DAO, and custom type scripts.
 
 **Cross-chain**: Omnilock provides seamless integration with Ethereum, Bitcoin, and other chains.
+
+## Related Documentation
+
+For understanding how addresses and lock scripts are generated from private keys, see the [Lock Value Relationships](ckb-dev-context://concepts/lock-value-relationships) guide.

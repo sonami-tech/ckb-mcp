@@ -1,16 +1,12 @@
-# CKB Developer Resources and Tooling
-
 ## Description
 
-Discover essential CKB development tools, frameworks, and SDKs to build blockchain applications efficiently. This comprehensive guide covers ckb-script-templates for smart contracts, CKB-SDK-Rust for backend services, CCC as the primary SDK for application development, OffCKB for rapid prototyping, and protocol-specific tools like Omnilock, Spore, and CoTA. Learn modern development workflows, testing frameworks, security best practices, and performance optimization techniques for professional CKB development.
+Essential CKB development tools, frameworks, and SDKs. Covers ckb-script-templates for smart contracts, CKB-SDK-Rust for backend services, CCC as the primary SDK for application development, OffCKB for rapid prototyping, and protocol-specific tools like Omnilock, Spore, and CoTA. Includes modern development workflows, testing frameworks, security best practices, and performance optimization techniques.
 
-This comprehensive guide covers all available CKB development resources, tools, and frameworks. **Modern CKB development uses OffCKB for project initialization and ckb-script-templates for smart contracts**, with CCC as the primary SDK for application development.
+**Modern CKB development uses OffCKB for project initialization and ckb-script-templates for smart contracts**, with CCC as the primary SDK for application development.
 
 ## Essential Development Tools
 
-### 1. OffCKB Development Environment (Recommended Starting Point)
-
-**Purpose:** Rapid project initialization and full-stack development environment for CKB dApps.
+### 1. OffCKB Development Environment
 
 **Key Features:**
 - **Local Devnet**: Instant blockchain with 20 pre-funded test accounts
@@ -52,9 +48,7 @@ my-dapp-project/
 
 **Reference:** Official Nervos Quick Start Guide
 
-### 2. ckb-script-templates (Current Smart Contract Development)
-
-**Purpose:** Modern Rust smart contract development framework (replaces deprecated Capsule).
+### 2. ckb-script-templates
 
 **Key Features:**
 - **Production-ready Templates**: Workspace, basic contract, atomics support
@@ -85,16 +79,7 @@ make test      # Run tests
 
 **Status:** No longer maintained - **migrate to ckb-script-templates for new projects**.
 
-**Migration Path:**
-- **New Projects**: Use OffCKB + ckb-script-templates workflow
-- **Existing Projects**: Consider migrating to ckb-script-templates for continued support
-- **Legacy Support**: Still functional but not recommended
-
-**Reference:** `resources/CKB-Developer-Resource/README.md`
-
-### 2. CKB CLI
-
-**Purpose:** Command-line interface for CKB blockchain interactions.
+### 4. CKB CLI
 
 **Key Operations:**
 ```bash
@@ -117,9 +102,7 @@ ckb-cli tx send --tx-file transaction.json
 ckb-cli util key-info --privkey-path <key-file>
 ```
 
-### 3. CKB Debugger
-
-**Purpose:** Advanced debugging for CKB scripts and transactions.
+### 5. CKB Debugger
 
 **Features:**
 - **Script Execution Tracing**: Step-by-step execution analysis
@@ -141,9 +124,7 @@ ckb-debugger --tx-file <transaction.json> --mode gdb
 
 ## Software Development Kits (SDKs)
 
-### 1. CCC (Common Chain Connector) - TypeScript/JavaScript (Primary SDK)
-
-**Purpose:** **Highly recommended as the primary CKB development tool** for both frontend and backend applications.
+### 1. CCC (Common Chain Connector) - Primary SDK
 
 **Key Features:**
 - **Universal Platform**: Works in Node.js (backend) and browsers (frontend)
@@ -232,8 +213,6 @@ function TransferComponent() {
 
 ### 2. CKB-SDK-Rust (Backend/Server Development)
 
-**Purpose:** **Rust SDK for backend applications and server-side blockchain interaction** (not for smart contract development).
-
 **Key Features:**
 - **Transaction Building**: High-level transaction construction for applications
 - **Cell Collection**: Automated UTXO management for backends
@@ -273,18 +252,9 @@ let tx = builder
 
 **Reference:** `resources/ckb-sdk-rust/`
 
-### 3. Lumos Framework (Legacy - Deprecated)
+### 3. Lumos Framework (Deprecated)
 
-**Status:** **No longer actively recommended for new projects** - migrate to CCC.
-
-**Official Notice:** Per Nervos documentation: "Lumos is no longer actively recommended for new projects. For a more robust development experience, consider using the Common Chain Connector (CCC)."
-
-**Migration Path:**
-- **New Projects**: Use CCC for both frontend and backend TypeScript/JavaScript development
-- **Existing Projects**: Consider migrating to CCC for better wallet integration and modern patterns
-- **Legacy Support**: Still functional but in maintenance mode
-
-**Reference:** `resources/lumos/`
+**Status:** No longer actively recommended for new projects - migrate to CCC.
 
 ### 4. Alternative Language Support
 
@@ -297,7 +267,6 @@ let tx = builder
 
 ### Recommended Development Path
 
-**For New Projects:**
 1. **Initialize**: Use OffCKB to create full-stack project
 2. **Smart Contracts**: Develop with ckb-script-templates (Rust)
 3. **Frontend/Backend**: Build with CCC SDK (TypeScript/JavaScript)
@@ -305,10 +274,6 @@ let tx = builder
 5. **Deployment**: Deploy to testnet, then mainnet
 
 ### Full-Stack Development with OffCKB
-
-**Purpose:** Complete development environment following official Nervos Quick Start guide.
-
-**Modern Workflow:**
 ```bash
 # Create full-stack dApp (recommended)
 offckb create my-dapp-project
@@ -340,13 +305,9 @@ offckb deploy --network testnet
 - **Built-in Scripts**: Omnilock, Spore, xUDT contracts included
 - **Testing Environment**: 20 pre-funded accounts for testing
 
-**Reference:** Official Nervos Quick Start Documentation
-
 ## Protocol-Specific Tools and SDKs
 
 ### 1. Omnilock Development
-
-**Purpose:** Universal lock script supporting multiple signature algorithms.
 
 **Supported Signatures:**
 - **CKB Native**: secp256k1 with Blake2b
@@ -371,8 +332,6 @@ let lock_script = omnilock_config.build_script();
 **Reference:** `resources/omnilock/`
 
 ### 2. Spore Protocol SDK
-
-**Purpose:** Digital object protocol for high-value NFTs and digital assets requiring fully on-chain data.
 
 **Recommended for:**
 - **Art NFTs**: High-value collectibles where data permanence is critical
@@ -408,8 +367,6 @@ const txHash = await signer.sendTransaction(tx);
 **Reference:** `resources/spore-sdk/`
 
 ### 3. CoTA NFT Development
-
-**Purpose:** Compact Token Aggregator for cost-effective NFT management where low cost is prioritized over flexibility.
 
 **Recommended for:**
 - **Gaming Assets**: In-game items and collectibles requiring low cost
@@ -453,8 +410,6 @@ const mintTx = await cota.mint({
 **Note**: This deprecation is reflected in the current ecosystem recommendations where Spore and CoTA are the supported NFT standards.
 
 ### 5. RGB++ Asset Protocol
-
-**Purpose:** Bitcoin-compatible asset issuance on CKB.
 
 **Features:**
 - **Bitcoin Binding**: Assets backed by Bitcoin UTXOs
@@ -590,4 +545,3 @@ mod integration_tests {
 - **Caching**: Cache frequently accessed blockchain data
 - **Local Development**: Use OffCKB for fast iteration cycles
 
-This comprehensive guide provides everything needed to start CKB development with modern tools and best practices, following the official Nervos documentation recommendations for OffCKB initialization, ckb-script-templates for contracts, and CCC as the primary SDK for applications.

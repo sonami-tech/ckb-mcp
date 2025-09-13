@@ -1,5 +1,3 @@
-# CKB Transaction CoBuild Protocol
-
 ## Description
 
 Collaborative transaction construction protocol for CKB enabling multi-party transaction building with standardized procedures. Covers message signing (EIP712-like), script interfaces with actions, composable witness layouts, BuildingPacket structures, validation rules, hash calculation methods, and migration strategies for enhanced UX and composability.

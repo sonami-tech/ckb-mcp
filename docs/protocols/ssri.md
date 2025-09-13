@@ -1,8 +1,12 @@
-# Script-Sourced Rich Information (SSRI)
-
 ## Description
 
 Extension protocol enabling CKB scripts to provide rich information through off-chain execution with enhanced syscalls. Covers method path systems, execution levels, SSRI/UDT trait implementations, enhanced syscall capabilities, server infrastructure, and integration patterns for complex query logic while maintaining on-chain verification.
+
+## Related Resources
+
+- [ckb-dev-context://patterns/ssri-implementation](ckb-dev-context://patterns/ssri-implementation) - Implementation guide for Script-Sourced Rich Information in CKB smart contracts
+- [ckb-dev-context://tools/ssri-server](ckb-dev-context://tools/ssri-server) - Comprehensive integration guide for SSRI server enabling off-chain CKB script execution
+- [ckb-dev-context://api-reference/ccc-sdk-ssri](ckb-dev-context://api-reference/ccc-sdk-ssri) - Guide to Script-Sourced Rich Information framework in the CCC SDK
 
 SSRI extends CKB script capabilities by enabling off-chain execution with enhanced syscalls, allowing scripts to provide rich information and implement complex query logic while maintaining on-chain verification.
 

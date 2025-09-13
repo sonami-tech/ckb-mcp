@@ -1,5 +1,3 @@
-# Operation Detection Pattern
-
 ## Description
 
 An advanced pattern for automatically detecting transaction operations (CREATE/TRANSFER/UPDATE/BURN) by analyzing input and output cell counts. This pattern demonstrates sophisticated state validation, overflow protection, and structured error handling for complex CKB applications requiring different behavior based on transaction intent.

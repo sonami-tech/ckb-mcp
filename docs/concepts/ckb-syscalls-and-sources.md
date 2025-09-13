@@ -1,12 +1,10 @@
-# CKB Syscalls and Sources
-
 ## Description
 
-Comprehensive guide to CKB-VM syscalls for script development, covering transaction data access, source enumeration, and programming patterns. Features complete syscall reference matrix, high-level vs low-level API comparisons, security patterns, error handling, and performance optimization. Essential for CKB smart contract development with practical examples in Rust and C.
+CKB-VM syscalls for script development, covering transaction data access, source enumeration, and programming patterns. Complete syscall reference matrix, high-level vs low-level API comparisons, security patterns, error handling, and performance optimization for CKB smart contract development with practical examples in Rust and C.
 
 ## Overview
 
-CKB scripts access transaction information through CKB-VM syscalls. Scripts written in Rust use the CKB-STD library which provides both high-level functions and direct syscall access. This document provides a comprehensive reference for accessing transaction data within scripts.
+CKB scripts access transaction information through CKB-VM syscalls. Scripts written in Rust use the CKB-STD library which provides both high-level functions and direct syscall access.
 
 ## Programming Approach
 

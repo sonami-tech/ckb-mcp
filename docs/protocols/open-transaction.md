@@ -1,5 +1,3 @@
-# CKB Open Transaction (OTX) Protocol
-
 ## Description
 
 Off-chain transaction construction protocol enabling collaborative assembly of CKB transactions through peer-to-peer networks. Covers partial transaction building, agent-based collection and relaying, batch processing, OTX/OtxStart witness layouts, validation rules, and integration with CoBuild for decentralized transaction coordination.

@@ -1,10 +1,15 @@
-# iCKB Liquidity Management Patterns
-
 ## Description
 
-Master advanced iCKB liquidity management with automated rebalancing algorithms, pool optimization, and market making strategies. Learn the Water Mill rebalancing model, pool snapshot encoding across 1024 time bins, dual-ratio order optimization, and sophisticated trading bot development for maximizing liquidity efficiency and yield in the iCKB protocol.
+Advanced iCKB liquidity management with automated rebalancing algorithms, pool optimization, and market making strategies. Water Mill rebalancing model, pool snapshot encoding across 1024 time bins, dual-ratio order optimization, and trading bot development for maximizing liquidity efficiency and yield in the iCKB protocol.
 
-This guide covers advanced patterns for managing liquidity in the iCKB protocol, including automated rebalancing, arbitrage strategies, and pool optimization techniques.
+## Related Resources
+
+- [ckb-dev-context://protocols/ickb-protocol](ckb-dev-context://protocols/ickb-protocol) - Revolutionary liquidity protocol tokenizing NervosDAO deposits
+- [ckb-dev-context://patterns/ickb-development](ckb-dev-context://patterns/ickb-development) - Build applications with iCKB liquid staking protocol for enhanced CKB yield
+- [ckb-dev-context://api-reference/ickb-sdk-examples](ckb-dev-context://api-reference/ickb-sdk-examples) - iCKB SDK reference with TypeScript examples for conversions and order management
+- [ckb-dev-context://troubleshooting/ickb-debugging](ckb-dev-context://troubleshooting/ickb-debugging) - Specialized debugging guide for iCKB protocol development
+
+Advanced patterns for managing liquidity in the iCKB protocol, including automated rebalancing, arbitrage strategies, and pool optimization techniques.
 
 ## Pool Rebalancing Algorithm
 

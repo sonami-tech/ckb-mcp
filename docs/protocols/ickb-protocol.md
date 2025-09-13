@@ -1,8 +1,13 @@
-# iCKB Protocol - Inflation-Protected CKB
-
 ## Description
 
 Revolutionary liquidity protocol tokenizing NervosDAO deposits into liquid xUDT tokens while maintaining inflation protection. Covers core contracts, limit order mechanisms, fulfillment bot infrastructure, two-phase operations, exchange rate calculations, deployment information, and integration examples for unlocking CKB capital in DeFi applications.
+
+## Related Resources
+
+- [ckb-dev-context://patterns/ickb-development](ckb-dev-context://patterns/ickb-development) - Build applications with iCKB liquid staking protocol for enhanced CKB yield and liquidity
+- [ckb-dev-context://patterns/ickb-liquidity-patterns](ckb-dev-context://patterns/ickb-liquidity-patterns) - Advanced iCKB liquidity management with automated rebalancing algorithms
+- [ckb-dev-context://api-reference/ickb-sdk-examples](ckb-dev-context://api-reference/ickb-sdk-examples) - iCKB SDK reference with TypeScript examples for conversions and order management
+- [ckb-dev-context://troubleshooting/ickb-debugging](ckb-dev-context://troubleshooting/ickb-debugging) - Specialized debugging guide for iCKB protocol development
 
 The iCKB (inflation-protected CKB) protocol is a revolutionary liquidity solution for the Nervos CKB ecosystem that tokenizes NervosDAO deposits into liquid xUDT tokens, enabling instant convertibility while maintaining inflation protection.
 

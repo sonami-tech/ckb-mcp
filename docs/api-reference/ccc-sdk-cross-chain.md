@@ -1,8 +1,6 @@
-# CCC SDK Cross-Chain Integration
-
 ## Description
 
-Comprehensive guide to CKB Common Connector (CCC) SDK's cross-chain wallet integration capabilities. Demonstrates how to build CKB applications that work seamlessly with Bitcoin, Ethereum, and Nostr wallets. Covers unified signer interfaces, transaction patterns, and practical examples for multi-chain dApp development. Essential for developers building cross-chain applications on CKB.
+CKB Common Connector (CCC) SDK's cross-chain wallet integration capabilities. Build CKB applications that work seamlessly with Bitcoin, Ethereum, and Nostr wallets. Unified signer interfaces, transaction patterns, and practical examples for multi-chain dApp development on CKB.
 
 ## Overview
 

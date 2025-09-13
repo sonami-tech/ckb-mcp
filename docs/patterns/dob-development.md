@@ -1,5 +1,3 @@
-# Digital Object (DOB) Development Patterns
-
 ## Description
 
 Comprehensive guide to developing Digital Objects (DOBs) on CKB using Spore protocol extensions. Covers DOB/0 and DOB/1 implementations, pattern configuration, DNA generation, decoder selection, content storage strategies, and best practices for production deployment. Essential for creating composable, extensible digital assets with rich rendering capabilities.

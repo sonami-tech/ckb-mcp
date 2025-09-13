@@ -1,12 +1,8 @@
-# Molecule API Reference and Examples
-
 ## Description
 
 Complete Molecule serialization API reference with multi-language examples (Rust, C, JavaScript). Covers Entity, Reader, and Builder traits, zero-copy parsing, error handling, performance optimization, and CKB-specific schemas. Essential for type-safe CKB transaction construction, script development, and protocol integration with practical patterns for efficient data handling.
 
-## Overview
-
-Molecule provides code-generated APIs in multiple languages for type-safe serialization. This reference covers the core API patterns, traits, and usage examples for Rust, C, and JavaScript implementations.
+Molecule provides code-generated APIs in multiple languages for type-safe serialization.
 
 ## Rust API Reference
 

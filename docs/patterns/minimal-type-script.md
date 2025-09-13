@@ -1,5 +1,3 @@
-# Minimal Type Script Pattern
-
 ## Description
 
 Master the fundamental type script pattern for CKB state validation and business logic enforcement. Learn input/output cell iteration, data validation, conservation checks, group cell processing, owner mode implementation, and UDT token amount verification. Essential foundation for building robust token contracts and state transition validation systems.

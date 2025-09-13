@@ -1,10 +1,7 @@
-# CKB Well-Known Hashes Reference
-
 ## Description
 
 Comprehensive reference of well-known script hashes, code hashes, transaction hashes, and dependency hashes for both CKB mainnet and testnet networks. Includes system scripts, popular protocols (Omnilock, xUDT, SUDT), deployment transactions, and cell dependencies with complete hash values for development and integration.
 
-This document provides a centralized reference for all well-known hashes in the CKB ecosystem, organized by network and script type for easy lookup during development.
 
 ## Script Structure Overview
 

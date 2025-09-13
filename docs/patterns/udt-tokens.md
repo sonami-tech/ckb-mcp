@@ -1,5 +1,3 @@
-# User Defined Tokens (UDT) on CKB
-
 ## Description
 
 Comprehensive guide to User Defined Tokens on CKB, covering Simple UDT (sUDT) and Extensible UDT (xUDT) standards. Includes cell structures, transfer/minting operations, extension scripts, regulatory compliance patterns, multi-signature tokens, deployment information, and development guidelines for choosing between UDT standards.

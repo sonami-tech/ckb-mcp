@@ -1,5 +1,3 @@
-# Cell Collection Automation Pattern (CCC Focused)
-
 ## Description
 
 Production-ready automation pattern for cell collection and capacity management using modern CCC APIs. Provides comprehensive examples of automated cell discovery, capacity requirement calculation, change cell handling, and efficient cell selection algorithms. Includes both built-in CCC methods and custom collection logic for complex scenarios. Essential pattern for building robust CKB applications that need automated transaction construction and capacity management.

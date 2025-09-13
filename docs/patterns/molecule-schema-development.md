@@ -1,5 +1,3 @@
-# Molecule Schema Development Patterns
-
 ## Description
 
 Master Molecule schema development for type-safe CKB data structures. Learn schema language syntax, design patterns, hierarchical organization, extensible schema evolution, modular development, and automated code generation workflows. Covers production patterns like CKBFS, testing strategies, performance optimization, and best practices for robust blockchain application development.

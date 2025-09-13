@@ -1,5 +1,3 @@
-# Deploying Binaries to CKB Blockchain
-
 ## Description
 
 Complete guide for deploying compiled smart contract binaries to CKB blockchain using multiple deployment methods. Covers OffCKB deployment workflow, manual deployment with CKB-CLI, transaction construction for code cells, and script referencing patterns. Includes practical examples of binary storage, capacity calculations, deployment verification, and integration with development tools. Essential resource for developers moving from development to production deployment of CKB smart contracts.

@@ -1,5 +1,3 @@
-# Minimal Lock Script Pattern
-
 ## Description
 
 Learn the foundational lock script pattern for CKB smart contract development. Covers script entry point setup, argument loading, witness data access, hash verification, and return code handling. Perfect starting point for understanding CKB script structure, error handling patterns, and basic authentication mechanisms using preimage-hash validation.
@@ -167,3 +165,7 @@ library = []
 - Compile to RISC-V target: `riscv64imac-unknown-none-elf`
 - Binary size typically 2-4KB for minimal implementations
 - Gas costs scale with script complexity and data access patterns
+
+## Related Documentation
+
+For understanding how lock scripts relate to addresses and the complete cryptographic transformation chain, see the [Lock Value Relationships](ckb-dev-context://concepts/lock-value-relationships) guide.

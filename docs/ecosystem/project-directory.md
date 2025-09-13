@@ -1,5 +1,3 @@
-# CKB Ecosystem Project Directory
-
 ## Description
 
 Comprehensive directory of CKB ecosystem projects, tools, and resources organized by category and maintenance status. Provides curated listings of development frameworks, wallets, protocols, testing tools, and infrastructure services with GitHub links, documentation, and current status. Includes recommendations for new developers, legacy project information, and community resources. Essential reference for navigating the CKB development ecosystem and selecting appropriate tools.

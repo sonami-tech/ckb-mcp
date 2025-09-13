@@ -1,12 +1,10 @@
-# C to Rust Script Migration Guide
-
 ## Description
 
-Migrate existing CKB smart contracts from C to Rust for improved safety, maintainability, and developer experience. Learn step-by-step migration patterns for UDT tokens, signature verification scripts, and advanced cryptographic operations. Covers error handling transformation, memory management improvements, iteration patterns, and comprehensive testing strategies for successful contract modernization.
+Migrate existing CKB smart contracts from C to Rust for improved safety, maintainability, and developer experience. Step-by-step migration patterns for UDT tokens, signature verification scripts, and advanced cryptographic operations. Error handling transformation, memory management improvements, iteration patterns, and testing strategies for contract modernization.
 
 ## Overview
 
-This guide helps developers migrate existing CKB scripts from C to Rust. Rust is now the recommended language for CKB script development due to its memory safety, rich ecosystem, and excellent tooling support through `ckb-std`.
+Migrate existing CKB scripts from C to Rust. Rust is now the recommended language for CKB script development due to its memory safety, rich ecosystem, and excellent tooling support through `ckb-std`.
 
 ## Why Migrate from C to Rust?
 

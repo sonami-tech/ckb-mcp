@@ -1,8 +1,12 @@
-# CoTA NFT Development Patterns
-
 ## Description
 
 Build cost-effective NFT applications using CoTA (Compact Token Aggregator) protocol on CKB. Master user registration, collection definition, batch minting, two-phase transfers, NFT updates, and marketplace integration. Learn advanced patterns for gaming assets, error handling, fee management, and batch processing optimization for scalable NFT development.
+
+## Related Resources
+
+- [ckb-dev-context://protocols/cota-protocol](ckb-dev-context://protocols/cota-protocol) - Layer-1.5 account-based token management solution using Sparse Merkle Trees
+- [ckb-dev-context://api-reference/cota-sdk-examples](ckb-dev-context://api-reference/cota-sdk-examples) - CoTA SDK JavaScript implementation guide with production-ready examples
+- [ckb-dev-context://deployment/cota-infrastructure](ckb-dev-context://deployment/cota-infrastructure) - Comprehensive deployment guide for CoTA infrastructure
 
 ## Complete CoTA NFT Development Workflow
 

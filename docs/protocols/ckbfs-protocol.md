@@ -1,8 +1,6 @@
-# CKBFS Protocol: CKB File Storage System
-
 ## Description
 
-Comprehensive guide to the CKBFS (CKB File System) protocol for decentralized file storage on CKB blockchain. Covers file publishing, versioning, content integrity verification, and API integration. Includes practical examples for building file storage applications, content management systems, and data archival solutions. Essential for developers needing blockchain-based file storage with witness-based storage patterns and Adler-32 checksum validation.
+CKBFS (CKB File System) protocol for decentralized file storage on CKB blockchain. File publishing, versioning, content integrity verification, and API integration. Practical examples for building file storage applications, content management systems, and data archival solutions for developers needing blockchain-based file storage with witness-based storage patterns and Adler-32 checksum validation.
 
 ## Overview
 

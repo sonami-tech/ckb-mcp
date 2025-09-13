@@ -1,8 +1,12 @@
-# CoTA Protocol: Compact Token Aggregator
-
 ## Description
 
 Layer-1.5 account-based token management solution using Sparse Merkle Trees for ultra-low-cost NFT/FT operations on CKB. Covers SMT key-value structures, two-step transfer model, registration workflows, batch operations, infrastructure requirements, aggregator services, development patterns, and production deployment strategies.
+
+## Related Resources
+
+- [ckb-dev-context://patterns/cota-nft-development](ckb-dev-context://patterns/cota-nft-development) - Build cost-effective NFT applications using CoTA protocol
+- [ckb-dev-context://api-reference/cota-sdk-examples](ckb-dev-context://api-reference/cota-sdk-examples) - CoTA SDK JavaScript implementation guide with production-ready examples
+- [ckb-dev-context://deployment/cota-infrastructure](ckb-dev-context://deployment/cota-infrastructure) - Comprehensive deployment guide for CoTA infrastructure
 
 ## Protocol Overview
 

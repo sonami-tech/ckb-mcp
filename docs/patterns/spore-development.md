@@ -1,10 +1,14 @@
-# Spore Development Patterns
-
 ## Description
 
-Comprehensive development patterns for building applications with the Spore Protocol on CKB. Covers content preparation, capacity management, error handling, transaction batching, marketplace integration, collection management, wallet integration, and performance optimization with production-ready code examples.
+Development patterns for building applications with the Spore Protocol on CKB. Content preparation, capacity management, error handling, transaction batching, marketplace integration, collection management, wallet integration, and performance optimization with production-ready code examples.
 
-This guide covers common development patterns and best practices for building applications with the Spore Protocol on CKB.
+## Related Resources
+
+- [ckb-dev-context://protocols/spore-protocol](ckb-dev-context://protocols/spore-protocol) - Core protocol specification for Spore digital objects on CKB blockchain
+- [ckb-dev-context://api-reference/spore-sdk-examples](ckb-dev-context://api-reference/spore-sdk-examples) - Spore SDK reference with TypeScript examples for digital object creation
+- [ckb-dev-context://protocols/spore-digital-objects](ckb-dev-context://protocols/spore-digital-objects) - Spore digital objects protocol specification
+
+Common development patterns and best practices for building applications with the Spore Protocol on CKB.
 
 **Spore Protocol is recommended for high-value NFTs and digital assets that require fully on-chain data storage.** Use Spore when data permanence, metadata integrity, and 100% on-chain content are critical to your application. For cost-effective NFT solutions where low transaction costs are more important than flexibility, consider CoTA Protocol instead.
 

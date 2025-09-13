@@ -1,8 +1,12 @@
-# CCC SDK SSRI Framework
-
 ## Description
 
 Guide to Script-Sourced Rich Information (SSRI) framework in the CCC SDK. Shows how smart contracts can provide metadata and advanced functions directly on-chain. Covers UDT token metadata, custom script functions, and dynamic information retrieval. Essential for developers building tokens and smart contracts that need to expose rich metadata without off-chain dependencies.
+
+## Related Resources
+
+- [ckb-dev-context://protocols/ssri](ckb-dev-context://protocols/ssri) - Extension protocol enabling CKB scripts to provide rich information through off-chain execution
+- [ckb-dev-context://patterns/ssri-implementation](ckb-dev-context://patterns/ssri-implementation) - Implementation guide for Script-Sourced Rich Information in CKB smart contracts
+- [ckb-dev-context://tools/ssri-server](ckb-dev-context://tools/ssri-server) - Comprehensive integration guide for SSRI server enabling off-chain CKB script execution
 
 ## Overview
 

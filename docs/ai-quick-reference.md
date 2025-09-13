@@ -1,5 +1,3 @@
-# CKB Development Quick Reference for AI
-
 ## Description
 
 Concise reference guide optimized for AI assistants helping with CKB blockchain development. Provides ready-to-use code snippets and patterns for common CKB development tasks including transaction building in TypeScript/Rust, script templates for locks and types, token operations (SUDT/xUDT), cell queries and management, error handling patterns, and deployment workflows. Features side-by-side comparisons of CCC SDK and ckb-sdk-rust implementations, common pitfalls to avoid, and quick lookups for syscalls, capacity calculations, and data encoding. Designed to enable AI assistants to quickly provide accurate, working CKB code examples without extensive context switching.

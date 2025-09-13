@@ -1,12 +1,15 @@
-# CoTA SDK JavaScript Examples
-
 ## Description
 
-Complete CoTA SDK JavaScript implementation guide with production-ready examples for NFT operations including minting, transferring, updating, and querying. Covers user registration, collection management, issuer setup, batch operations, and advanced patterns like two-step transfers and claim updates. Uses official `@nervina-labs/cota-sdk` with comprehensive error handling and transaction signing patterns.
+CoTA SDK JavaScript implementation guide with production-ready examples for NFT operations including minting, transferring, updating, and querying. User registration, collection management, issuer setup, batch operations, and advanced patterns like two-step transfers and claim updates. Uses official `@nervina-labs/cota-sdk` with error handling and transaction signing patterns.
+
+## Related Resources
+
+- [ckb-dev-context://protocols/cota-protocol](ckb-dev-context://protocols/cota-protocol) - Layer-1.5 account-based token management solution using Sparse Merkle Trees
+- [ckb-dev-context://patterns/cota-nft-development](ckb-dev-context://patterns/cota-nft-development) - Build cost-effective NFT applications using CoTA protocol
+- [ckb-dev-context://deployment/cota-infrastructure](ckb-dev-context://deployment/cota-infrastructure) - Comprehensive deployment guide for CoTA infrastructure
 
 ## Complete CoTA SDK Implementation Guide
 
-This guide provides production-ready examples using the official CoTA SDK JavaScript library (`@nervina-labs/cota-sdk`) with practical implementations for all CoTA operations.
 
 ## Installation and Setup
 
@@ -816,4 +819,4 @@ export async function exampleUsage() {
 }
 ```
 
-This comprehensive guide provides production-ready CoTA SDK examples covering all major operations from user registration to advanced NFT management. The examples include proper error handling, type safety, and real-world usage patterns for building scalable CoTA applications.
+Production-ready CoTA SDK examples covering all major operations from user registration to advanced NFT management. Examples include error handling, type safety, and real-world usage patterns for building scalable CoTA applications.

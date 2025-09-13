@@ -1,5 +1,3 @@
-# CKB Development Tool Recommendations (2024)
-
 ## Description
 
 Choose the right CKB development tools for 2024 projects. Learn why CCC SDK is now preferred over Lumos for frontend development, understand the transition from deprecated Capsule to modern ckb-script-templates for smart contracts, and follow migration guides for updating existing projects. Get current recommendations for tool selection, development workflows, and modern CKB application building.

@@ -1,10 +1,8 @@
-# File Storage Patterns on CKB
-
 ## Description
 
 Implement permanent file storage on CKB blockchain using advanced patterns and protocols. Learn CKBFS witness-based storage, file chunking strategies, integrity verification with Adler-32 checksums, deletion prevention mechanisms, and type ID patterns. Covers large file handling, content addressing, client SDK development, and comprehensive testing for production file storage systems.
 
-This guide covers patterns for storing files on the CKB blockchain, focusing on the CKBFS (CKB File System) protocol as a comprehensive example.
+Patterns focus on the CKBFS (CKB File System) protocol as a comprehensive example.
 
 ## Overview
 
@@ -428,7 +426,7 @@ let file_hash = ckbfs_client.upload_file(
 1. **Access Control**: Use appropriate lock scripts for intended access patterns
 2. **Content Validation**: Always verify checksums when reading files
 3. **Cost Management**: Consider compression for large files to reduce costs
-4. **Privacy**: Remember that all data is publicly visible on the blockchain
+4. **Privacy**: All data is publicly visible on the blockchain
 5. **Key Management**: Protect private keys used for file operations
 
 The CKBFS protocol demonstrates how to build robust, production-ready file storage systems on CKB with proper security, efficiency, and reliability guarantees.

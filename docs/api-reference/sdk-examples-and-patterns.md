@@ -1,10 +1,7 @@
-# CKB SDK Examples and Patterns
-
 ## Description
 
-Comprehensive CKB SDK patterns and examples covering Rust SDK, Lumos (legacy), and Sparse Merkle Tree implementations. Features advanced transaction building, cell collection, multi-signature operations, DAO interactions, error handling, and performance optimization. Includes practical patterns for script development, state management, and production deployment.
+CKB SDK patterns and examples covering Rust SDK, Lumos (legacy), and Sparse Merkle Tree implementations. Advanced transaction building, cell collection, multi-signature operations, DAO interactions, error handling, and performance optimization. Practical patterns for script development, state management, and production deployment.
 
-This guide provides comprehensive examples and patterns for using CKB SDKs, including ckb-sdk-rust, Lumos (maintenance mode), and sparse merkle tree implementations.
 
 ## Rust SDK Patterns
 

@@ -1,5 +1,3 @@
-# Transaction Lifecycle and Construction Workflows (CCC Modern Approach)
-
 ## Description
 
 Complete transaction construction workflow using modern CCC SDK, covering automated and manual approaches for building, signing, broadcasting, and monitoring CKB transactions. Includes cell collection, capacity management, dependency handling, error handling, and confirmation monitoring. Features deprecation guidance for Capsule and recommended 2024 development stack.

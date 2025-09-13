@@ -1,5 +1,3 @@
-# Header Dependencies and Time Access in Smart Contracts
-
 ## Description
 
 Comprehensive guide explaining how CKB smart contracts access time and epoch information through header dependencies. Covers the critical limitation that scripts cannot access current block headers, header_deps transaction field, syscalls for header access, temporal validation patterns, and security considerations. Essential for developers implementing time-based contracts like time-locks, vesting schedules, and epoch-based validation logic.

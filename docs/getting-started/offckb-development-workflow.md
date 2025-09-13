@@ -1,5 +1,3 @@
-# OffCKB Development Workflow
-
 ## Description
 
 Streamline CKB development with OffCKB's one-command local blockchain environment. Set up instant devnet with 20 pre-funded accounts, deploy contracts, test dApps, and debug transactions locally. Master project templates, account management, script deployment, and testing workflows for rapid CKB application prototyping and development before deploying to testnet or mainnet.

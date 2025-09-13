@@ -1,5 +1,3 @@
-# Molecule Serialization in CKB
-
 ## Description
 
 Complete guide to Molecule serialization in CKB, covering type system, memory layout, zero-copy access, and schema design. Features practical examples of transaction structures, UDT serialization, compatibility patterns, and performance optimization. Essential for CKB development with comprehensive coverage of arrays, vectors, tables, options, unions, and real-world usage patterns.

@@ -1,5 +1,3 @@
-# CKB Interactive Learning Courses
-
 ## Description
 
 Curated collection of interactive CKB blockchain development courses, tutorials, and hands-on learning resources. Features official Nervos training programs, community workshops, coding challenges, and practical exercises for different skill levels. Includes step-by-step tutorials, video content, interactive coding environments, and certification programs. Essential learning path for developers new to CKB development and those advancing their blockchain programming skills.

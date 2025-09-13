@@ -1,5 +1,3 @@
-# CKB Network History and Hard Forks
-
 ## Description
 
 Complete history of CKB network evolution, including hard fork dates, network name changes, and major protocol upgrades. Essential reference for understanding deployment contexts and version compatibility across different network eras. Covers the progression from Lina to Mirana to Meepo on mainnet, and Aggron to Pudge to Meepo on testnet.

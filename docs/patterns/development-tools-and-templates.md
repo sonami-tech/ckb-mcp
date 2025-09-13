@@ -1,10 +1,8 @@
-# CKB Development Tools and Templates
-
 ## Description
 
-Accelerate CKB development with comprehensive tools and templates. Master OffCKB local development environment, project templates for Next.js and React, smart contract integration patterns, Cargo Generate templates, and automated testing pipelines. Learn build systems, deployment workflows, debugging techniques, and best practices for efficient CKB application development.
+CKB development tools and templates. OffCKB local development environment, project templates for Next.js and React, smart contract integration patterns, Cargo Generate templates, and automated testing pipelines. Build systems, deployment workflows, debugging techniques, and best practices for efficient CKB application development.
 
-This guide covers development tools, project templates, and workflow patterns for CKB development, based on OffCKB and ckb-script-templates.
+Development tools, project templates, and workflow patterns for CKB development, based on OffCKB and ckb-script-templates.
 
 ## OffCKB Development Environment
 
