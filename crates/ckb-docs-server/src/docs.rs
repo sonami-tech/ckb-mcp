@@ -162,6 +162,7 @@ impl DocsProvider {
 			("ckb-dev-context://patterns/ssri-implementation", "patterns/ssri-implementation.md"),
 			("ckb-dev-context://patterns/dob-development", "patterns/dob-development.md"),
 			("ckb-dev-context://patterns/proxy-lock-patterns", "patterns/proxy-lock-patterns.md"),
+			("ckb-dev-context://patterns/proxy-lock-testing-patterns", "patterns/proxy-lock-testing-patterns.md"),
 			("ckb-dev-context://patterns/contract-workspace-development", "patterns/contract-workspace-development.md"),
 			("ckb-dev-context://protocols/ckbfs-protocol", "protocols/ckbfs-protocol.md"),
 			("ckb-dev-context://protocols/cota-protocol", "protocols/cota-protocol.md"),
