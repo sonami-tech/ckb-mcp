@@ -194,38 +194,57 @@ let total = input_amount.saturating_add(output_amount);
 overflow-checks = true
 ```
 
-### 4. Type Script vs Lock Script Context
+### 4. Type Script vs Lock Script Context (Script Source Confusion)
 
-**Issue**: Using wrong Source for script type
+**Issue**: Using wrong Source for script type - particularly using `Source::GroupOutput` in lock scripts to count outputs with matching scripts.
+
 ```rust
-// ❌ Wrong: Lock script trying to use GroupOutput
-// Lock scripts don't execute on outputs
-for cell in QueryIter::new(load_cell, Source::GroupOutput) {
-    // This loop never executes for lock scripts!
+// ❌ COMMON ERROR: Lock script trying to count outputs with GroupOutput
+// This always returns 0 because lock scripts don't execute on outputs!
+let output_count = QueryIter::new(load_cell, Source::GroupOutput).count(); // Always 0
+
+if output_count != expected_outputs {
+    return Err(Error::InvalidStructure); // Always fails!
 }
 ```
 
-**Solution**: Use appropriate sources
+**Root Cause**: Group sources reflect script execution context, not script presence:
+- Lock scripts only execute on inputs (for spending validation)
+- `Source::GroupOutput` returns zero for lock scripts even if outputs have the same lock script
+- This is a fundamental difference between "where is my script executing?" vs "where is my script present?"
+
+**Solution**: Use manual script hash comparison for lock scripts
 ```rust
-// ✅ Lock script: Only use GroupInput
-pub fn lock_script_main() -> Result<(), Error> {
-    for cell in QueryIter::new(load_cell, Source::GroupInput) {
-        validate_spending_authorization(&cell)?;
+// ✅ CORRECT: Manual script matching for lock scripts
+pub fn lock_script_validate_structure() -> Result<(), Error> {
+    let current_script = load_script()?;
+    let current_script_hash = current_script.calc_script_hash();
+
+    // Count outputs with matching lock script using manual comparison
+    let output_count = QueryIter::new(load_cell, Source::Output)
+        .filter(|cell| cell.lock().calc_script_hash() == current_script_hash)
+        .count();
+
+    if output_count != expected_outputs {
+        return Ok(()); // Now works correctly!
     }
+
     Ok(())
 }
 
-// ✅ Type script: Can use both GroupInput and GroupOutput
+// ✅ Type scripts CAN use group sources for both inputs and outputs
 pub fn type_script_main() -> Result<(), Error> {
-    let input_amount = sum_amounts(Source::GroupInput)?;
-    let output_amount = sum_amounts(Source::GroupOutput)?;
-    
+    let input_amount = sum_amounts(Source::GroupInput)?;   // Works
+    let output_amount = sum_amounts(Source::GroupOutput)?; // Also works
+
     if output_amount > input_amount {
         return Err(Error::TokenInflation);
     }
     Ok(())
 }
 ```
+
+**For comprehensive explanation and patterns, see**: [Script Source Patterns Documentation](../patterns/script-source-patterns.md)
 
 ## Testing Issues
 

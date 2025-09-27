@@ -1,6 +1,6 @@
 [package]
 name = "ckb-docs-server"
-version = "0.2.843"
+version = "0.2.850"
 edition = "2021"
 
 [[bin]]

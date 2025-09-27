@@ -150,6 +150,7 @@ impl DocsProvider {
 			("ckb-dev-context://patterns/operation-detection", "patterns/operation-detection.md"),
 			("ckb-dev-context://patterns/rust-script-development-patterns", "patterns/rust-script-development-patterns.md"),
 			("ckb-dev-context://patterns/script-development-patterns", "patterns/script-development-patterns.md"),
+			("ckb-dev-context://patterns/script-source-patterns", "patterns/script-source-patterns.md"),
 			("ckb-dev-context://patterns/seed-cell-pattern", "patterns/seed-cell-pattern.md"),
 			("ckb-dev-context://patterns/simple-transfer", "patterns/simple-transfer.md"),
 			("ckb-dev-context://patterns/spore-development", "patterns/spore-development.md"),
