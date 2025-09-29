@@ -279,5 +279,5 @@ fn test_script() {
 2. **Use group sources**: For type script validation.
 3. **Check data length**: Before parsing.
 4. **Owner mode**: Verify lock hash matches.
-5. **Error early**: Return specific error codes.
+5. **Use granular error codes**: Return specific error codes like `MultipleInputsNotAllowed` instead of generic `InvalidTransaction`.
 6. **Test thoroughly**: Use OffCKB for local testing.

@@ -179,6 +179,28 @@ mod tests {
 }
 ```
 
+## Best Practice: Using Granular Error Codes
+
+For improved debugging efficiency and AI-assisted development, implement granular error codes that provide specific information about each failure condition. Instead of generic errors like "InvalidTransaction" that could indicate multiple different problems, use precise error codes like "MultipleInputsNotAllowed" or "RequiredOutputMissing" that immediately identify the exact issue.
+
+**Reference**: See the [Granular Error Code Pattern](ckb-dev-context://patterns/rust-script-development-patterns#granular-error-code-pattern) for detailed implementation examples and best practices.
+
+```rust
+// ❌ Generic error codes mask the root cause
+pub enum Error {
+    InvalidTransaction = 4,  // Could be anything!
+    InvalidArgs = 5,         // Too vague
+}
+
+// ✅ Granular error codes pinpoint exact issues
+pub enum Error {
+    MultipleInputsNotAllowed = 10,
+    RequiredOutputMissing = 11,
+    InvalidOwnerLockHash = 20,
+    ArgumentLengthIncorrect = 21,
+}
+```
+
 ## Common Anti-Patterns
 
 ### ❌ Ignoring Errors

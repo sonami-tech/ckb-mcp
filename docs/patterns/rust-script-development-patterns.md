@@ -131,6 +131,114 @@ impl From<ckb_std::error::SysError> for Error {
 }
 ```
 
+### Granular Error Code Pattern
+
+Smart contracts often use generic error codes that mask the true cause of failures, making debugging extremely difficult. When multiple distinct failure conditions return the same error code, developers must manually trace through complex contract logic to determine which specific condition triggered the error. For example, a single "Invalid Transaction Structure" error might be thrown for completely different issues like having too many inputs, missing required outputs, or incorrect transaction ordering. This ambiguity leads to time-consuming debugging sessions, potential misdiagnosis of issues, and delayed resolution of contract problems.
+
+Implementing granular error codes creates a one-to-one mapping between each error condition and its specific error code, dramatically improving debugging efficiency. Instead of generic errors, contracts return precise codes like "Multiple Inputs Not Allowed" or "Required Output Missing" that immediately pinpoint the exact failure condition. This precision is particularly valuable for AI systems debugging smart contracts, as they can instantly identify the specific problem and apply targeted fixes without having to analyze multiple potential causes. The granular feedback enables AI to systematically address each error type with high confidence, significantly increasing the likelihood of successful automated problem resolution and reducing the time needed to fix contract issues.
+
+#### Before: Generic Error Codes (❌)
+
+```rust
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Error {
+    IndexOutOfBound = 1,
+    ItemMissing = 2,
+    InvalidData = 3,
+    InvalidTransaction = 4,  // Too generic!
+    InvalidArgs = 5,         // Too generic!
+    Unauthorized = 6,        // Too generic!
+}
+
+pub fn validate() -> Result<(), Error> {
+    // Multiple different conditions all return the same error
+    if input_count() > 1 {
+        return Err(Error::InvalidTransaction);  // Could be many things
+    }
+    if output_count() != 1 {
+        return Err(Error::InvalidTransaction);  // Same error code!
+    }
+    if required_output_missing() {
+        return Err(Error::InvalidTransaction);  // Same error code!
+    }
+    Ok(())
+}
+```
+
+#### After: Granular Error Codes (✅)
+
+```rust
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Error {
+    // Syscall errors
+    IndexOutOfBound = 1,
+    ItemMissing = 2,
+    LengthNotEnough = 3,
+
+    // Specific transaction structure errors
+    MultipleInputsNotAllowed = 10,
+    RequiredOutputMissing = 11,
+    IncorrectOutputCount = 12,
+    UnexpectedExtraOutput = 13,
+
+    // Specific argument errors
+    InvalidOwnerLockHash = 20,
+    ArgumentLengthIncorrect = 21,
+    MissingRequiredArgument = 22,
+
+    // Specific authorization errors
+    OwnerSignatureMissing = 30,
+    InvalidOwnerMode = 31,
+    UnauthorizedMintingAttempt = 32,
+}
+
+pub fn validate() -> Result<(), Error> {
+    // Each condition has a specific, descriptive error
+    if input_count() > 1 {
+        return Err(Error::MultipleInputsNotAllowed);
+    }
+    if output_count() != 1 {
+        return Err(Error::IncorrectOutputCount);
+    }
+    if required_output_missing() {
+        return Err(Error::RequiredOutputMissing);
+    }
+    Ok(())
+}
+```
+
+#### Error Code Organization Strategy
+
+```rust
+// Group related errors by category using number ranges
+pub enum Error {
+    // Syscall errors (1-9)
+    IndexOutOfBound = 1,
+    ItemMissing = 2,
+    LengthNotEnough = 3,
+
+    // Transaction validation errors (10-19)
+    MultipleInputsNotAllowed = 10,
+    RequiredOutputMissing = 11,
+    IncorrectOutputCount = 12,
+
+    // Token amount errors (20-29)
+    TokenAmountOverflow = 20,
+    TokenAmountUnderflow = 21,
+    ConservationViolation = 22,
+
+    // Authorization errors (30-39)
+    OwnerSignatureMissing = 30,
+    InvalidOwnerMode = 31,
+    UnauthorizedOperation = 32,
+
+    // Data format errors (40-49)
+    InvalidTokenData = 40,
+    MalformedWitness = 41,
+    CorruptedCellData = 42,
+}
+```
+
 ## Core Development Patterns
 
 ### 1. Simple UDT (User Defined Token) Pattern
