@@ -51,104 +51,109 @@ impl McpHandler {
 	async fn handle_tools_list(&self, id: Option<Value>) -> Result<McpResponse> {
 		let tools = vec![
 			ToolDefinition {
-				name: "generate_contract".to_string(),
-				description: "Generate a new CKB smart contract from template".to_string(),
+				name: "DeployCellData".to_string(),
+				description: "Deploy a cell with data provided directly to the MCP server".to_string(),
 				input_schema: json!({
 					"type": "object",
 					"properties": {
-						"name": {
+						"data": {
 							"type": "string",
-							"description": "Contract name"
-						},
-						"contract_type": {
-							"type": "string",
-							"enum": ["lock", "type"],
-							"description": "Type of contract to generate"
+							"description": "Hex-encoded data to deploy in the cell (without 0x prefix)"
 						}
 					},
-					"required": ["name", "contract_type"]
+					"required": ["data"]
 				}),
 			},
 			ToolDefinition {
-				name: "compile_contract".to_string(),
-				description: "Compile a CKB smart contract using Capsule".to_string(),
-				input_schema: json!({
-					"type": "object",
-					"properties": {
-						"contract_path": {
-							"type": "string",
-							"description": "Path or name of the contract to compile"
-						}
-					},
-					"required": ["contract_path"]
-				}),
-			},
-			ToolDefinition {
-				name: "run_tests".to_string(),
-				description: "Run tests for CKB contracts".to_string(),
-				input_schema: json!({
-					"type": "object",
-					"properties": {
-						"contract_name": {
-							"type": "string",
-							"description": "Specific contract to test (optional)"
-						}
-					}
-				}),
-			},
-			ToolDefinition {
-				name: "deploy_contract".to_string(),
-				description: "Deploy a contract to CKB network".to_string(),
-				input_schema: json!({
-					"type": "object",
-					"properties": {
-						"contract_name": {
-							"type": "string",
-							"description": "Name of the contract to deploy"
-						},
-						"address": {
-							"type": "string",
-							"description": "Deployment address"
-						},
-						"env": {
-							"type": "string",
-							"enum": ["testnet", "mainnet"],
-							"description": "Target environment"
-						}
-					},
-					"required": ["contract_name", "address", "env"]
-				}),
-			},
-			ToolDefinition {
-				name: "format_code".to_string(),
-				description: "Format Rust code using cargo fmt".to_string(),
+				name: "DeployCellDataFromFile".to_string(),
+				description: "Deploy a cell with data read from a file on the filesystem".to_string(),
 				input_schema: json!({
 					"type": "object",
 					"properties": {
 						"file_path": {
 							"type": "string",
-							"description": "Specific file to format (optional)"
+							"description": "Absolute path to the file containing data to deploy"
+						}
+					},
+					"required": ["file_path"]
+				}),
+			},
+			ToolDefinition {
+				name: "GetAddressBalance".to_string(),
+				description: "Get the CKB balance for an address. If no address is provided, returns balance of the default sender address.".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"address": {
+							"type": "string",
+							"description": "Optional CKB address to check balance for. If omitted, checks the default address from private key."
 						}
 					}
 				}),
 			},
 			ToolDefinition {
-				name: "create_project".to_string(),
-				description: "Create a new CKB project".to_string(),
+				name: "GetChainType".to_string(),
+				description: "Get the chain type of the connected CKB node (mainnet, testnet, or devnet)".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {}
+				}),
+			},
+			ToolDefinition {
+				name: "GetGenesisHash".to_string(),
+				description: "Get the genesis block hash of the connected CKB chain".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {}
+				}),
+			},
+			ToolDefinition {
+				name: "GenerateLockInfo".to_string(),
+				description: "Generate all lock values from a private key, showing the complete transformation chain: Private Key → Public Key → Lock Arg → Lock Script → Lock Hash → Address. The private key must be provided and will be included in the response for educational purposes.".to_string(),
 				input_schema: json!({
 					"type": "object",
 					"properties": {
-						"name": {
+						"private_key": {
 							"type": "string",
-							"description": "Project name"
-						},
-						"project_type": {
-							"type": "string",
-							"enum": ["capsule"],
-							"description": "Type of project to create"
+							"description": "Private key in hex format (with or without 0x prefix). Required parameter."
 						}
 					},
-					"required": ["name", "project_type"]
+					"required": ["private_key"]
+				}),
+			},
+			ToolDefinition {
+				name: "GetLockInfoFromAddress".to_string(),
+				description: "Extract lock information from a CKB address. Returns lock script, lock hash, lock arg, and both testnet/mainnet addresses. Note: Private key and public key cannot be derived from an address.".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"address": {
+							"type": "string",
+							"description": "CKB address (testnet or mainnet format)"
+						}
+					},
+					"required": ["address"]
+				}),
+			},
+			ToolDefinition {
+				name: "RequestTestnetFunds".to_string(),
+				description: "Request CKB testnet funds from the faucet. If no address is provided, funds are sent to the default address from the configured private key.".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"address": {
+							"type": "string",
+							"description": "Optional CKB testnet address to receive funds. If omitted, uses the default address from private key."
+						}
+					}
+				}),
+			},
+			ToolDefinition {
+				name: "GetDefaultAccountInfo".to_string(),
+				description: "Get information about the default account configured in the server (derived from the private key). Returns address, lock script details, and current balance. Private key is never exposed.".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {}
 				}),
 			},
 		];
@@ -175,12 +180,15 @@ impl McpHandler {
 		info!("Calling tool: {} with arguments: {}", tool_name, arguments);
 
 		let result = match tool_name {
-			"generate_contract" => self.call_generate_contract(arguments).await,
-			"compile_contract" => self.call_compile_contract(arguments).await,
-			"run_tests" => self.call_run_tests(arguments).await,
-			"deploy_contract" => self.call_deploy_contract(arguments).await,
-			"format_code" => self.call_format_code(arguments).await,
-			"create_project" => self.call_create_project(arguments).await,
+			"DeployCellData" => self.call_deploy_cell_data(arguments).await,
+			"DeployCellDataFromFile" => self.call_deploy_cell_data_from_file(arguments).await,
+			"GetAddressBalance" => self.call_get_address_balance(arguments).await,
+			"GetChainType" => self.call_get_chain_type().await,
+			"GetGenesisHash" => self.call_get_genesis_hash().await,
+			"GenerateLockInfo" => self.call_generate_lock_info(arguments),
+			"GetLockInfoFromAddress" => self.call_get_lock_info_from_address(arguments),
+			"RequestTestnetFunds" => self.call_request_testnet_funds(arguments).await,
+			"GetDefaultAccountInfo" => self.call_get_default_account_info().await,
 			_ => {
 				return Ok(create_error_response(
 					id,
@@ -207,85 +215,102 @@ impl McpHandler {
 		}
 	}
 
-	async fn call_generate_contract(&self, args: &Value) -> Result<String> {
-		let name = args
-			.get("name")
+	async fn call_deploy_cell_data(&self, args: &Value) -> Result<String> {
+		let data_hex = args
+			.get("data")
 			.and_then(|v| v.as_str())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing contract name".to_string())
+				shared::error::CkbMcpError::InvalidParameter("Missing data parameter".to_string())
 			})?;
 
-		let contract_type = args
-			.get("contract_type")
-			.and_then(|v| v.as_str())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing contract type".to_string())
-			})?;
+		// Decode hex string to bytes
+		let data = hex::decode(data_hex.trim_start_matches("0x")).map_err(|e| {
+			shared::error::CkbMcpError::InvalidParameter(format!("Invalid hex data: {}", e))
+		})?;
 
-		self.tools_provider.generate_contract(name, contract_type).await
+		let result = self.tools_provider.deploy_cell_data(data).await?;
+
+		Ok(serde_json::to_string_pretty(&result)?)
 	}
 
-	async fn call_compile_contract(&self, args: &Value) -> Result<String> {
-		let contract_path = args
-			.get("contract_path")
+	async fn call_deploy_cell_data_from_file(&self, args: &Value) -> Result<String> {
+		let file_path = args
+			.get("file_path")
 			.and_then(|v| v.as_str())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing contract path".to_string())
+				shared::error::CkbMcpError::InvalidParameter("Missing file_path parameter".to_string())
 			})?;
 
-		self.tools_provider.compile_contract(contract_path).await
+		let result = self.tools_provider.deploy_cell_data_from_file(file_path).await?;
+
+		Ok(serde_json::to_string_pretty(&result)?)
 	}
 
-	async fn call_run_tests(&self, args: &Value) -> Result<String> {
-		let contract_name = args.get("contract_name").and_then(|v| v.as_str());
-		self.tools_provider.run_tests(contract_name).await
+	async fn call_get_chain_type(&self) -> Result<String> {
+		let chain_type = self.tools_provider.get_chain_type().await?;
+		Ok(chain_type)
 	}
 
-	async fn call_deploy_contract(&self, args: &Value) -> Result<String> {
-		let contract_name = args
-			.get("contract_name")
+	async fn call_get_genesis_hash(&self) -> Result<String> {
+		let genesis_hash = self.tools_provider.get_genesis_hash().await?;
+		Ok(genesis_hash)
+	}
+
+	async fn call_get_address_balance(&self, args: &Value) -> Result<String> {
+		let address = args
+			.get("address")
+			.and_then(|v| v.as_str())
+			.map(|s| s.to_string());
+
+		let result = self.tools_provider.get_address_balance(address).await?;
+
+		Ok(serde_json::to_string_pretty(&result)?)
+	}
+
+	fn call_generate_lock_info(&self, args: &Value) -> Result<String> {
+		let private_key = args
+			.get("private_key")
 			.and_then(|v| v.as_str())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing contract name".to_string())
-			})?;
+				shared::error::CkbMcpError::InvalidParameter(
+					"private_key parameter is required. To get info about the default account, use GetDefaultAccountInfo instead.".to_string()
+				)
+			})?
+			.to_string();
 
+		let result = self.tools_provider.generate_lock_info(Some(private_key))?;
+
+		Ok(serde_json::to_string_pretty(&result)?)
+	}
+
+	fn call_get_lock_info_from_address(&self, args: &Value) -> Result<String> {
 		let address = args
 			.get("address")
 			.and_then(|v| v.as_str())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing address".to_string())
-			})?;
+				shared::error::CkbMcpError::InvalidParameter("Missing address parameter".to_string())
+			})?
+			.to_string();
 
-		let env = args
-			.get("env")
-			.and_then(|v| v.as_str())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing environment".to_string())
-			})?;
+		let result = self.tools_provider.get_lock_info_from_address(address)?;
 
-		self.tools_provider.deploy_contract(contract_name, address, env).await
+		Ok(serde_json::to_string_pretty(&result)?)
 	}
 
-	async fn call_format_code(&self, args: &Value) -> Result<String> {
-		let file_path = args.get("file_path").and_then(|v| v.as_str());
-		self.tools_provider.format_code(file_path).await
+	async fn call_request_testnet_funds(&self, args: &Value) -> Result<String> {
+		let address = args
+			.get("address")
+			.and_then(|v| v.as_str())
+			.map(|s| s.to_string());
+
+		let result = self.tools_provider.request_testnet_funds(address).await?;
+
+		Ok(result)
 	}
 
-	async fn call_create_project(&self, args: &Value) -> Result<String> {
-		let name = args
-			.get("name")
-			.and_then(|v| v.as_str())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing project name".to_string())
-			})?;
+	async fn call_get_default_account_info(&self) -> Result<String> {
+		let result = self.tools_provider.get_default_account_info().await?;
 
-		let project_type = args
-			.get("project_type")
-			.and_then(|v| v.as_str())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing project type".to_string())
-			})?;
-
-		self.tools_provider.create_project(name, project_type).await
+		Ok(serde_json::to_string_pretty(&result)?)
 	}
 }
