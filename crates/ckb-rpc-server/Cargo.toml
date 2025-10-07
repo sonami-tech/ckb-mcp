@@ -1,6 +1,6 @@
 [package]
 name = "ckb-rpc-server"
-version = "0.2.951"
+version = "0.4.35"
 edition = "2021"
 
 [[bin]]
@@ -23,3 +23,8 @@ tracing-subscriber = { workspace = true }
 clap = { workspace = true }
 reqwest = { workspace = true }
 tokio-stream = { workspace = true }
+
+[dev-dependencies]
+reqwest = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
