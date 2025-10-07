@@ -661,6 +661,9 @@ async fn test_deploy_cell_data_valid_hex() {
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
 	assert!(content.contains("tx_hash"));
+
+	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
+	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 #[tokio::test]
@@ -674,6 +677,9 @@ async fn test_deploy_cell_data_with_0x_prefix() {
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
+
+	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
+	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 #[tokio::test]
@@ -687,6 +693,9 @@ async fn test_deploy_cell_data_without_0x_prefix() {
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
+
+	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
+	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 #[tokio::test]
@@ -703,6 +712,9 @@ async fn test_deploy_cell_data_large_payload() {
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
+
+	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
+	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 #[tokio::test]
@@ -717,6 +729,9 @@ async fn test_deploy_cell_data_returns_tx_hash() {
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(content.contains("tx_hash"), "Should return transaction hash");
 	assert!(content.contains("0x"), "Transaction hash should be in hex format");
+
+	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
+	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 #[tokio::test]
@@ -730,6 +745,9 @@ async fn test_deploy_cell_data_returns_capacity() {
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(content.contains("capacity"), "Should return capacity information");
+
+	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
+	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 // Cell Deployment From File Tests
@@ -753,6 +771,9 @@ async fn test_deploy_cell_data_from_file_valid() {
 
 	// Cleanup
 	let _ = fs::remove_file(test_file);
+
+	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
+	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 #[tokio::test]
@@ -805,6 +826,9 @@ async fn test_deploy_cell_data_from_file_absolute_path() {
 
 	// Cleanup
 	let _ = fs::remove_file(test_file);
+
+	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
+	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 // Faucet Tests
