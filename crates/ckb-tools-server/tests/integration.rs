@@ -1,4 +1,6 @@
 use serde_json::json;
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 #[path = "../../shared/tests/common/mod.rs"]
 mod common;
@@ -6,6 +8,29 @@ mod common;
 use common::TestContext;
 
 const TOOLS_SERVER_PORT: u16 = 8003;
+
+// Global lock to serialize deployment tests and enforce delay between them
+static DEPLOYMENT_LOCK: Mutex<Option<Instant>> = Mutex::new(None);
+
+/// Acquire deployment lock and wait if needed to avoid RBF conflicts.
+/// Ensures at least 30 seconds between deployment transactions.
+async fn acquire_deployment_lock() {
+	let mut last_deployment = DEPLOYMENT_LOCK.lock().unwrap();
+
+	if let Some(last_time) = *last_deployment {
+		let elapsed = last_time.elapsed();
+		let required_delay = Duration::from_secs(30);
+
+		if elapsed < required_delay {
+			let remaining = required_delay - elapsed;
+			drop(last_deployment); // Release lock while sleeping
+			tokio::time::sleep(remaining).await;
+			last_deployment = DEPLOYMENT_LOCK.lock().unwrap();
+		}
+	}
+
+	*last_deployment = Some(Instant::now());
+}
 
 /// Run first - fail fast if server not available
 #[tokio::test]
@@ -651,6 +676,7 @@ async fn test_get_lock_info_from_address_mainnet() {
 // Cell Deployment Success Cases
 #[tokio::test]
 async fn test_deploy_cell_data_valid_hex() {
+	acquire_deployment_lock().await;
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	let result = ctx
@@ -661,13 +687,11 @@ async fn test_deploy_cell_data_valid_hex() {
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
 	assert!(content.contains("tx_hash"));
-
-	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
-	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 #[tokio::test]
 async fn test_deploy_cell_data_with_0x_prefix() {
+	acquire_deployment_lock().await;
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	let result = ctx
@@ -677,13 +701,11 @@ async fn test_deploy_cell_data_with_0x_prefix() {
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
-
-	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
-	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 #[tokio::test]
 async fn test_deploy_cell_data_without_0x_prefix() {
+	acquire_deployment_lock().await;
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	let result = ctx
@@ -693,13 +715,11 @@ async fn test_deploy_cell_data_without_0x_prefix() {
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
-
-	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
-	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 #[tokio::test]
 async fn test_deploy_cell_data_large_payload() {
+	acquire_deployment_lock().await;
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	// Create a larger data payload (1KB of data)
@@ -712,13 +732,11 @@ async fn test_deploy_cell_data_large_payload() {
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
-
-	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
-	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 #[tokio::test]
 async fn test_deploy_cell_data_returns_tx_hash() {
+	acquire_deployment_lock().await;
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	let result = ctx
@@ -729,13 +747,11 @@ async fn test_deploy_cell_data_returns_tx_hash() {
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(content.contains("tx_hash"), "Should return transaction hash");
 	assert!(content.contains("0x"), "Transaction hash should be in hex format");
-
-	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
-	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 #[tokio::test]
 async fn test_deploy_cell_data_returns_capacity() {
+	acquire_deployment_lock().await;
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	let result = ctx
@@ -745,9 +761,6 @@ async fn test_deploy_cell_data_returns_capacity() {
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(content.contains("capacity"), "Should return capacity information");
-
-	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
-	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 // Cell Deployment From File Tests
@@ -760,6 +773,8 @@ async fn test_deploy_cell_data_from_file_valid() {
 	let test_file = "/tmp/test_deploy_data.bin";
 	fs::write(test_file, b"Hello CKB").expect("Should write test file");
 
+	acquire_deployment_lock().await;
+
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellDataFromFile", "arguments": {"file_path": test_file}}))
 		.await
@@ -771,9 +786,6 @@ async fn test_deploy_cell_data_from_file_valid() {
 
 	// Cleanup
 	let _ = fs::remove_file(test_file);
-
-	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
-	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 #[tokio::test]
@@ -816,6 +828,8 @@ async fn test_deploy_cell_data_from_file_absolute_path() {
 	let test_file = "/tmp/test_absolute.bin";
 	fs::write(test_file, b"Absolute").expect("Should write test file");
 
+	acquire_deployment_lock().await;
+
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellDataFromFile", "arguments": {"file_path": test_file}}))
 		.await
@@ -826,9 +840,6 @@ async fn test_deploy_cell_data_from_file_absolute_path() {
 
 	// Cleanup
 	let _ = fs::remove_file(test_file);
-
-	// Wait for transaction to confirm to avoid RBF conflicts with subsequent tests
-	tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
 }
 
 // Faucet Tests
