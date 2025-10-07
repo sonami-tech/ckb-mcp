@@ -1,6 +1,6 @@
 [package]
 name = "ckb-docs-server"
-version = "0.2.951"
+version = "0.4.35"
 edition = "2021"
 
 [[bin]]
@@ -22,3 +22,8 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 clap = { workspace = true }
 tokio-stream = { workspace = true }
+
+[dev-dependencies]
+reqwest = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
