@@ -617,8 +617,9 @@ async fn test_invalid_json_rpc_request() {
 async fn test_get_address_balance_zero_balance() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
-	// Use an address unlikely to have any CKB
-	let empty_address = "ckt1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq2qf8keemy2p5uu0g0gn8cd4jr23s7ct7az30dmke";
+	// Use an address unlikely to have any CKB (derived from private key 0x01)
+	// This address has valid checksum but likely zero balance
+	let empty_address = "ckt1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsqt4z78ng4yutl5u6xsv27ht6q08mhujf8s2r0n40";
 
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "GetAddressBalance", "arguments": {"address": empty_address}}))
@@ -634,7 +635,8 @@ async fn test_get_address_balance_zero_balance() {
 async fn test_get_lock_info_from_address_mainnet() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
-	let mainnet_address = "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsqwgx292hnvmn68xf779vmzrshpmm6epn4c0cgwga";
+	// Valid mainnet address derived from private key 0x01
+	let mainnet_address = "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsqt4z78ng4yutl5u6xsv27ht6q08mhujf8sy3yulh";
 
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "GetLockInfoFromAddress", "arguments": {"address": mainnet_address}}))
