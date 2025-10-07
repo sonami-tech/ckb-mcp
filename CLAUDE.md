@@ -37,11 +37,11 @@ ckb-mcp/
 
 ```bash
 # Run all tests
-cargo test --workspace
+cargo test
 
 # Run tests for specific server
 cargo test -p ckb-rpc-server
-cargo test -p ckb-docs-server  
+cargo test -p ckb-docs-server
 cargo test -p ckb-tools-server
 
 # Run tests with logging

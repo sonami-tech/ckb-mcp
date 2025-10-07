@@ -6,9 +6,9 @@ A collection of Model Context Protocol (MCP) servers for Nervos CKB development.
 
 | Server | Status | Description |
 |--------|--------|-------------|
-| **ckb-docs-server** | **Alpha** | Ready for early use but pending data refinement and corrections. |
-| **ckb-rpc-server** | **Alpha** | Operational but incomplete. |  
-| **ckb-tools-server** | **Early Development** | Basic implementation in progress, not suitable for usage. |
+| **ckb-docs-server** | **Alpha** | 84 documentation resources available via MCP. Ready for use. |
+| **ckb-rpc-server** | **Alpha** | 16 blockchain query tools operational. Ready for use. |
+| **ckb-tools-server** | **Alpha** | 9 cell deployment and account management tools. Ready for use. |
 
 ⚠️ **Note**: These servers are under active development. Expect breaking changes and incomplete functionality.
 
@@ -140,11 +140,11 @@ The servers provide context-aware assistance for CKB development workflows.
 **Purpose**: Query CKB blockchain data
 
 **Chain Methods**:
-- `get_block` - Get block by hash.
-- `get_block_by_number` - Get block by number.
-- `get_header` - Get block header by hash.
-- `get_header_by_number` - Get block header by number.
-- `get_transaction` - Get transaction by hash.
+- `get_block` - Get CKB block by hash.
+- `get_block_by_number` - Get CKB block by number.
+- `get_header` - Get CKB block header by hash.
+- `get_header_by_number` - Get CKB block header by number.
+- `get_transaction` - Get CKB transaction by hash.
 - `get_block_hash` - Get block hash by number.
 - `get_tip_header` - Get tip block header.
 - `get_live_cell` - Get live cell by outpoint.
@@ -174,39 +174,38 @@ ckb-rpc-server [OPTIONS]
 
 **Resources** (served via `ckb-dev-context://` URI scheme):
 
+All 84 documentation resources are available through the MCP server. Key resources include:
+
 *Core Concepts*:
-- `concepts/cell-model` - CKB Cell Model fundamentals.
-- `concepts/transaction-structure` - Transaction anatomy and validation.
-- `concepts/molecule-serialization` - Molecule type system and encoding.
-- `concepts/advanced-cell-concepts` - Advanced cell patterns.
+- Cell model fundamentals and advanced patterns.
+- Transaction structure and lifecycle.
+- Molecule serialization and type system.
+- CKB syscalls and sources.
+- Script groups and execution.
 
 *Development Patterns*:
-- `patterns/minimal-lock-script` - Basic lock script development.
-- `patterns/minimal-type-script` - Basic type script development.
-- `patterns/simple-transfer` - Basic CKB transfers.
-- `patterns/token-creation` - Custom token creation.
-- `patterns/udt-tokens` - User Defined Tokens (sUDT/xUDT).
-- `patterns/omnilock-development` - Cross-chain wallet integration.
-- `patterns/molecule-schema-development` - Schema design patterns.
-- `patterns/cota-nft-development` - NFT development with CoTA.
-- `patterns/spore-development` - Spore SDK integration patterns.
+- Lock and type script development (minimal templates).
+- Token creation (UDT, sUDT, xUDT patterns).
+- Omnilock cross-chain integration.
+- CoTA and Spore NFT development.
+- DAO staking and iCKB liquidity.
+- File storage with CKBFS.
+- Rust and C contract development.
 
 *API References*:
-- `api-reference/syscalls-quick-ref` - CKB syscalls reference.
-- `api-reference/ccc-api-patterns` - CCC SDK usage patterns.
-- `api-reference/molecule-api-examples` - Molecule API examples.
-- `api-reference/omnilock-api-examples` - Omnilock integration examples.
-- `api-reference/spore-sdk-examples` - Spore SDK API reference and examples.
+- CKB syscalls quick reference.
+- CCC SDK patterns (including cross-chain and SSRI).
+- Molecule, Omnilock, Spore, CoTA, iCKB SDK examples.
+- Well-known hashes and constants.
 
 *Protocols*:
-- `protocols/cota-protocol` - CoTA NFT protocol specification.
-- `protocols/omnilock-protocol` - Universal lock script protocol.
-- `protocols/spore-protocol` - Spore protocol for digital objects.
-- `protocols/spore-digital-objects` - Legacy Spore documentation.
-- `protocols/rgb-plus-plus` - RGB++ asset protocol.
+- CoTA, Omnilock, Spore, iCKB, RGB++, CKBFS protocols.
+- CoBuild, Open Transaction, SSRI, xUDT specifications.
 
 *Troubleshooting*:
-- `troubleshooting/common-script-errors` - Script debugging guide.
+- Common script errors and debugging.
+- Framework-specific error guides (Omnilock, xUDT, Spore, iCKB).
+- Transaction building errors.
 
 **Usage**:
 ```bash
@@ -217,22 +216,25 @@ ckb-docs-server [OPTIONS]
 
 ### CKB Tools Server
 
-**Purpose**: Development and build tools
+**Purpose**: Deploy cells, manage addresses and balances, generate lock info, request testnet funds.
 
 **Tools**:
-- `generate_contract` - Create contract boilerplate.
-- `compile_contract` - Compile Rust contracts.
-- `run_tests` - Execute contract tests.
-- `deploy_contract` - Deploy to network.
-- `format_code` - Code formatting.
-- `create_project` - Create new contract project.
+- `DeployCellData` - Deploy a cell with hex-encoded data.
+- `DeployCellDataFromFile` - Deploy a cell with data from a file.
+- `GetAddressBalance` - Get CKB balance for an address.
+- `GetChainType` - Get chain type (mainnet/testnet/devnet).
+- `GetGenesisHash` - Get genesis block hash.
+- `GenerateLockInfo` - Generate lock script info from private key.
+- `GetLockInfoFromAddress` - Extract lock info from CKB address.
+- `RequestTestnetFunds` - Request testnet funds from faucet.
+- `GetDefaultAccountInfo` - Get configured account details and balance.
 
 **Usage**:
 ```bash
 ckb-tools-server [OPTIONS]
   -p, --port <PORT>           Port [default: 8003]
       --ckb-rpc <URL>         CKB RPC URL [default: http://127.0.0.1:8114]
-      --workspace <PATH>      Target workspace directory
+      --private-key <HEX>     Private key for signing transactions
 ```
 
 ## Development
@@ -260,8 +262,8 @@ cargo test
 # Test specific server
 cargo test -p ckb-rpc-server
 
-# Integration test with actual CKB node
-INTEGRATION_TEST=1 cargo test
+# Run tests with logging
+RUST_LOG=debug cargo test
 ```
 
 ### Utilities
@@ -284,7 +286,6 @@ See `utils/README.md` for complete utility documentation.
 
 - `RUST_LOG`: Logging level (debug, info, warn, error).
 - `CKB_RPC_URL`: Default CKB node RPC endpoint.
-- `INTEGRATION_TEST`: Enable integration tests.
 
 ### Documentation Structure
 
