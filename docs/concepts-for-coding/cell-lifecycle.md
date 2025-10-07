@@ -68,18 +68,30 @@ if output_data != new_data {
 // Minimum capacity calculation
 const BASIC_CAPACITY: u64 = 61_00000000; // 61 CKB minimum
 
-// Calculate occupied capacity
+// Calculate occupied capacity (recommended: use SDK's occupied_capacity() method)
 fn calculate_occupied_capacity(lock: &Script, type_opt: &Option<Script>, data: &[u8]) -> u64 {
+    // Capacity field: 8 bytes
+    // Lock script: code_hash (32) + hash_type (1) + args
+    // Type script: code_hash (32) + hash_type (1) + args (if present)
+    // Data: actual data bytes
+
+    let capacity_field = 8u64;
     let lock_size = lock.as_slice().len() as u64;
-    let type_size = type_opt.as_ref().map_or(0, |t| t.as_slice().len() as u64 + 1);
+    let type_size = type_opt.as_ref().map_or(0, |t| t.as_slice().len() as u64);
     let data_size = data.len() as u64;
-    
-    // Cell structure overhead + script sizes + data size
-    8 + 8 + lock_size + type_size + data_size + 4 // simplified calculation
+
+    capacity_field + lock_size + type_size + data_size
 }
 
+// Best practice: Use SDK's occupied_capacity() method
+let output = CellOutput::new_builder()
+    .lock(lock_script)
+    .type_(type_script.pack())
+    .build();
+let required_capacity = output.occupied_capacity(Capacity::bytes(data.len())?)?;
+
 // Verify sufficient capacity
-if cell.capacity().unpack() < calculate_occupied_capacity(&lock, &type_opt, &data) {
+if cell.capacity().unpack() < required_capacity.as_u64() {
     return Err(Error::InsufficientCapacity);
 }
 ```
