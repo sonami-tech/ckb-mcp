@@ -1,280 +1,456 @@
 use shared::error::{CkbMcpError, Result};
-use std::{collections::HashMap, path::PathBuf, process::Command};
+use std::{fs, str::FromStr};
 use tracing::{debug, info};
+use serde::{Deserialize, Serialize};
+use ckb_sdk::{
+	rpc::ckb_indexer::{ScriptType, SearchKey},
+	transaction::{
+		builder::{CkbTransactionBuilder, SimpleTransactionBuilder},
+		input::InputIterator,
+		signer::{SignContexts, TransactionSigner},
+		TransactionBuilderConfiguration,
+	},
+	Address, AddressPayload, CkbRpcClient, HumanCapacity, NetworkInfo,
+};
+use ckb_types::{
+	bytes::Bytes,
+	core::Capacity,
+	packed::{CellOutput, Script},
+	prelude::*,
+	H256,
+};
+use ckb_hash::blake2b_256;
+use secp256k1::SecretKey;
+
+use crate::client::CkbClient;
 
 #[derive(Clone)]
 pub struct ToolsProvider {
-	_ckb_rpc_url: Option<String>,
-	_workspace: Option<PathBuf>,
-	templates: HashMap<String, String>,
+	ckb_client: CkbClient,
+	private_key: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DeploymentResult {
+	pub tx_hash: String,
+	pub output_index: u32,
+	pub data_size: usize,
+	pub capacity: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BalanceInfo {
+	pub address: String,
+	pub capacity_shannons: u64,
+	pub capacity_ckb: String,
+	pub block_number: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LockInfo {
+	pub private_key: String,
+	pub public_key: String,
+	pub lock_arg: String,
+	pub lock_script: LockScriptInfo,
+	pub lock_hash: String,
+	pub address_testnet: String,
+	pub address_mainnet: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DefaultAccountInfo {
+	pub public_key: String,
+	pub lock_arg: String,
+	pub lock_script: LockScriptInfo,
+	pub lock_hash: String,
+	pub address_testnet: String,
+	pub address_mainnet: String,
+	pub capacity_shannons: u64,
+	pub capacity_ckb: String,
+	pub block_number: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LockScriptInfo {
+	pub code_hash: String,
+	pub hash_type: String,
+	pub args: String,
 }
 
 impl ToolsProvider {
-	pub fn new(ckb_rpc_url: Option<String>, workspace: Option<PathBuf>) -> Result<Self> {
-		let mut provider = Self {
-			_ckb_rpc_url: ckb_rpc_url,
-			_workspace: workspace,
-			templates: HashMap::new(),
+	pub fn new(ckb_client: CkbClient, _ckb_rpc_url: String, private_key: String) -> Result<Self> {
+		Ok(Self {
+			ckb_client,
+			private_key,
+		})
+	}
+
+	/// Parse private key from hex string (with or without 0x prefix)
+	fn parse_private_key(&self) -> Result<SecretKey> {
+		let key_hex = self.private_key.trim_start_matches("0x");
+		let key_bytes = hex::decode(key_hex)
+			.map_err(|e| CkbMcpError::InvalidParameter(format!("Invalid private key hex: {}", e)))?;
+
+		SecretKey::from_slice(&key_bytes)
+			.map_err(|e| CkbMcpError::InvalidParameter(format!("Invalid private key: {}", e)))
+	}
+
+	/// Derive sender address from private key
+	fn get_sender_address(&self) -> Result<Address> {
+		let secret_key = self.parse_private_key()?;
+		let secp = secp256k1::Secp256k1::new();
+		let pubkey = secp256k1::PublicKey::from_secret_key(&secp, &secret_key);
+		let pubkey_hash = blake2b_256(&pubkey.serialize()[..])[0..20].to_vec();
+
+		let mut hash_bytes = [0u8; 20];
+		hash_bytes.copy_from_slice(&pubkey_hash);
+		let payload = AddressPayload::from_pubkey_hash(hash_bytes.into());
+		Ok(Address::new(ckb_sdk::NetworkType::Testnet, payload, true))
+	}
+
+	pub async fn deploy_cell_data(&self, data: Vec<u8>) -> Result<DeploymentResult> {
+		info!("Deploying cell with data size: {} bytes", data.len());
+		self.deploy_data_internal(data).await
+	}
+
+	pub async fn deploy_cell_data_from_file(&self, file_path: &str) -> Result<DeploymentResult> {
+		debug!("Reading data from file: {}", file_path);
+
+		let data = fs::read(file_path).map_err(|e| {
+			CkbMcpError::Internal(format!("Failed to read file {}: {}", file_path, e))
+		})?;
+
+		info!(
+			"Deploying cell with data from file: {} ({} bytes)",
+			file_path,
+			data.len()
+		);
+
+		self.deploy_data_internal(data).await
+	}
+
+	pub async fn get_genesis_hash(&self) -> Result<String> {
+		info!("Fetching genesis block hash");
+
+		// Get block 0 (genesis block)
+		let genesis_block = self.ckb_client.get_block_by_number(0).await?;
+
+		// Extract the hash from the header
+		let hash = genesis_block
+			.get("header")
+			.and_then(|h| h.get("hash"))
+			.and_then(|h| h.as_str())
+			.ok_or_else(|| CkbMcpError::Internal("Failed to extract genesis hash".to_string()))?
+			.to_string();
+
+		debug!("Genesis hash: {}", hash);
+		Ok(hash)
+	}
+
+	pub async fn get_chain_type(&self) -> Result<String> {
+		info!("Determining chain type");
+
+		let genesis_hash = self.get_genesis_hash().await?;
+
+		// Known genesis hashes for mainnet and testnet
+		const MAINNET_GENESIS: &str = "0x92b197aa1fba0f63633922c61c92375c9c074a93e85963554f5499fe1450d0e5";
+		const TESTNET_GENESIS: &str = "0x10639e0895502b5688a6be8cf69460d76541bfa4821629d86d62ba0aae3f9606";
+
+		let chain_type = if genesis_hash == MAINNET_GENESIS {
+			"mainnet"
+		} else if genesis_hash == TESTNET_GENESIS {
+			"testnet"
+		} else {
+			"devnet"
 		};
 
-		provider.load_templates();
-		info!("Initialized tools provider with {} templates", provider.templates.len());
-
-		Ok(provider)
+		info!("Chain type: {}", chain_type);
+		Ok(chain_type.to_string())
 	}
 
-	pub async fn generate_contract(&self, name: &str, contract_type: &str) -> Result<String> {
-		let template = match contract_type {
-			"lock" => self.get_lock_template(name),
-			"type" => self.get_type_template(name),
-			_ => return Err(CkbMcpError::InvalidParameter(
-				"Contract type must be 'lock' or 'type'".to_string()
-			)),
+	pub async fn get_address_balance(&self, address: Option<String>) -> Result<BalanceInfo> {
+		info!("Checking address balance");
+
+		// Use provided address or default to sender address from private key
+		let addr = match address {
+			Some(a) => Address::from_str(&a)
+				.map_err(|e| CkbMcpError::InvalidParameter(format!("Invalid address: {}", e)))?,
+			None => self.get_sender_address()?,
 		};
 
-		info!("Generated {} contract template for: {}", contract_type, name);
-		Ok(template)
+		debug!("Querying balance for address: {}", addr);
+
+		// Build search key for the address's lock script
+		let lock_script: Script = Script::from(&addr);
+		let search_key = SearchKey {
+			script: lock_script.into(),
+			script_type: ScriptType::Lock,
+			script_search_mode: None,
+			filter: None,
+			with_data: None,
+			group_by_transaction: None,
+		};
+
+		// Query capacity using indexer RPC
+		// Note: We need to use the network info to get the correct RPC URL
+		let network_info = NetworkInfo::testnet();
+		let ckb_client = CkbRpcClient::new(network_info.url.as_str());
+
+		let cells_capacity = ckb_client
+			.get_cells_capacity(search_key)
+			.map_err(|e| CkbMcpError::Internal(format!("Failed to query cells capacity: {}", e)))?
+			.ok_or_else(|| CkbMcpError::Internal("No cells found for address".to_string()))?;
+
+		let capacity_shannons = cells_capacity.capacity.value();
+		let capacity_ckb = HumanCapacity::from(capacity_shannons).to_string();
+		let block_number = cells_capacity.block_number.value();
+
+		info!(
+			"Address {} has {} CKB ({} shannons) at block {}",
+			addr, capacity_ckb, capacity_shannons, block_number
+		);
+
+		Ok(BalanceInfo {
+			address: addr.to_string(),
+			capacity_shannons,
+			capacity_ckb,
+			block_number,
+		})
 	}
 
-	pub async fn compile_contract(&self, contract_path: &str) -> Result<String> {
-		debug!("Compiling contract at path: {}", contract_path);
+	pub fn generate_lock_info(&self, private_key: Option<String>) -> Result<LockInfo> {
+		info!("Generating lock info from private key");
 
-		// Check if capsule is available
-		let output = Command::new("capsule")
-			.args(&["build", "--name", contract_path])
-			.output()
-			.map_err(|e| CkbMcpError::Internal(format!("Failed to run capsule: {}", e)))?;
+		// Use provided private key or default to configured private key
+		let key_hex = private_key.unwrap_or_else(|| self.private_key.clone());
+		let key_hex = key_hex.trim_start_matches("0x");
 
-		if output.status.success() {
-			let stdout = String::from_utf8_lossy(&output.stdout);
-			let stderr = String::from_utf8_lossy(&output.stderr);
-			Ok(format!("Compilation successful!\n\nSTDOUT:\n{}\n\nSTDERR:\n{}", stdout, stderr))
-		} else {
-			let stderr = String::from_utf8_lossy(&output.stderr);
-			Err(CkbMcpError::Internal(format!("Compilation failed: {}", stderr)))
-		}
-	}
+		// Parse private key
+		let key_bytes = hex::decode(key_hex)
+			.map_err(|e| CkbMcpError::InvalidParameter(format!("Invalid private key hex: {}", e)))?;
+		let secret_key = SecretKey::from_slice(&key_bytes)
+			.map_err(|e| CkbMcpError::InvalidParameter(format!("Invalid private key: {}", e)))?;
 
-	pub async fn run_tests(&self, contract_name: Option<&str>) -> Result<String> {
-		debug!("Running tests for contract: {:?}", contract_name);
+		// Derive public key
+		let secp = secp256k1::Secp256k1::new();
+		let pubkey = secp256k1::PublicKey::from_secret_key(&secp, &secret_key);
+		let pubkey_bytes = pubkey.serialize();
 
-		let mut args = vec!["test"];
-		if let Some(name) = contract_name {
-			args.extend(&["--name", name]);
-		}
+		// Calculate lock arg (blake2b hash of public key, first 20 bytes)
+		let pubkey_hash = blake2b_256(&pubkey_bytes[..])[0..20].to_vec();
 
-		let output = Command::new("capsule")
-			.args(&args)
-			.output()
-			.map_err(|e| CkbMcpError::Internal(format!("Failed to run capsule test: {}", e)))?;
+		// Build lock script (secp256k1_blake160_sighash_all)
+		let mut hash_bytes = [0u8; 20];
+		hash_bytes.copy_from_slice(&pubkey_hash);
+		let payload = AddressPayload::from_pubkey_hash(hash_bytes.into());
 
-		if output.status.success() {
-			let stdout = String::from_utf8_lossy(&output.stdout);
-			let stderr = String::from_utf8_lossy(&output.stderr);
-			Ok(format!("Tests passed!\n\nSTDOUT:\n{}\n\nSTDERR:\n{}", stdout, stderr))
-		} else {
-			let stderr = String::from_utf8_lossy(&output.stderr);
-			Err(CkbMcpError::Internal(format!("Tests failed: {}", stderr)))
-		}
-	}
+		// Generate addresses for both networks
+		let address_testnet = Address::new(ckb_sdk::NetworkType::Testnet, payload.clone(), true);
+		let address_mainnet = Address::new(ckb_sdk::NetworkType::Mainnet, payload.clone(), true);
 
-	pub async fn deploy_contract(&self, contract_name: &str, address: &str, env: &str) -> Result<String> {
-		debug!("Deploying contract {} to {} using address {}", contract_name, env, address);
+		// Get lock script
+		let lock_script: Script = Script::from(&address_testnet);
 
-		let output = Command::new("capsule")
-			.args(&["deploy", "--address", address, "--env", env, "--contract", contract_name])
-			.output()
-			.map_err(|e| CkbMcpError::Internal(format!("Failed to run capsule deploy: {}", e)))?;
+		// Calculate lock hash (blake2b of molecule-serialized script)
+		let lock_hash_bytes = lock_script.calc_script_hash();
 
-		if output.status.success() {
-			let stdout = String::from_utf8_lossy(&output.stdout);
-			let stderr = String::from_utf8_lossy(&output.stderr);
-			Ok(format!("Deployment successful!\n\nSTDOUT:\n{}\n\nSTDERR:\n{}", stdout, stderr))
-		} else {
-			let stderr = String::from_utf8_lossy(&output.stderr);
-			Err(CkbMcpError::Internal(format!("Deployment failed: {}", stderr)))
-		}
-	}
-
-	pub async fn format_code(&self, file_path: Option<&str>) -> Result<String> {
-		debug!("Formatting code for file: {:?}", file_path);
-
-		let mut args = vec!["fmt"];
-		if let Some(path) = file_path {
-			args.push(path);
-		}
-
-		let output = Command::new("cargo")
-			.args(&args)
-			.output()
-			.map_err(|e| CkbMcpError::Internal(format!("Failed to run cargo fmt: {}", e)))?;
-
-		if output.status.success() {
-			let stdout = String::from_utf8_lossy(&output.stdout);
-			let stderr = String::from_utf8_lossy(&output.stderr);
-			Ok(format!("Code formatting completed!\n\nSTDOUT:\n{}\n\nSTDERR:\n{}", stdout, stderr))
-		} else {
-			let stderr = String::from_utf8_lossy(&output.stderr);
-			Err(CkbMcpError::Internal(format!("Code formatting failed: {}", stderr)))
-		}
-	}
-
-	pub async fn create_project(&self, name: &str, project_type: &str) -> Result<String> {
-		debug!("Creating new project: {} of type: {}", name, project_type);
-
-		let output = match project_type {
-			"capsule" => {
-				Command::new("capsule")
-					.args(&["new", name])
-					.output()
-					.map_err(|e| CkbMcpError::Internal(format!("Failed to run capsule new: {}", e)))?
+		Ok(LockInfo {
+			private_key: format!("0x{}", key_hex),
+			public_key: format!("0x{}", hex::encode(pubkey_bytes)),
+			lock_arg: format!("0x{}", hex::encode(&pubkey_hash)),
+			lock_script: LockScriptInfo {
+				code_hash: format!("{:#x}", lock_script.code_hash()),
+				hash_type: format!("{:?}", lock_script.hash_type()),
+				args: format!("0x{}", hex::encode(lock_script.args().raw_data())),
 			},
-			_ => return Err(CkbMcpError::InvalidParameter(
-				"Project type must be 'capsule'".to_string()
-			)),
+			lock_hash: format!("{:#x}", lock_hash_bytes),
+			address_testnet: address_testnet.to_string(),
+			address_mainnet: address_mainnet.to_string(),
+		})
+	}
+
+	pub fn get_lock_info_from_address(&self, address: String) -> Result<LockInfo> {
+		info!("Extracting lock info from address");
+
+		// Parse address
+		let addr = Address::from_str(&address)
+			.map_err(|e| CkbMcpError::InvalidParameter(format!("Invalid address: {}", e)))?;
+
+		// Get lock script from address
+		let lock_script: Script = Script::from(&addr);
+
+		// Calculate lock hash (blake2b of molecule-serialized script)
+		let lock_hash_bytes = lock_script.calc_script_hash();
+
+		// Extract lock arg
+		let lock_arg = lock_script.args().raw_data();
+
+		// Determine network type and generate counterpart address
+		let network_type = addr.network();
+		let payload = addr.payload();
+		let (address_testnet, address_mainnet) = match network_type {
+			ckb_sdk::NetworkType::Testnet => {
+				let mainnet_addr = Address::new(ckb_sdk::NetworkType::Mainnet, payload.clone(), true);
+				(address.clone(), mainnet_addr.to_string())
+			}
+			ckb_sdk::NetworkType::Mainnet => {
+				let testnet_addr = Address::new(ckb_sdk::NetworkType::Testnet, payload.clone(), true);
+				(testnet_addr.to_string(), address.clone())
+			}
+			_ => {
+				// For dev network, just use the same address for both
+				(address.clone(), address.clone())
+			}
 		};
 
-		if output.status.success() {
-			let stdout = String::from_utf8_lossy(&output.stdout);
-			let stderr = String::from_utf8_lossy(&output.stderr);
-			Ok(format!("Project created successfully!\n\nSTDOUT:\n{}\n\nSTDERR:\n{}", stdout, stderr))
-		} else {
-			let stderr = String::from_utf8_lossy(&output.stderr);
-			Err(CkbMcpError::Internal(format!("Project creation failed: {}", stderr)))
+		Ok(LockInfo {
+			private_key: "N/A - Cannot derive from address".to_string(),
+			public_key: "N/A - Cannot derive from address".to_string(),
+			lock_arg: format!("0x{}", hex::encode(&lock_arg)),
+			lock_script: LockScriptInfo {
+				code_hash: format!("{:#x}", lock_script.code_hash()),
+				hash_type: format!("{:?}", lock_script.hash_type()),
+				args: format!("0x{}", hex::encode(lock_script.args().raw_data())),
+			},
+			lock_hash: format!("{:#x}", lock_hash_bytes),
+			address_testnet,
+			address_mainnet,
+		})
+	}
+
+	pub async fn request_testnet_funds(&self, address: Option<String>) -> Result<String> {
+		info!("Requesting testnet funds from faucet");
+
+		let addr = match address {
+			Some(a) => Address::from_str(&a)
+				.map_err(|e| CkbMcpError::InvalidParameter(format!("Invalid address: {}", e)))?,
+			None => self.get_sender_address()?,
+		};
+
+		// Call the Nervos testnet faucet API
+		let client = reqwest::Client::new();
+		let response = client
+			.post("https://faucet-api.nervos.org/claim_events")
+			.header("accept", "application/json, text/plain, */*")
+			.header("content-type", "application/json")
+			.json(&serde_json::json!({
+				"claim_event": {
+					"address_hash": addr.to_string(),
+					"amount": "100000"
+				}
+			}))
+			.send()
+			.await
+			.map_err(|e| CkbMcpError::Http(format!("Failed to request faucet funds: {}", e)))?;
+
+		let status = response.status();
+		let body = response.text().await
+			.map_err(|e| CkbMcpError::Http(format!("Failed to read faucet response: {}", e)))?;
+
+		if !status.is_success() {
+			return Err(CkbMcpError::Http(format!(
+				"Faucet request failed with status {}: {}",
+				status, body
+			)));
 		}
+
+		info!("Faucet request successful for address: {}", addr);
+		Ok(format!("Successfully requested testnet funds for address: {}\nResponse: {}", addr, body))
 	}
 
-	fn load_templates(&mut self) {
-		// Load basic contract templates
-		self.templates.insert("lock".to_string(), self.get_default_lock_template());
-		self.templates.insert("type".to_string(), self.get_default_type_template());
+	pub async fn get_default_account_info(&self) -> Result<DefaultAccountInfo> {
+		info!("Getting default account information");
+
+		// Generate lock info from the configured private key
+		let lock_info = self.generate_lock_info(None)?;
+
+		// Get balance for the default address
+		let balance_info = self.get_address_balance(None).await?;
+
+		Ok(DefaultAccountInfo {
+			public_key: lock_info.public_key,
+			lock_arg: lock_info.lock_arg,
+			lock_script: lock_info.lock_script,
+			lock_hash: lock_info.lock_hash,
+			address_testnet: lock_info.address_testnet,
+			address_mainnet: lock_info.address_mainnet,
+			capacity_shannons: balance_info.capacity_shannons,
+			capacity_ckb: balance_info.capacity_ckb,
+			block_number: balance_info.block_number,
+		})
 	}
 
-	fn get_lock_template(&self, name: &str) -> String {
-		let template = self.get_default_lock_template();
-		template.replace("CONTRACT_NAME", name)
-	}
+	async fn deploy_data_internal(&self, data: Vec<u8>) -> Result<DeploymentResult> {
+		let data_size = data.len();
+		info!("Building transaction to deploy {} bytes of data", data_size);
 
-	fn get_type_template(&self, name: &str) -> String {
-		let template = self.get_default_type_template();
-		template.replace("CONTRACT_NAME", name)
-	}
+		// Parse private key and get sender address
+		let secret_key = self.parse_private_key()?;
+		let sender_address = self.get_sender_address()?;
 
-	fn get_default_lock_template(&self) -> String {
-		r#"#![no_std]
-#![no_main]
+		debug!("Sender address: {}", sender_address);
 
-use ckb_std::{
-	debug,
-	default_alloc,
-	entry,
-	error::SysError,
-	high_level::{load_script, load_witness_args},
-	ckb_constants::Source,
-	ckb_types::{bytes::Bytes, prelude::*},
-};
+		// Setup network info and configuration
+		let network_info = NetworkInfo::testnet();
+		let configuration = TransactionBuilderConfiguration::new_with_network(network_info.clone())
+			.map_err(|e| CkbMcpError::Internal(format!("Failed to create transaction configuration: {}", e)))?;
 
-entry!(program_entry);
-default_alloc!();
+		// Calculate required capacity (cell header + data + lock script)
+		let lock_script: Script = Script::from(&sender_address);
+		let output_capacity = Capacity::bytes(data.len())
+			.map_err(|e| CkbMcpError::Internal(format!("Capacity calculation error: {}", e)))?
+			.safe_add(lock_script.occupied_capacity().unwrap())
+			.map_err(|e| CkbMcpError::Internal(format!("Capacity overflow: {}", e)))?;
 
-/// CONTRACT_NAME Lock Script
-pub fn program_entry() -> i8 {
-	match main() {
-		Ok(_) => 0,
-		Err(err) => err as i8,
-	}
-}
+		debug!("Output capacity needed: {} shannons", output_capacity.as_u64());
 
-fn main() -> Result<(), SysError> {
-	debug!("Starting CONTRACT_NAME lock script");
+		// Build output cell with data
+		let output = CellOutput::new_builder()
+			.capacity(output_capacity.pack())
+			.lock(lock_script)
+			.build();
 
-	// Load script args
-	let script = load_script()?;
-	let args: Bytes = script.args().unpack();
-	
-	if args.len() < 20 {
-		return Err(SysError::Encoding);
-	}
+		// Create input iterator for the sender address
+		let iterator = InputIterator::new_with_address(&[sender_address.clone()], &network_info);
 
-	// Load witness for signature verification
-	let witness_args = load_witness_args(0, Source::GroupInput)?;
-	let lock: Bytes = witness_args.lock().to_opt().unwrap().unpack();
-	
-	if lock.len() < 65 {
-		return Err(SysError::Encoding);
-	}
+		// Build transaction using SimpleTransactionBuilder
+		let mut builder = SimpleTransactionBuilder::new(configuration, iterator);
+		builder.add_output_and_data(output, Bytes::from(data).pack());
 
-	// TODO: Implement signature verification logic
-	// This is a placeholder - add your signature verification here
-	debug!("Signature verification would happen here");
+		let mut tx_with_groups = builder
+			.build(&Default::default())
+			.map_err(|e| CkbMcpError::Internal(format!("Failed to build transaction: {}", e)))?;
 
-	debug!("CONTRACT_NAME lock script completed successfully");
-	Ok(())
-}
-"#.to_string()
-	}
+		debug!("Transaction built successfully");
 
-	fn get_default_type_template(&self) -> String {
-		r#"#![no_std]
-#![no_main]
+		// Sign transaction
+		let private_keys = vec![H256::from_slice(secret_key.as_ref())
+			.map_err(|e| CkbMcpError::Internal(format!("Invalid private key format: {}", e)))?];
 
-use ckb_std::{
-	debug,
-	default_alloc,
-	entry,
-	error::SysError,
-	high_level::{load_cell_data, load_script, QueryIter},
-	ckb_constants::Source,
-	ckb_types::{bytes::Bytes, prelude::*},
-};
+		TransactionSigner::new(&network_info)
+			.sign_transaction(
+				&mut tx_with_groups,
+				&SignContexts::new_sighash_h256(private_keys)
+					.map_err(|e| CkbMcpError::Internal(format!("Failed to create sign context: {}", e)))?,
+			)
+			.map_err(|e| CkbMcpError::Internal(format!("Failed to sign transaction: {}", e)))?;
 
-entry!(program_entry);
-default_alloc!();
+		debug!("Transaction signed successfully");
 
-/// CONTRACT_NAME Type Script
-pub fn program_entry() -> i8 {
-	match main() {
-		Ok(_) => 0,
-		Err(err) => err as i8,
-	}
-}
+		// Convert to JSON-RPC format and send
+		let tx_json = ckb_jsonrpc_types::TransactionView::from(tx_with_groups.get_tx_view().clone());
 
-fn main() -> Result<(), SysError> {
-	debug!("Starting CONTRACT_NAME type script");
+		let tx_hash = CkbRpcClient::new(network_info.url.as_str())
+			.send_transaction(tx_json.inner, None)
+			.map_err(|e| CkbMcpError::Internal(format!("Failed to send transaction: {}", e)))?;
 
-	// Load script args
-	let script = load_script()?;
-	let args: Bytes = script.args().unpack();
-	
-	// Validate input cells
-	for data in QueryIter::new(load_cell_data, Source::GroupInput) {
-		let data: Bytes = data.unpack();
-		
-		// TODO: Add input validation logic
-		if !validate_cell_data(&data) {
-			return Err(SysError::Encoding);
-		}
-	}
-	
-	// Validate output cells
-	for data in QueryIter::new(load_cell_data, Source::GroupOutput) {
-		let data: Bytes = data.unpack();
-		
-		// TODO: Add output validation logic
-		if !validate_cell_data(&data) {
-			return Err(SysError::Encoding);
-		}
-	}
+		info!("Transaction sent successfully: {:x}", tx_hash);
 
-	debug!("CONTRACT_NAME type script completed successfully");
-	Ok(())
-}
-
-fn validate_cell_data(data: &Bytes) -> bool {
-	// TODO: Implement your cell data validation logic
-	// This is a placeholder
-	data.len() >= 4
-}
-"#.to_string()
+		Ok(DeploymentResult {
+			tx_hash: format!("{:#x}", tx_hash),
+			output_index: 0,
+			data_size,
+			capacity: output_capacity.as_u64(),
+		})
 	}
 }

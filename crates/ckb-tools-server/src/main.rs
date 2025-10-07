@@ -6,13 +6,15 @@ use axum::{
 };
 use clap::Parser;
 use shared::{error::Result, types::ServerConfig};
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 use tracing::info;
 
+mod client;
 mod handlers;
 mod tools;
 
+use client::CkbClient;
 use handlers::McpHandler;
 use tools::ToolsProvider;
 
@@ -32,9 +34,11 @@ struct Args {
 	#[arg(long, default_value = "http://127.0.0.1:8114")]
 	ckb_rpc: String,
 
-	/// Target workspace directory
-	#[arg(long)]
-	workspace: Option<PathBuf>,
+	/// Private key for signing transactions (hex format with or without 0x prefix)
+	/// Default: Test key for development - DO NOT USE IN PRODUCTION
+	/// Default key: 0xd7a9c7138ff3963efdd222033c90d7241d99122beeefd9bfbca17dd12d39c9ca
+	#[arg(long, default_value = "0xd7a9c7138ff3963efdd222033c90d7241d99122beeefd9bfbca17dd12d39c9ca")]
+	private_key: String,
 
 	/// Log level
 	#[arg(long, default_value = "info")]
@@ -55,15 +59,18 @@ async fn main() -> Result<()> {
 		.with_env_filter(&args.log_level)
 		.init();
 
-	let config = ServerConfig {
+	let _config = ServerConfig {
 		host: args.host.clone(),
 		port: args.port,
-		ckb_rpc_url: Some(args.ckb_rpc),
+		ckb_rpc_url: Some(args.ckb_rpc.clone()),
 		log_level: args.log_level,
 	};
 
+	// Initialize CKB client
+	let ckb_client = CkbClient::new(args.ckb_rpc.clone())?;
+
 	// Initialize tools provider
-	let tools_provider = ToolsProvider::new(config.ckb_rpc_url.clone(), args.workspace)?;
+	let tools_provider = ToolsProvider::new(ckb_client, args.ckb_rpc, args.private_key)?;
 
 	// Initialize MCP handler
 	let handler = Arc::new(McpHandler::new(tools_provider));
