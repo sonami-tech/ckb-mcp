@@ -392,36 +392,55 @@ impl ToolsProvider {
 
 		// Setup network info and configuration
 		let network_info = NetworkInfo::testnet();
-		let configuration = TransactionBuilderConfiguration::new_with_network(network_info.clone())
+		let mut configuration = TransactionBuilderConfiguration::new_with_network(network_info.clone())
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to create transaction configuration: {}", e)))?;
 
-		// Calculate required capacity (cell header + data + lock script)
+		// Adjust fee configuration for more reliable transaction acceptance
+		// Default estimate_tx_size is 128000 which causes massive fee overestimation
+		// We use a more realistic 10000 bytes AND increase the fee rate to 2000 shannons/KB
+		// to ensure transactions are accepted and can replace pending ones in the pool
+		configuration.estimate_tx_size = 10000;
+		configuration.fee_rate = 2000; // 2000 shannons per KB (2x default of 1000)
+
+		// Calculate required capacity using proper occupied_capacity method
+		// This accounts for cell header (8 bytes capacity + 32 bytes data hash + 1 byte data length),
+		// lock script, and data
 		let lock_script: Script = Script::from(&sender_address);
-		let output_capacity = Capacity::bytes(data.len())
-			.map_err(|e| CkbMcpError::Internal(format!("Capacity calculation error: {}", e)))?
-			.safe_add(lock_script.occupied_capacity().unwrap())
-			.map_err(|e| CkbMcpError::Internal(format!("Capacity overflow: {}", e)))?;
+		let data_bytes = Bytes::from(data.clone());
+
+		// First create a temporary output to calculate occupied capacity
+		let temp_output = CellOutput::new_builder()
+			.capacity(Capacity::zero().pack())
+			.lock(lock_script.clone())
+			.build();
+
+		// Calculate the actual occupied capacity including all overhead
+		let output_capacity = temp_output
+			.occupied_capacity(Capacity::bytes(data.len()).unwrap())
+			.map_err(|e| CkbMcpError::Internal(format!("Capacity calculation error: {}", e)))?;
 
 		debug!("Output capacity needed: {} shannons", output_capacity.as_u64());
 
-		// Build output cell with data
+		// Build final output cell with correct capacity
 		let output = CellOutput::new_builder()
 			.capacity(output_capacity.pack())
-			.lock(lock_script)
+			.lock(lock_script.clone())
 			.build();
 
-		// Create input iterator for the sender address
+		// Create input iterator - this will automatically collect cells as needed
 		let iterator = InputIterator::new_with_address(&[sender_address.clone()], &network_info);
 
 		// Build transaction using SimpleTransactionBuilder
+		// The builder will automatically collect enough inputs to cover outputs + fees
 		let mut builder = SimpleTransactionBuilder::new(configuration, iterator);
-		builder.add_output_and_data(output, Bytes::from(data).pack());
+		builder.add_output_and_data(output, data_bytes.pack());
 
 		let mut tx_with_groups = builder
 			.build(&Default::default())
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to build transaction: {}", e)))?;
 
-		debug!("Transaction built successfully");
+		let input_count = tx_with_groups.get_tx_view().inputs().len();
+		debug!("Transaction built successfully with {} inputs", input_count);
 
 		// Sign transaction
 		let private_keys = vec![H256::from_slice(secret_key.as_ref())
