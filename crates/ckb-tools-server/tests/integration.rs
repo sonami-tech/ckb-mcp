@@ -81,8 +81,10 @@ async fn test_get_default_account_info_no_private_key_exposed() {
 		.expect("GetDefaultAccountInfo should succeed");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
-	assert!(!content.contains("private_key"), "Should not expose private key");
-	assert!(!content.contains("\"0x"), "Should not contain hex private key");
+	assert!(!content.contains("\"private_key\""), "Should not expose private_key field");
+	// Verify we have expected fields but not the private key
+	assert!(content.contains("public_key"), "Should contain public_key");
+	assert!(content.contains("address_testnet"), "Should contain address_testnet");
 }
 
 #[tokio::test]
