@@ -21,7 +21,7 @@ ckb-mcp/
 
 - **ckb-rpc-server**: Query live CKB blockchain data, transaction details, cell information.
 - **ckb-docs-server**: Serve CKB development documentation, patterns, and API references.
-- **ckb-tools-server**: Generate, compile, test, and deploy CKB smart contracts.
+- **ckb-tools-server**: Deploy cells, manage addresses and balances, generate lock info, request testnet funds.
 
 ## Development Guidelines
 
@@ -63,9 +63,26 @@ cargo build --workspace --release
 
 # These commands are handled automatically - DO NOT RUN:
 # cargo run --bin ckb-rpc-server
-# cargo run --bin ckb-docs-server  
+# cargo run --bin ckb-docs-server
 # cargo run --bin ckb-tools-server
 ```
+
+### CLI Parameters
+
+If you need to run servers manually for debugging, use `--help` to see available parameters:
+
+```bash
+# View parameters for each server
+cargo run --bin ckb-rpc-server -- --help
+cargo run --bin ckb-docs-server -- --help
+cargo run --bin ckb-tools-server -- --help
+```
+
+**Key parameters:**
+- All servers: `--host`, `--port`, `--log-level`
+- **ckb-rpc-server**: `--ckb-rpc` (CKB node URL)
+- **ckb-docs-server**: `--docs-path` (custom docs directory)
+- **ckb-tools-server**: `--ckb-rpc`, `--private-key` (transaction signing key)
 
 ### Debugging
 
@@ -209,6 +226,7 @@ Always provide meaningful error messages and proper HTTP status codes.
 - Log security-relevant events appropriately.
 - Handle sensitive data (private keys, seeds) carefully.
 - Never commit secrets to version control.
+- **IMPORTANT**: The ckb-tools-server includes a default test private key for development convenience. This key should **NEVER** be used in production. Always provide a secure `--private-key` parameter when deploying to production environments.
 
 ## Performance Notes
 
@@ -232,7 +250,7 @@ Always provide meaningful error messages and proper HTTP status codes.
 ```bash
 # Check server health
 curl http://localhost:8001/health
-curl http://localhost:8002/health  
+curl http://localhost:8002/health
 curl http://localhost:8003/health
 
 # List available resources
@@ -242,6 +260,11 @@ curl http://localhost:8002/resources
 curl -X POST http://localhost:8001/rpc \
   -H "Content-Type: application/json" \
   -d '{"method": "get_tip_header", "params": [], "id": 1}'
+
+# Test tools server (examples require parameters - see MCP tools/list for schemas)
+curl -X POST http://localhost:8003/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"GetDefaultAccountInfo","arguments":{}}}'
 ```
 
 ## Utility Scripts
