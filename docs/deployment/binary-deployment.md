@@ -88,14 +88,17 @@ const utils = require('@nervosnetwork/ckb-sdk-utils');
 function calculateDeploymentCost(binaryPath) {
     const binary = fs.readFileSync(binaryPath);
     const binarySize = binary.length;
-    
-    // CKB capacity calculation: 1 CKB = 1 byte storage
+
+    // Simplified estimate: binary + minimum cell overhead
+    // 61 CKB = capacity field (8) + typical lock script (~53)
+    // For detailed capacity calculation, see:
+    // ckb-dev-context://concepts-for-coding/cell-lifecycle
     const cellOverhead = 61; // Minimum cell size in CKBytes
     const requiredCapacity = BigInt(binarySize + cellOverhead) * 100000000n; // Convert to Shannon
-    
+
     console.log(`Binary size: ${binarySize} bytes`);
     console.log(`Required capacity: ${requiredCapacity / 100000000n} CKB`);
-    
+
     return requiredCapacity;
 }
 ```

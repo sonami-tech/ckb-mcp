@@ -16,21 +16,23 @@ Transaction construction error debugging covering insufficient capacity, missing
 
 **Cause**: Output cells don't have minimum required capacity for their data/type
 
-**Minimum Capacity Calculation**:
+**Quick Reference**: For complete capacity calculation details, see [Cell Capacity Calculation](ckb-dev-context://concepts-for-coding/cell-lifecycle)
+
+**Troubleshooting Example**:
 ```typescript
-// Minimum capacity = 8 (capacity) + data_size + type_script_size + lock_script_size
+// Calculate minimum capacity: capacity_field + data + lock + type
 function calculateMinCapacity(cell: Cell): bigint {
-  const base = 8n; // Capacity field itself
+  const base = 8n; // Capacity field
   const dataSize = BigInt(cell.data.length);
-  const lockSize = BigInt(cell.lock.args.length / 2 + 33); // 33 for code_hash + hash_type
+  const lockSize = BigInt(cell.lock.args.length / 2 + 33); // code_hash (32) + hash_type (1)
   const typeSize = cell.type ? BigInt(cell.type.args.length / 2 + 33) : 0n;
-  
+
   const minCapacity = (base + dataSize + lockSize + typeSize) * 100000000n;
-  
+
   if (cell.capacity < minCapacity) {
     throw new Error(`Need ${minCapacity} shannons, got ${cell.capacity}`);
   }
-  
+
   return minCapacity;
 }
 ```

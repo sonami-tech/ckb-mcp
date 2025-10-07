@@ -309,12 +309,13 @@ function collectXudtCells(
 }
 
 // Helper: Calculate minimum capacity
+// Simplified calculation for xUDT. See ckb-dev-context://concepts-for-coding/cell-lifecycle for details
 function calculateMinCapacity(data: Uint8Array): bigint {
   const base = 8; // Capacity field
   const dataSize = data.length;
-  const lockSize = 33 + 20; // Standard lock
-  const typeSize = 33 + 32; // Type script with args
-  
+  const lockSize = 53; // Secp256k1 lock: code_hash (32) + hash_type (1) + args (20)
+  const typeSize = 65; // xUDT type: code_hash (32) + hash_type (1) + unique_id (32)
+
   return BigInt(base + dataSize + lockSize + typeSize) * 100000000n;
 }
 

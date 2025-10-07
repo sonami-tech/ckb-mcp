@@ -63,16 +63,58 @@ if output_data != new_data {
 }
 ```
 
-## Capacity Requirements
-```rust
-// Minimum capacity calculation
-const BASIC_CAPACITY: u64 = 61_00000000; // 61 CKB minimum
+## Cell Capacity Calculation (Authoritative Reference)
 
-// Calculate occupied capacity (recommended: use SDK's occupied_capacity() method)
+### Understanding Occupied Capacity
+
+Every cell must have sufficient capacity to store all its components. The capacity serves dual purposes:
+1. **Token value**: Amount of CKB tokens in the cell
+2. **Storage limit**: Maximum bytes the cell can occupy
+
+### Complete Formula
+
+```rust
+occupied_capacity = capacity_field + lock_script_size + type_script_size + data_size
+```
+
+**Component Breakdown**:
+- **Capacity field**: 8 bytes (stores the capacity value itself)
+- **Lock script**: `code_hash (32) + hash_type (1) + args (variable)`
+- **Type script**: `code_hash (32) + hash_type (1) + args (variable)` (if present)
+- **Data**: Actual cell data bytes
+
+### Common Lock Script Sizes
+
+| Lock Type | Size | Components |
+|-----------|------|------------|
+| Secp256k1 (standard) | 53 bytes | code_hash (32) + hash_type (1) + pubkey_hash (20) |
+| Empty/Default | 33 bytes | code_hash (32) + hash_type (1) + empty args (0) |
+| Multisig | 53+ bytes | code_hash (32) + hash_type (1) + multisig_config (20+) |
+
+### Common Type Script Sizes
+
+| Type | Size | Components |
+|------|------|------------|
+| UDT/sUDT | 65 bytes | code_hash (32) + hash_type (1) + owner_lock_hash (32) |
+| xUDT | 65 bytes | code_hash (32) + hash_type (1) + unique_id (32) |
+| No type script | 0 bytes | N/A |
+
+### Minimum Cell Capacity
+
+The absolute minimum for an empty cell is **61 CKBytes**:
+- 8 (capacity) + 33 (minimal lock) + 20 (typical args) = 61 bytes
+
+```rust
+const BASIC_CAPACITY: u64 = 61_00000000; // 61 CKB minimum in shannons
+```
+
+### Manual Calculation Example
+
+```rust
 fn calculate_occupied_capacity(lock: &Script, type_opt: &Option<Script>, data: &[u8]) -> u64 {
     // Capacity field: 8 bytes
-    // Lock script: code_hash (32) + hash_type (1) + args
-    // Type script: code_hash (32) + hash_type (1) + args (if present)
+    // Lock script: serialized size (code_hash + hash_type + args)
+    // Type script: serialized size (if present)
     // Data: actual data bytes
 
     let capacity_field = 8u64;
@@ -82,18 +124,39 @@ fn calculate_occupied_capacity(lock: &Script, type_opt: &Option<Script>, data: &
 
     capacity_field + lock_size + type_size + data_size
 }
+```
 
-// Best practice: Use SDK's occupied_capacity() method
+### Best Practice: Use SDK Method
+
+**Always prefer the SDK's `occupied_capacity()` method for accurate calculation**:
+
+```rust
+// Build the output cell
 let output = CellOutput::new_builder()
     .lock(lock_script)
     .type_(type_script.pack())
     .build();
+
+// Let the SDK calculate exact capacity needed
 let required_capacity = output.occupied_capacity(Capacity::bytes(data.len())?)?;
 
 // Verify sufficient capacity
 if cell.capacity().unpack() < required_capacity.as_u64() {
     return Err(Error::InsufficientCapacity);
 }
+```
+
+### When to Use Each Method
+
+- **SDK Method (`occupied_capacity()`)**: Production code, transaction building, accurate calculations
+- **Manual Calculation**: Understanding the internals, educational purposes, debugging
+- **Simplified Estimates**: Quick cost estimates, test data generation
+
+### Why Capacity Matters
+
+1. **Transaction Validation**: Cells with insufficient capacity are rejected
+2. **Storage Economics**: 1 CKB = 1 byte on-chain storage
+3. **Capacity Conservation**: Total output capacity cannot exceed input capacity (minus fees)
 ```
 
 ## Cell Dependency Pattern
