@@ -10,7 +10,7 @@ const TOOLS_SERVER_PORT: u16 = 8003;
 
 /// Wait between deployment tests to allow transactions to be mined and avoid RBF conflicts
 async fn wait_for_mining() {
-	tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+	tokio::time::sleep(std::time::Duration::from_secs(10)).await;
 }
 
 /// Run first - fail fast if server not available
