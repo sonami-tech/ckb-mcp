@@ -8,13 +8,6 @@ use common::TestContext;
 
 const TOOLS_SERVER_PORT: u16 = 8003;
 
-/// Wait between deployment tests to allow transactions to be mined and avoid RBF conflicts
-/// CKB testnet blocks are mined approximately every 8-16 seconds, so we wait 20 seconds
-/// to ensure the previous transaction is confirmed before starting the next test
-async fn wait_for_mining() {
-	tokio::time::sleep(std::time::Duration::from_secs(20)).await;
-}
-
 /// Run first - fail fast if server not available
 #[tokio::test]
 async fn test_00_server_running() {
@@ -670,8 +663,6 @@ async fn test_deploy_cell_data_valid_hex() {
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
 	assert!(content.contains("tx_hash"));
-
-	wait_for_mining().await;
 }
 
 #[tokio::test]
@@ -687,7 +678,6 @@ async fn test_deploy_cell_data_with_0x_prefix() {
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
 
-	wait_for_mining().await;
 }
 
 #[tokio::test]
@@ -703,7 +693,6 @@ async fn test_deploy_cell_data_without_0x_prefix() {
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
 
-	wait_for_mining().await;
 }
 
 #[tokio::test]
@@ -722,7 +711,6 @@ async fn test_deploy_cell_data_large_payload() {
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
 
-	wait_for_mining().await;
 }
 
 #[tokio::test]
@@ -739,7 +727,6 @@ async fn test_deploy_cell_data_returns_tx_hash() {
 	assert!(content.contains("tx_hash"), "Should return transaction hash");
 	assert!(content.contains("0x"), "Transaction hash should be in hex format");
 
-	wait_for_mining().await;
 }
 
 #[tokio::test]
@@ -755,7 +742,6 @@ async fn test_deploy_cell_data_returns_capacity() {
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(content.contains("capacity"), "Should return capacity information");
 
-	wait_for_mining().await;
 }
 
 // Cell Deployment From File Tests
@@ -781,7 +767,6 @@ async fn test_deploy_cell_data_from_file_valid() {
 	// Cleanup
 	let _ = fs::remove_file(&test_file);
 
-	wait_for_mining().await;
 }
 
 #[tokio::test]
@@ -836,7 +821,6 @@ async fn test_deploy_cell_data_from_file_absolute_path() {
 	// Cleanup
 	let _ = fs::remove_file(&test_file);
 
-	wait_for_mining().await;
 }
 
 // Faucet Tests

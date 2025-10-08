@@ -711,7 +711,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-tools-server"
-version = "0.4.109"
+version = "0.4.110"
 dependencies = [
  "anyhow",
  "axum",
