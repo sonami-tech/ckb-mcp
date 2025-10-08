@@ -1,6 +1,5 @@
 use serde_json::json;
-use std::sync::Mutex;
-use std::time::{Duration, Instant};
+use serial_test::serial;
 
 #[path = "../../shared/tests/common/mod.rs"]
 mod common;
@@ -9,27 +8,9 @@ use common::TestContext;
 
 const TOOLS_SERVER_PORT: u16 = 8003;
 
-// Global lock to serialize deployment tests and enforce delay between them
-static DEPLOYMENT_LOCK: Mutex<Option<Instant>> = Mutex::new(None);
-
-/// Acquire deployment lock and wait if needed to avoid RBF conflicts.
-/// Ensures at least 30 seconds between deployment transactions.
-async fn acquire_deployment_lock() {
-	let mut last_deployment = DEPLOYMENT_LOCK.lock().unwrap();
-
-	if let Some(last_time) = *last_deployment {
-		let elapsed = last_time.elapsed();
-		let required_delay = Duration::from_secs(30);
-
-		if elapsed < required_delay {
-			let remaining = required_delay - elapsed;
-			drop(last_deployment); // Release lock while sleeping
-			tokio::time::sleep(remaining).await;
-			last_deployment = DEPLOYMENT_LOCK.lock().unwrap();
-		}
-	}
-
-	*last_deployment = Some(Instant::now());
+/// Wait between deployment tests to allow transactions to be mined and avoid RBF conflicts
+async fn wait_for_mining() {
+	tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 }
 
 /// Run first - fail fast if server not available
@@ -675,117 +656,130 @@ async fn test_get_lock_info_from_address_mainnet() {
 
 // Cell Deployment Success Cases
 #[tokio::test]
+#[serial]
 async fn test_deploy_cell_data_valid_hex() {
-	acquire_deployment_lock().await;
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
+	let unique_data = format!("{:x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
 	let result = ctx
-		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": "48656c6c6f"}}))
+		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": unique_data}}))
 		.await
 		.expect("DeployCellData should succeed with valid hex");
-
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
 	assert!(content.contains("tx_hash"));
+
+	wait_for_mining().await;
 }
 
 #[tokio::test]
+#[serial]
 async fn test_deploy_cell_data_with_0x_prefix() {
-	acquire_deployment_lock().await;
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
+	let unique_data = format!("0x{:x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
 	let result = ctx
-		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": "0x48656c6c6f"}}))
+		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": unique_data}}))
 		.await
 		.expect("DeployCellData should succeed with 0x prefix");
-
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
+
+	wait_for_mining().await;
 }
 
 #[tokio::test]
+#[serial]
 async fn test_deploy_cell_data_without_0x_prefix() {
-	acquire_deployment_lock().await;
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
+	let unique_data = format!("{:x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
 	let result = ctx
-		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": "48656c6c6f"}}))
+		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": unique_data}}))
 		.await
 		.expect("DeployCellData should succeed without 0x prefix");
-
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
+
+	wait_for_mining().await;
 }
 
 #[tokio::test]
+#[serial]
 async fn test_deploy_cell_data_large_payload() {
-	acquire_deployment_lock().await;
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
-	// Create a larger data payload (1KB of data)
-	let large_data = "00".repeat(512);
+	// Create a larger data payload (1KB of data) with unique timestamp prefix
+	let timestamp = format!("{:x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
+	let large_data = format!("{}{}", timestamp, "00".repeat(512 - timestamp.len() / 2));
 
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": large_data}}))
 		.await
 		.expect("DeployCellData should succeed with large payload");
-
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
+
+	wait_for_mining().await;
 }
 
 #[tokio::test]
+#[serial]
 async fn test_deploy_cell_data_returns_tx_hash() {
-	acquire_deployment_lock().await;
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
+	let unique_data = format!("{:x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
 	let result = ctx
-		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": "54784861736854657374"}}))
+		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": unique_data}}))
 		.await
 		.expect("DeployCellData should succeed");
-
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(content.contains("tx_hash"), "Should return transaction hash");
 	assert!(content.contains("0x"), "Transaction hash should be in hex format");
+
+	wait_for_mining().await;
 }
 
 #[tokio::test]
+#[serial]
 async fn test_deploy_cell_data_returns_capacity() {
-	acquire_deployment_lock().await;
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
+	let unique_data = format!("{:x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
 	let result = ctx
-		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": "48656c6c6f"}}))
+		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": unique_data}}))
 		.await
 		.expect("DeployCellData should succeed");
-
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(content.contains("capacity"), "Should return capacity information");
+
+	wait_for_mining().await;
 }
 
 // Cell Deployment From File Tests
 #[tokio::test]
+#[serial]
 async fn test_deploy_cell_data_from_file_valid() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	// Create a temporary test file
 	use std::fs;
-	let test_file = "/tmp/test_deploy_data.bin";
-	fs::write(test_file, b"Hello CKB").expect("Should write test file");
-
-	acquire_deployment_lock().await;
+	let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
+	let test_file = format!("/tmp/test_deploy_data_{}.bin", timestamp);
+	fs::write(&test_file, format!("TestData{}", timestamp).as_bytes()).expect("Should write test file");
 
 	let result = ctx
-		.mcp_call("tools/call", json!({"name": "DeployCellDataFromFile", "arguments": {"file_path": test_file}}))
+		.mcp_call("tools/call", json!({"name": "DeployCellDataFromFile", "arguments": {"file_path": &test_file}}))
 		.await
 		.expect("DeployCellDataFromFile should succeed");
-
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
 	assert!(content.contains("tx_hash"));
 
 	// Cleanup
-	let _ = fs::remove_file(test_file);
+	let _ = fs::remove_file(&test_file);
+
+	wait_for_mining().await;
 }
 
 #[tokio::test]
@@ -820,26 +814,27 @@ async fn test_deploy_cell_data_from_file_relative_path() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_deploy_cell_data_from_file_absolute_path() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	// Create a temporary file with absolute path
 	use std::fs;
-	let test_file = "/tmp/test_absolute.bin";
-	fs::write(test_file, b"AbsolutePathTestData").expect("Should write test file");
-
-	acquire_deployment_lock().await;
+	let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
+	let test_file = format!("/tmp/test_absolute_{}.bin", timestamp);
+	fs::write(&test_file, format!("AbsolutePathTestData{}", timestamp).as_bytes()).expect("Should write test file");
 
 	let result = ctx
-		.mcp_call("tools/call", json!({"name": "DeployCellDataFromFile", "arguments": {"file_path": test_file}}))
+		.mcp_call("tools/call", json!({"name": "DeployCellDataFromFile", "arguments": {"file_path": &test_file}}))
 		.await
 		.expect("DeployCellDataFromFile should succeed with absolute path");
-
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
 
 	// Cleanup
-	let _ = fs::remove_file(test_file);
+	let _ = fs::remove_file(&test_file);
+
+	wait_for_mining().await;
 }
 
 // Faucet Tests
