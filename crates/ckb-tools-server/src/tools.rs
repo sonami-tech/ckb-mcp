@@ -397,10 +397,10 @@ impl ToolsProvider {
 
 		// Adjust fee configuration for more reliable transaction acceptance
 		// Default estimate_tx_size is 128000 which causes massive fee overestimation
-		// We use a more realistic 10000 bytes AND increase the fee rate to 2000 shannons/KB
-		// to ensure transactions are accepted and can replace pending ones in the pool
+		// We use a more realistic 10000 bytes AND increase the fee rate to 3000 shannons/KB
+		// to ensure transactions can replace any pending ones in the pool (RBF requires ~1.73x)
 		configuration.estimate_tx_size = 10000;
-		configuration.fee_rate = 2000; // 2000 shannons per KB (2x default of 1000)
+		configuration.fee_rate = 3000; // 3000 shannons per KB (3x default of 1000)
 
 		// Calculate required capacity using proper occupied_capacity method
 		// This accounts for cell header (8 bytes capacity + 32 bytes data hash + 1 byte data length),
