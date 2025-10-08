@@ -9,8 +9,10 @@ use common::TestContext;
 const TOOLS_SERVER_PORT: u16 = 8003;
 
 /// Wait between deployment tests to allow transactions to be mined and avoid RBF conflicts
+/// CKB testnet blocks are mined approximately every 8-16 seconds, so we wait 20 seconds
+/// to ensure the previous transaction is confirmed before starting the next test
 async fn wait_for_mining() {
-	tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+	tokio::time::sleep(std::time::Duration::from_secs(20)).await;
 }
 
 /// Run first - fail fast if server not available
