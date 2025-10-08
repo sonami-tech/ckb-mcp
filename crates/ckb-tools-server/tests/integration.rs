@@ -740,7 +740,7 @@ async fn test_deploy_cell_data_returns_tx_hash() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	let result = ctx
-		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": "48656c6c6f"}}))
+		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": "54784861736854657374"}}))
 		.await
 		.expect("DeployCellData should succeed");
 
@@ -826,7 +826,7 @@ async fn test_deploy_cell_data_from_file_absolute_path() {
 	// Create a temporary file with absolute path
 	use std::fs;
 	let test_file = "/tmp/test_absolute.bin";
-	fs::write(test_file, b"Absolute").expect("Should write test file");
+	fs::write(test_file, b"AbsolutePathTestData").expect("Should write test file");
 
 	acquire_deployment_lock().await;
 
