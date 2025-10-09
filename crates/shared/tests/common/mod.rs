@@ -60,6 +60,7 @@ impl TestContext {
 	}
 
 	/// Call an MCP tool
+	#[allow(dead_code)]
 	pub async fn call_tool(&self, name: &str, arguments: Value) -> Result<Value, String> {
 		self.mcp_call("tools/call", json!({ "name": name, "arguments": arguments }))
 			.await
@@ -68,6 +69,7 @@ impl TestContext {
 	/// Wait for a transaction to be confirmed by polling via MCP tools/call
 	/// This method requires the RPC server context (port 8001) to query transaction status.
 	/// Returns the block number where the transaction was confirmed.
+	#[allow(dead_code)]
 	pub async fn wait_for_tx_confirmation(
 		rpc_server_ctx: &TestContext,
 		tx_hash: &str,
@@ -110,6 +112,7 @@ impl TestContext {
 
 	/// Wait for the indexer to catch up to at least the specified block number
 	/// This ensures cells from confirmed transactions are available for collection
+	#[allow(dead_code)]
 	pub async fn wait_for_indexer_sync(
 		rpc_server_ctx: &TestContext,
 		target_block: u64,
