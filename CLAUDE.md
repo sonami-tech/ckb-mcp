@@ -56,20 +56,29 @@ RUST_LOG=debug cargo test
 ### Building and Running
 
 **IMPORTANT: Server Management**
-- Servers are **automatically managed** in a separate process/window.
-- Servers auto-restart when code changes are detected.
-- **DO NOT** manually start, stop, or restart servers during development.
-- Servers are accessible at ports 8001, 8002, 8003 at all times.
-- **Only build** to validate compilation and eliminate errors/warnings.
 
+First, confirm with the user whether servers are:
+1. **Auto-managed in another window**: Servers auto-restart when code changes are detected. You should NOT manually start/stop them. However, if a request fails or times out, automatically retry at least once as the server may still be compiling.
+2. **Manually managed by you**: After rebuilding, you must start/stop servers as needed.
+
+**Auto-managed workflow:**
 ```bash
-# Build for validation only (servers auto-managed)
+# Only build to validate compilation
 cargo build --workspace --release
 
-# These commands are handled automatically - DO NOT RUN:
-# cargo run --bin ckb-rpc-server
-# cargo run --bin ckb-docs-server
-# cargo run --bin ckb-tools-server
+# Servers restart automatically - DO NOT manually start/stop
+# If requests fail/timeout, retry automatically (server may be compiling)
+```
+
+**Manual management workflow:**
+```bash
+# Build and restart servers after code changes
+cargo build --workspace --release
+
+# Then start servers manually:
+./target/release/ckb-rpc-server --host 0.0.0.0 --port 8001 --ckb-rpc <node-url>
+./target/release/ckb-docs-server --host 0.0.0.0 --port 8002
+./target/release/ckb-tools-server --host 0.0.0.0 --port 8003 --ckb-rpc <node-url>
 ```
 
 ### CLI Parameters
