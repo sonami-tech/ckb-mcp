@@ -28,6 +28,7 @@ tokio-stream = { workspace = true }
 reqwest = { workspace = true }
 tokio = { workspace = true }
 serde_json = { workspace = true }
+serial_test = "3.2"
 
 [build-dependencies]
 sysinfo = "0.30"
