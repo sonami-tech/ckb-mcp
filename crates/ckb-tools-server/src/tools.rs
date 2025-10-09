@@ -1,4 +1,7 @@
-use shared::error::{CkbMcpError, Result};
+use shared::{
+	ckb_client::CkbRpcClient,
+	error::{CkbMcpError, Result},
+};
 use std::{fs, str::FromStr};
 use tracing::{debug, info};
 use serde::{Deserialize, Serialize};
@@ -10,24 +13,26 @@ use ckb_sdk::{
 		signer::{SignContexts, TransactionSigner},
 		TransactionBuilderConfiguration,
 	},
-	Address, AddressPayload, CkbRpcClient, HumanCapacity, NetworkInfo,
+	Address, AddressPayload, CkbRpcClient as SdkCkbRpcClient, HumanCapacity, NetworkInfo,
 };
 use ckb_types::{
 	bytes::Bytes,
 	core::Capacity,
-	packed::{CellOutput, Script},
+	packed::{CellDep, CellOutput, OutPoint, Script},
 	prelude::*,
 	H256,
 };
 use ckb_hash::blake2b_256;
 use secp256k1::SecretKey;
 
-use crate::client::CkbClient;
-
 #[derive(Clone)]
 pub struct ToolsProvider {
-	ckb_client: CkbClient,
+	ckb_client: CkbRpcClient,
+	ckb_rpc_url: String,
 	private_key: String,
+	network_type: ckb_sdk::NetworkType,
+	/// Cached sighash cell_dep from genesis block
+	sighash_cell_dep: Option<CellDep>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -78,11 +83,67 @@ pub struct LockScriptInfo {
 }
 
 impl ToolsProvider {
-	pub fn new(ckb_client: CkbClient, _ckb_rpc_url: String, private_key: String) -> Result<Self> {
+	pub fn new(ckb_client: CkbRpcClient, ckb_rpc_url: String, private_key: String) -> Result<Self> {
+		// Detect network type by querying genesis hash
+		let (network_type, sighash_cell_dep) = Self::detect_network(&ckb_rpc_url)?;
+
+		info!("Detected network type: {:?}", network_type);
+		if sighash_cell_dep.is_some() {
+			debug!("Using custom sighash cell_dep from genesis");
+		}
+
 		Ok(Self {
 			ckb_client,
+			ckb_rpc_url,
 			private_key,
+			network_type,
+			sighash_cell_dep,
 		})
+	}
+
+	/// Detect network type by querying genesis block hash
+	/// Returns (NetworkType, Optional custom sighash cell_dep for devnet)
+	fn detect_network(rpc_url: &str) -> Result<(ckb_sdk::NetworkType, Option<CellDep>)> {
+		use ckb_jsonrpc_types::BlockNumber;
+
+		let client = SdkCkbRpcClient::new(rpc_url);
+		let genesis_block = client
+			.get_block_by_number(BlockNumber::from(0))
+			.map_err(|e| CkbMcpError::Internal(format!("Failed to fetch genesis block: {}", e)))?
+			.ok_or_else(|| CkbMcpError::Internal("Genesis block not found".to_string()))?;
+
+		let genesis_hash = genesis_block.header.hash.to_string();
+
+		// Known genesis hashes
+		const MAINNET_GENESIS: &str = "0x92b197aa1fba0f63633922c61c92375c9c074a93e85963554f5499fe1450d0e5";
+		const TESTNET_GENESIS: &str = "0x10639e0895502b5688a6be8cf69460d76541bfa4821629d86d62ba0aae3f9606";
+
+		match genesis_hash.as_str() {
+			MAINNET_GENESIS => Ok((ckb_sdk::NetworkType::Mainnet, None)),
+			TESTNET_GENESIS => Ok((ckb_sdk::NetworkType::Testnet, None)),
+			_ => {
+				// Unknown genesis - assume devnet, fetch sighash cell_dep from genesis
+				info!("Unknown genesis hash {}, assuming devnet", genesis_hash);
+
+				// Get second transaction which contains the dep_group
+				// In standard CKB genesis: tx[0] = cellbase with scripts, tx[1] = dep_group
+				let dep_group_tx_hash = genesis_block.transactions[1].hash.clone();
+
+				// Sighash dep_group is at output index 0 of transaction 1
+				let out_point = OutPoint::new_builder()
+					.tx_hash(dep_group_tx_hash.pack())
+					.index(0u32.pack())
+					.build();
+
+				let cell_dep = CellDep::new_builder()
+					.out_point(out_point)
+					.dep_type(ckb_types::core::DepType::DepGroup.into())
+					.build();
+
+				// Use Testnet as the network type since devnet has same structure
+				Ok((ckb_sdk::NetworkType::Testnet, Some(cell_dep)))
+			}
+		}
 	}
 
 	/// Parse private key from hex string (with or without 0x prefix)
@@ -192,18 +253,28 @@ impl ToolsProvider {
 		};
 
 		// Query capacity using indexer RPC
-		// Note: We need to use the network info to get the correct RPC URL
-		let network_info = NetworkInfo::testnet();
-		let ckb_client = CkbRpcClient::new(network_info.url.as_str());
+		let ckb_client = SdkCkbRpcClient::new(&self.ckb_rpc_url);
 
-		let cells_capacity = ckb_client
+		let cells_capacity_opt = ckb_client
 			.get_cells_capacity(search_key)
-			.map_err(|e| CkbMcpError::Internal(format!("Failed to query cells capacity: {}", e)))?
-			.ok_or_else(|| CkbMcpError::Internal("No cells found for address".to_string()))?;
+			.map_err(|e| CkbMcpError::Internal(format!("Failed to query cells capacity: {}", e)))?;
 
-		let capacity_shannons = cells_capacity.capacity.value();
-		let capacity_ckb = HumanCapacity::from(capacity_shannons).to_string();
-		let block_number = cells_capacity.block_number.value();
+		let (capacity_shannons, capacity_ckb, block_number) = match cells_capacity_opt {
+			Some(cells_capacity) => {
+				let capacity_shannons = cells_capacity.capacity.value();
+				let capacity_ckb = HumanCapacity::from(capacity_shannons).to_string();
+				let block_number = cells_capacity.block_number.value();
+				(capacity_shannons, capacity_ckb, block_number)
+			}
+			None => {
+				// No cells found - return zero balance with current tip block number
+				let tip_header = ckb_client
+					.get_tip_header()
+					.map_err(|e| CkbMcpError::Internal(format!("Failed to get tip header: {}", e)))?;
+				let block_number = tip_header.inner.number.value();
+				(0, HumanCapacity::from(0).to_string(), block_number)
+			}
+		};
 
 		info!(
 			"Address {} has {} CKB ({} shannons) at block {}",
@@ -394,10 +465,21 @@ impl ToolsProvider {
 
 		debug!("Sender address: {}", sender_address);
 
-		// Setup network info and configuration
-		let network_info = NetworkInfo::testnet();
+		// Setup network info using detected network type
+		let network_info = NetworkInfo::new(self.network_type, self.ckb_rpc_url.clone());
 		let mut configuration = TransactionBuilderConfiguration::new_with_network(network_info.clone())
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to create transaction configuration: {}", e)))?;
+
+		// For devnet, override the sighash cell_dep with the one from actual genesis
+		if let Some(ref custom_cell_dep) = self.sighash_cell_dep {
+			// Replace the hardcoded testnet sighash cell_dep with our devnet one
+			configuration.script_handlers[0] = Box::new(
+				ckb_sdk::transaction::handler::sighash::Secp256k1Blake160SighashAllScriptHandler::new_with_customize(
+					vec![custom_cell_dep.clone()]
+				)
+			);
+			debug!("Overrode sighash cell_dep with devnet genesis cell_dep");
+		}
 
 		// Adjust fee configuration for more reliable transaction acceptance
 		// Default estimate_tx_size is 128000 which causes massive fee overestimation
@@ -463,7 +545,15 @@ impl ToolsProvider {
 		// Convert to JSON-RPC format and send
 		let tx_json = ckb_jsonrpc_types::TransactionView::from(tx_with_groups.get_tx_view().clone());
 
-		let tx_hash = CkbRpcClient::new(network_info.url.as_str())
+		// Debug: Log cell_deps and inputs
+		for (i, cell_dep) in tx_json.inner.cell_deps.iter().enumerate() {
+			debug!("CellDep {}: tx_hash={}, index={}", i, cell_dep.out_point.tx_hash, cell_dep.out_point.index);
+		}
+		for (i, input) in tx_json.inner.inputs.iter().enumerate() {
+			debug!("Input {}: previous_output tx_hash={}, index={}", i, input.previous_output.tx_hash, input.previous_output.index);
+		}
+
+		let tx_hash = SdkCkbRpcClient::new(network_info.url.as_str())
 			.send_transaction(tx_json.inner, None)
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to send transaction: {}", e)))?;
 
