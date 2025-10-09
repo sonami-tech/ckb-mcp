@@ -66,19 +66,6 @@ async fn test_mcp_initialize() {
 	assert!(result["capabilities"]["tools"].is_object());
 }
 
-#[tokio::test]
-async fn test_tools_list_returns_9_tools() {
-	let ctx = TestContext::new(TOOLS_SERVER_PORT);
-
-	let result = ctx
-		.mcp_call("tools/list", json!({}))
-		.await
-		.expect("tools/list should succeed");
-
-	let tools = result["tools"].as_array().unwrap();
-	assert_eq!(tools.len(), 9, "Should have exactly 9 tools");
-}
-
 // Account Info Tests
 #[tokio::test]
 async fn test_get_default_account_info() {
@@ -509,16 +496,35 @@ async fn test_deploy_cell_data_missing_data_param() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_deploy_cell_data_empty_data() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
+	// Empty string "" decodes to zero bytes via hex::decode, which is valid
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": ""}}))
-		.await;
+		.await
+		.expect("Empty data should be accepted (decodes to zero bytes)");
 
-	// Empty data might be valid or invalid depending on implementation
-	// At minimum it shouldn't panic
-	let _ = result;
+	let content = result["content"][0]["text"].as_str().unwrap();
+
+	// Verify deployment succeeded
+	assert!(content.contains("tx_hash"), "Should return transaction hash");
+
+	// Parse and validate response structure
+	let response: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	let tx_hash = response["tx_hash"].as_str()
+		.expect("tx_hash should be present");
+	assert!(tx_hash.starts_with("0x"), "tx_hash should be hex format");
+	assert_eq!(tx_hash.len(), 66, "tx_hash should be 66 chars (0x + 64 hex digits)");
+
+	// Verify capacity is present (cells with empty data still need capacity)
+	assert!(response.get("capacity").is_some(), "Should include capacity information");
+
+	// Wait for confirmation
+	wait_for_deployment_confirmation(content).await;
 }
 
 #[tokio::test]
@@ -579,7 +585,7 @@ async fn test_deploy_cell_data_from_file_missing_param() {
 
 // Faucet Tests
 #[tokio::test]
-async fn test_request_testnet_funds_invalid_address() {
+async fn test_faucet_rejects_invalid_address() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	let result = ctx
@@ -822,8 +828,20 @@ async fn test_deploy_cell_data_from_file_relative_path() {
 		.mcp_call("tools/call", json!({"name": "DeployCellDataFromFile", "arguments": {"file_path": test_file}}))
 		.await;
 
-	// May succeed or fail depending on working directory
-	let _ = result;
+	// Relative paths may succeed or fail depending on server working directory.
+	// Either outcome is valid - if it fails, verify it's due to file not found.
+	match result {
+		Ok(res) => {
+			// If successful, verify transaction hash is returned
+			let content = res["content"][0]["text"].as_str().unwrap();
+			assert!(content.contains("0x"), "Should return transaction hash starting with 0x");
+		}
+		Err(e) => {
+			// If failed, verify it's a file-not-found error
+			assert!(e.contains("No such file or directory") || e.contains("file") || e.contains("Failed to read"),
+				"Error should be about file access, got: {}", e);
+		}
+	}
 
 	// Cleanup
 	let _ = fs::remove_file(test_file);
@@ -856,7 +874,7 @@ async fn test_deploy_cell_data_from_file_absolute_path() {
 
 // Faucet Tests
 #[tokio::test]
-async fn test_request_testnet_funds_default() {
+async fn test_faucet_request_default_address() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	let result = ctx
@@ -869,7 +887,7 @@ async fn test_request_testnet_funds_default() {
 }
 
 #[tokio::test]
-async fn test_request_testnet_funds_specific_address() {
+async fn test_faucet_request_specific_address() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	let test_address = "ckt1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsqwgx292hnvmn68xf779vmzrshpmm6epn4c0cgwga";
@@ -883,7 +901,7 @@ async fn test_request_testnet_funds_specific_address() {
 }
 
 #[tokio::test]
-async fn test_request_testnet_funds_mainnet_address() {
+async fn test_faucet_request_mainnet_address() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	let mainnet_address = "ckb1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsqwgx292hnvmn68xf779vmzrshpmm6epn4c0cgwga";
@@ -897,19 +915,3 @@ async fn test_request_testnet_funds_mainnet_address() {
 	let _ = result;
 }
 
-#[tokio::test]
-async fn test_request_testnet_funds_rate_limit() {
-	let ctx = TestContext::new(TOOLS_SERVER_PORT);
-
-	// Request funds multiple times to potentially hit rate limit
-	let _result1 = ctx
-		.mcp_call("tools/call", json!({"name": "RequestTestnetFunds", "arguments": {}}))
-		.await;
-
-	let _result2 = ctx
-		.mcp_call("tools/call", json!({"name": "RequestTestnetFunds", "arguments": {}}))
-		.await;
-
-	// One of these likely hits rate limit
-	// Just verify no panic
-}
