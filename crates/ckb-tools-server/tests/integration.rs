@@ -7,39 +7,7 @@ mod common;
 use common::TestContext;
 
 const TOOLS_SERVER_PORT: u16 = 8003;
-const CKB_RPC_URL: &str = "http://192.168.0.73:18114";
-
-/// Wait for a transaction to be confirmed by polling the CKB node
-async fn wait_for_tx_confirmation(tx_hash: &str) -> Result<(), Box<dyn std::error::Error>> {
-	let client = reqwest::Client::new();
-
-	// Poll for up to 60 seconds
-	for _ in 0..60 {
-		let response = client
-			.post(CKB_RPC_URL)
-			.json(&serde_json::json!({
-				"jsonrpc": "2.0",
-				"method": "get_transaction",
-				"params": [tx_hash],
-				"id": 1
-			}))
-			.send()
-			.await?;
-
-		let result: serde_json::Value = response.json().await?;
-
-		// Check if transaction is confirmed (has tx_status.status == "committed")
-		if let Some(status) = result["result"]["tx_status"]["status"].as_str() {
-			if status == "committed" {
-				return Ok(());
-			}
-		}
-
-		tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-	}
-
-	Err("Transaction confirmation timeout".into())
-}
+const RPC_SERVER_PORT: u16 = 8001;
 
 /// Extract tx_hash from deployment result and wait for confirmation
 async fn wait_for_deployment_confirmation(content: &str) {
@@ -47,7 +15,8 @@ async fn wait_for_deployment_confirmation(content: &str) {
 		let hash_start = start + 12;
 		if let Some(end) = content[hash_start..].find('"') {
 			let tx_hash = &content[hash_start..hash_start + end];
-			wait_for_tx_confirmation(tx_hash).await.expect("Transaction should confirm");
+			let rpc_ctx = TestContext::new(RPC_SERVER_PORT);
+			TestContext::wait_for_tx_confirmation(&rpc_ctx, tx_hash).await.expect("Transaction should confirm");
 		}
 	}
 }

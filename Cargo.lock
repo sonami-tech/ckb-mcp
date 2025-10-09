@@ -396,7 +396,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-docs-server"
-version = "0.4.78"
+version = "0.4.98"
 dependencies = [
  "anyhow",
  "axum",
@@ -600,7 +600,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-rpc-server"
-version = "0.4.90"
+version = "0.4.127"
 dependencies = [
  "anyhow",
  "axum",
@@ -713,7 +713,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-tools-server"
-version = "0.4.149"
+version = "0.4.184"
 dependencies = [
  "anyhow",
  "axum",
@@ -2876,12 +2876,16 @@ name = "shared"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "axum",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
+ "tower 0.4.13",
+ "tower-http 0.5.2",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

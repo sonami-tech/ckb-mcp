@@ -5,7 +5,7 @@ use shared::{
 use serde_json::{json, Value};
 use tracing::{debug, error, info};
 
-use crate::rpc::CkbRpcClient;
+use crate::rpc::{CkbRpcClient, CkbRpcClientExt};
 
 pub struct McpHandler {
 	rpc_client: CkbRpcClient,

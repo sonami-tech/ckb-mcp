@@ -327,8 +327,12 @@ impl ToolsProvider {
 			None => self.get_sender_address()?,
 		};
 
-		// Call the Nervos testnet faucet API
-		let client = reqwest::Client::new();
+		// Call the Nervos testnet faucet API.
+		let client = reqwest::Client::builder()
+			.timeout(std::time::Duration::from_secs(30))
+			.connect_timeout(std::time::Duration::from_secs(5))
+			.build()
+			.map_err(|e| CkbMcpError::Internal(format!("Failed to build HTTP client: {}", e)))?;
 		let response = client
 			.post("https://faucet-api.nervos.org/claim_events")
 			.header("accept", "application/json, text/plain, */*")

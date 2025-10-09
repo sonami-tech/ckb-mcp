@@ -1,14 +1,9 @@
-use axum::{
-	extract::State,
-	http::{HeaderValue, StatusCode},
-	routing::{get, post},
-	Json, Router,
-};
 use clap::Parser;
-use shared::{error::Result, types::ServerConfig};
+use shared::{
+	error::Result,
+	server::{HasMcpHandler, McpHandlerTrait, McpServerConfig},
+};
 use std::sync::Arc;
-use tower_http::cors::CorsLayer;
-use tracing::info;
 
 mod client;
 mod handlers;
@@ -50,21 +45,38 @@ struct AppState {
 	handler: Arc<McpHandler>,
 }
 
+impl HasMcpHandler for AppState {
+	type Handler = McpHandler;
+
+	fn handler(&self) -> &Arc<Self::Handler> {
+		&self.handler
+	}
+
+	fn server_info_json(&self) -> serde_json::Value {
+		serde_json::json!({
+			"name": "ckb-tools-server",
+			"version": "0.1.0",
+			"description": "CKB Development Tools MCP Server",
+			"endpoints": {
+				"mcp": "/mcp",
+				"sse": "/sse",
+				"health": "/health"
+			},
+			"transport": ["http"]
+		})
+	}
+}
+
+#[axum::async_trait]
+impl McpHandlerTrait for McpHandler {
+	async fn handle_request(&self, request: shared::mcp::McpRequest) -> Result<shared::mcp::McpResponse> {
+		self.handle_request(request).await
+	}
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
 	let args = Args::parse();
-
-	// Initialize logging
-	tracing_subscriber::fmt()
-		.with_env_filter(&args.log_level)
-		.init();
-
-	let _config = ServerConfig {
-		host: args.host.clone(),
-		port: args.port,
-		ckb_rpc_url: Some(args.ckb_rpc.clone()),
-		log_level: args.log_level,
-	};
 
 	// Initialize CKB client
 	let ckb_client = CkbClient::new(args.ckb_rpc.clone())?;
@@ -77,56 +89,13 @@ async fn main() -> Result<()> {
 
 	let state = AppState { handler };
 
-	// Build router
-	let app = Router::new()
-		.route("/", get(mcp_info_handler))
-		.route("/mcp", post(mcp_handler))
-		.route("/health", get(health_handler))
-		.layer(
-			CorsLayer::new()
-				.allow_origin("*".parse::<HeaderValue>().unwrap())
-				.allow_methods([axum::http::Method::GET, axum::http::Method::POST])
-				.allow_headers([axum::http::header::CONTENT_TYPE]),
-		)
-		.with_state(state);
+	// Configure and start server
+	let config = McpServerConfig::new(
+		args.host,
+		args.port,
+		"CKB Tools MCP server".to_string(),
+		args.log_level,
+	);
 
-	let addr = format!("{}:{}", args.host, args.port);
-	info!("Starting CKB Tools MCP server on {}", addr);
-
-	let listener = tokio::net::TcpListener::bind(&addr).await?;
-	axum::serve(listener, app).await?;
-
-	Ok(())
-}
-
-
-async fn mcp_handler(
-	State(state): State<AppState>,
-	Json(request): Json<shared::mcp::McpRequest>,
-) -> std::result::Result<Json<shared::mcp::McpResponse>, StatusCode> {
-	match state.handler.handle_request(request).await {
-		Ok(response) => Ok(Json(response)),
-		Err(e) => {
-			tracing::warn!("MCP request failed: {}", e);
-			Err(StatusCode::INTERNAL_SERVER_ERROR)
-		}
-	}
-}
-
-async fn mcp_info_handler() -> Json<serde_json::Value> {
-	Json(serde_json::json!({
-		"name": "ckb-tools-server",
-		"version": "0.1.0",
-		"description": "CKB Development Tools MCP Server",
-		"endpoints": {
-			"mcp": "/mcp",
-			"sse": "/sse",
-			"health": "/health"
-		},
-		"transport": ["http"]
-	}))
-}
-
-async fn health_handler() -> &'static str {
-	"OK"
+	config.serve(state).await
 }

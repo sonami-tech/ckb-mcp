@@ -715,7 +715,7 @@ async fn test_get_cells_empty_results() {
 					"script": {
 						"code_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
 						"hash_type": "type",
-						"args": "0xnonexistent"
+						"args": "0xdeadbeef"
 					},
 					"script_type": "lock"
 				},
@@ -767,7 +767,7 @@ async fn test_get_transactions_empty_results() {
 					"script": {
 						"code_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
 						"hash_type": "type",
-						"args": "0xnonexistent"
+						"args": "0xdeadbeef"
 					},
 					"script_type": "lock"
 				},
