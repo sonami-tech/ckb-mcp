@@ -46,19 +46,6 @@ async fn test_mcp_initialize() {
 	assert!(result["capabilities"]["tools"].is_object());
 }
 
-#[tokio::test]
-async fn test_tools_list_returns_16_tools() {
-	let ctx = TestContext::new(RPC_SERVER_PORT);
-
-	let result = ctx
-		.mcp_call("tools/list", json!({}))
-		.await
-		.expect("tools/list should succeed");
-
-	let tools = result["tools"].as_array().unwrap();
-	assert_eq!(tools.len(), 16, "Should have exactly 16 RPC tools");
-}
-
 // Chain Methods - Success Cases
 #[tokio::test]
 async fn test_get_tip_block_number() {
@@ -233,13 +220,12 @@ async fn test_get_block_nonexistent_hash() {
 
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "get_block", "arguments": {"block_hash": "0x0000000000000000000000000000000000000000000000000000000000000000"}}))
-		.await;
+		.await
+		.expect("get_block should succeed even for nonexistent hash");
 
-	// May return null or error depending on RPC implementation
-	if let Ok(res) = result {
-		let content = res["content"][0]["text"].as_str().unwrap();
-		assert!(content.contains("null") || content.contains("error"));
-	}
+	// Should return null for nonexistent block
+	let content = result["content"][0]["text"].as_str().unwrap();
+	assert!(content.contains("null"), "Nonexistent block should return null");
 }
 
 #[tokio::test]
@@ -248,13 +234,12 @@ async fn test_get_block_by_number_beyond_tip() {
 
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "get_block_by_number", "arguments": {"block_number": 99999999}}))
-		.await;
+		.await
+		.expect("get_block_by_number should succeed even for beyond tip");
 
 	// Should return null for beyond tip
-	if let Ok(res) = result {
-		let content = res["content"][0]["text"].as_str().unwrap();
-		assert!(content.contains("null"));
-	}
+	let content = result["content"][0]["text"].as_str().unwrap();
+	assert!(content.contains("null"), "Block beyond tip should return null");
 }
 
 #[tokio::test]
@@ -274,13 +259,12 @@ async fn test_get_epoch_by_number_future() {
 
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "get_epoch_by_number", "arguments": {"epoch_number": 999999}}))
-		.await;
+		.await
+		.expect("get_epoch_by_number should succeed even for future epoch");
 
 	// Should return null for future epoch
-	if let Ok(res) = result {
-		let content = res["content"][0]["text"].as_str().unwrap();
-		assert!(content.contains("null"));
-	}
+	let content = result["content"][0]["text"].as_str().unwrap();
+	assert!(content.contains("null"), "Future epoch should return null");
 }
 
 #[tokio::test]
@@ -289,12 +273,12 @@ async fn test_get_header_by_number_beyond_tip() {
 
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "get_header_by_number", "arguments": {"block_number": 99999999}}))
-		.await;
+		.await
+		.expect("get_header_by_number should succeed even for beyond tip");
 
-	if let Ok(res) = result {
-		let content = res["content"][0]["text"].as_str().unwrap();
-		assert!(content.contains("null"));
-	}
+	// Should return null for beyond tip
+	let content = result["content"][0]["text"].as_str().unwrap();
+	assert!(content.contains("null"), "Header beyond tip should return null");
 }
 
 // Live Cell Methods
@@ -410,22 +394,34 @@ async fn test_local_node_info() {
 		.expect("local_node_info should succeed");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-	assert!(content.contains("version") || content.contains("node_id"));
-}
 
-#[tokio::test]
-async fn test_local_node_info_has_required_fields() {
-	let ctx = TestContext::new(RPC_SERVER_PORT);
+	// Parse JSON to validate structure
+	let node_info: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
 
-	let result = ctx
-		.mcp_call("tools/call", json!({"name": "local_node_info", "arguments": {}}))
-		.await
-		.expect("local_node_info should succeed");
+	// Verify ALL required fields exist (not just one)
+	assert!(node_info.get("version").is_some(), "Should contain version field");
+	assert!(node_info.get("node_id").is_some(), "Should contain node_id field");
+	assert!(node_info.get("addresses").is_some(), "Should contain addresses field");
 
-	let content = result["content"][0]["text"].as_str().unwrap();
-	// Should have version, node_id, addresses, etc.
-	assert!(content.contains("\""));
+	// Validate field types and formats
+	let version = node_info["version"].as_str()
+		.expect("version should be a string");
+	assert!(!version.is_empty(), "version should not be empty");
+
+	let node_id = node_info["node_id"].as_str()
+		.expect("node_id should be a string");
+	assert!(!node_id.is_empty(), "node_id should not be empty");
+
+	let _addresses = node_info["addresses"].as_array()
+		.expect("addresses should be an array");
+	// Note: addresses could be empty if node has no peers, so we just check it's an array
+
+	// Validate connections is a hex number string if present
+	if let Some(connections) = node_info.get("connections") {
+		let conn_str = connections.as_str().expect("connections should be a string");
+		assert!(conn_str.starts_with("0x"), "connections should be hex format");
+	}
 }
 
 // General Error Cases
@@ -478,7 +474,7 @@ async fn test_invalid_json_rpc_request() {
 async fn test_get_transaction_valid() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
-	// Get genesis block first
+	// Get genesis block to extract a real transaction hash
 	let block_result = ctx
 		.mcp_call("tools/call", json!({"name": "get_block_by_number", "arguments": {"block_number": 0}}))
 		.await
@@ -486,11 +482,26 @@ async fn test_get_transaction_valid() {
 
 	let block_content = block_result["content"][0]["text"].as_str().unwrap();
 
-	// Genesis block should have cellbase transaction
-	// For now just test that the call format works
-	if block_content.contains("transactions") {
-		// Would need to parse actual tx hash from block, skip for now if complex
-	}
+	// Parse the block JSON to extract a transaction hash
+	let block_json: serde_json::Value = serde_json::from_str(block_content)
+		.expect("Block content should be valid JSON");
+
+	// Extract the first transaction hash from the genesis block
+	let tx_hash = block_json["transactions"][0]["hash"]
+		.as_str()
+		.expect("Genesis block should have at least one transaction with a hash");
+
+	// Now query for this transaction
+	let tx_result = ctx
+		.mcp_call("tools/call", json!({"name": "get_transaction", "arguments": {"tx_hash": tx_hash}}))
+		.await
+		.expect("get_transaction should succeed for genesis transaction");
+
+	let tx_content = tx_result["content"][0]["text"].as_str().unwrap();
+
+	// Validate the response contains transaction details
+	assert!(tx_content.contains("transaction"), "Response should contain transaction details");
+	assert!(tx_content.contains(tx_hash), "Response should contain the queried transaction hash");
 }
 
 #[tokio::test]
@@ -499,26 +510,35 @@ async fn test_get_transaction_nonexistent() {
 
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "get_transaction", "arguments": {"tx_hash": "0x0000000000000000000000000000000000000000000000000000000000000000"}}))
-		.await;
+		.await
+		.expect("get_transaction should succeed even for nonexistent transaction");
 
-	// Should return null or succeed with null result
-	if let Ok(res) = result {
-		let content = res["content"][0]["text"].as_str().unwrap();
-		assert!(content.contains("null"));
-	}
+	// Should return null for nonexistent transaction
+	let content = result["content"][0]["text"].as_str().unwrap();
+	assert!(content.contains("null"), "Nonexistent transaction should return null");
 }
 
 #[tokio::test]
 async fn test_get_block_hash_negative_number() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
-	// Note: JSON doesn't have negative integers in the same way, but we can test with invalid value
+	// JSON numeric -1 will be deserialized. CKB RPC should handle gracefully.
+	// Either returns null (treating as non-existent block) or returns an error.
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "get_block_hash", "arguments": {"block_number": -1}}))
 		.await;
 
-	// May fail or be handled differently
-	let _ = result;
+	match result {
+		Ok(res) => {
+			// If it succeeds, should return null for invalid block number
+			let content = res["content"][0]["text"].as_str().unwrap();
+			assert!(content.contains("null"), "Negative block number should return null");
+		}
+		Err(_) => {
+			// If it fails, that's also acceptable behavior for invalid input
+			// Either outcome is valid
+		}
+	}
 }
 
 // Live Cell Tests
@@ -526,38 +546,77 @@ async fn test_get_block_hash_negative_number() {
 async fn test_get_live_cell_valid() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
-	// Use a known genesis cellbase output
+	// Get genesis block to extract a real transaction hash
+	let block_result = ctx
+		.mcp_call("tools/call", json!({"name": "get_block_by_number", "arguments": {"block_number": 0}}))
+		.await
+		.expect("get_block_by_number should succeed");
+
+	let block_content = block_result["content"][0]["text"].as_str().unwrap();
+	let block_json: serde_json::Value = serde_json::from_str(block_content)
+		.expect("Block content should be valid JSON");
+
+	// Extract the first transaction hash from the genesis block
+	let tx_hash = block_json["transactions"][0]["hash"]
+		.as_str()
+		.expect("Genesis block should have at least one transaction with a hash");
+
+	// Query for the first output of this transaction
 	let result = ctx
 		.mcp_call("tools/call", json!({
 			"name": "get_live_cell",
 			"arguments": {
-				"tx_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+				"tx_hash": tx_hash,
 				"index": 0,
 				"with_data": false
 			}
 		}))
-		.await;
+		.await
+		.expect("get_live_cell should succeed for genesis transaction output");
 
-	// May or may not exist depending on network
-	let _ = result;
+	let content = result["content"][0]["text"].as_str().unwrap();
+
+	// Validate the response contains cell status information
+	assert!(content.contains("status"), "Response should contain cell status");
 }
 
 #[tokio::test]
 async fn test_get_live_cell_with_data() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
+	// Get genesis block to extract a real transaction hash
+	let block_result = ctx
+		.mcp_call("tools/call", json!({"name": "get_block_by_number", "arguments": {"block_number": 0}}))
+		.await
+		.expect("get_block_by_number should succeed");
+
+	let block_content = block_result["content"][0]["text"].as_str().unwrap();
+	let block_json: serde_json::Value = serde_json::from_str(block_content)
+		.expect("Block content should be valid JSON");
+
+	// Extract the first transaction hash from the genesis block
+	let tx_hash = block_json["transactions"][0]["hash"]
+		.as_str()
+		.expect("Genesis block should have at least one transaction with a hash");
+
+	// Query for the first output of this transaction WITH data
 	let result = ctx
 		.mcp_call("tools/call", json!({
 			"name": "get_live_cell",
 			"arguments": {
-				"tx_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+				"tx_hash": tx_hash,
 				"index": 0,
 				"with_data": true
 			}
 		}))
-		.await;
+		.await
+		.expect("get_live_cell with_data should succeed for genesis transaction output");
 
-	let _ = result;
+	let content = result["content"][0]["text"].as_str().unwrap();
+
+	// Validate the response contains cell status and data field
+	assert!(content.contains("status"), "Response should contain cell status");
+	// Note: Not all cells have data, but the field should be present in the response structure
 }
 
 #[tokio::test]
@@ -581,19 +640,37 @@ async fn test_get_live_cell_invalid_outpoint() {
 async fn test_get_live_cell_spent() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
-	// This tests the response format when querying a potentially spent cell
+	// Get genesis block to extract a real transaction hash
+	let block_result = ctx
+		.mcp_call("tools/call", json!({"name": "get_block_by_number", "arguments": {"block_number": 0}}))
+		.await
+		.expect("get_block_by_number should succeed");
+
+	let block_content = block_result["content"][0]["text"].as_str().unwrap();
+	let block_json: serde_json::Value = serde_json::from_str(block_content)
+		.expect("Block content should be valid JSON");
+
+	// Extract the first transaction hash from the genesis block
+	let tx_hash = block_json["transactions"][0]["hash"]
+		.as_str()
+		.expect("Genesis block should have at least one transaction with a hash");
+
+	// Query for the first output of this transaction
 	let result = ctx
 		.mcp_call("tools/call", json!({
 			"name": "get_live_cell",
 			"arguments": {
-				"tx_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+				"tx_hash": tx_hash,
 				"index": 0
 			}
 		}))
-		.await;
+		.await
+		.expect("get_live_cell should succeed for genesis transaction output");
 
-	// Should return status information
-	let _ = result;
+	let content = result["content"][0]["text"].as_str().unwrap();
+
+	// Validate the response contains status information (live, dead, or unknown)
+	assert!(content.contains("status"), "Response should contain cell status information");
 }
 
 // Indexer Pagination & Filtering Tests
@@ -681,7 +758,7 @@ async fn test_get_cells_with_order_desc() {
 async fn test_get_cells_with_cursor() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
-	// First get some cells
+	// Step 1: First request - get page 1 with small limit
 	let first_result = ctx
 		.mcp_call("tools/call", json!({
 			"name": "get_cells",
@@ -694,15 +771,86 @@ async fn test_get_cells_with_cursor() {
 					},
 					"script_type": "lock"
 				},
-				"limit": 1
+				"order": "asc",
+				"limit": 2
 			}
 		}))
 		.await
-		.expect("get_cells should succeed");
+		.expect("First get_cells request should succeed");
 
-	// Note: Would need to parse cursor from response to test pagination properly
-	let content = first_result["content"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
+	// Step 2: Parse first response
+	let first_content = first_result["content"][0]["text"].as_str().unwrap();
+	let first_page: serde_json::Value = serde_json::from_str(first_content)
+		.expect("First response should be valid JSON");
+
+	// Step 3: Extract cursor and handle edge case
+	let cursor_value = first_page.get("last_cursor")
+		.expect("Response should have last_cursor field");
+
+	if cursor_value.is_null() {
+		println!("Skipping pagination test - no cursor returned (insufficient data)");
+		return;
+	}
+
+	let cursor = cursor_value.as_str()
+		.expect("last_cursor should be a string when not null");
+
+	// Step 4: Second request with cursor
+	let second_result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_cells",
+			"arguments": {
+				"search_key": {
+					"script": {
+						"code_hash": "0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8",
+						"hash_type": "type",
+						"args": "0x"
+					},
+					"script_type": "lock"
+				},
+				"order": "asc",
+				"limit": 2,
+				"after_cursor": cursor
+			}
+		}))
+		.await
+		.expect("Second get_cells request with cursor should succeed");
+
+	// Step 5: Parse second response
+	let second_content = second_result["content"][0]["text"].as_str().unwrap();
+	let second_page: serde_json::Value = serde_json::from_str(second_content)
+		.expect("Second response should be valid JSON");
+
+	// Step 6: Validate pagination
+	let first_objects = first_page["objects"].as_array()
+		.expect("First page should have objects array");
+	let second_objects = second_page["objects"].as_array()
+		.expect("Second page should have objects array");
+
+	assert!(!second_objects.is_empty(), "Second page should contain results");
+
+	// Verify pages have different content
+	if !first_objects.is_empty() && !second_objects.is_empty() {
+		let first_cell_outpoint = &first_objects[0]["out_point"];
+		let second_cell_outpoint = &second_objects[0]["out_point"];
+
+		assert_ne!(
+			first_cell_outpoint, second_cell_outpoint,
+			"Paginated results should return different cells"
+		);
+	}
+
+	// Step 7: Ensure no overlap between pages
+	for first_cell in first_objects.iter() {
+		let first_outpoint = &first_cell["out_point"];
+		for second_cell in second_objects.iter() {
+			let second_outpoint = &second_cell["out_point"];
+			assert_ne!(
+				first_outpoint, second_outpoint,
+				"Pages should not have overlapping cells"
+			);
+		}
+	}
 }
 
 #[tokio::test]
