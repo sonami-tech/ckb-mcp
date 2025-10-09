@@ -55,9 +55,16 @@ RUST_LOG=debug cargo test
 
 ### Building and Running
 
-**IMPORTANT: Server Management**
+**⚠️ CRITICAL: Server Management - MUST ASK USER FIRST ⚠️**
 
-First, confirm with the user whether servers are:
+**BEFORE running any tests, building servers, or starting/stopping servers, you MUST ask the user:**
+
+"Are the MCP servers (ports 8001-8003) auto-managed in another window, or should I manage them manually?"
+
+Wait for the user's response before proceeding. Do not assume or guess.
+
+Once confirmed, follow the appropriate workflow:
+
 1. **Auto-managed in another window**: Servers auto-restart when code changes are detected. You should NOT manually start/stop them. However, if a request fails or times out, automatically retry at least once as the server may still be compiling.
 2. **Manually managed by you**: After rebuilding, you must start/stop servers as needed.
 
