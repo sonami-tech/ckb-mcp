@@ -1,15 +1,13 @@
 use clap::Parser;
 use shared::{
+	ckb_client::CkbRpcClient,
 	error::Result,
 	server::{HasMcpHandler, McpHandlerTrait, McpServerConfig},
 };
 use std::sync::Arc;
 
-mod client;
 mod handlers;
 mod tools;
-
-use client::CkbClient;
 use handlers::McpHandler;
 use tools::ToolsProvider;
 
@@ -79,7 +77,7 @@ async fn main() -> Result<()> {
 	let args = Args::parse();
 
 	// Initialize CKB client
-	let ckb_client = CkbClient::new(args.ckb_rpc.clone())?;
+	let ckb_client = CkbRpcClient::new(args.ckb_rpc.clone())?;
 
 	// Initialize tools provider
 	let tools_provider = ToolsProvider::new(ckb_client, args.ckb_rpc, args.private_key)?;
