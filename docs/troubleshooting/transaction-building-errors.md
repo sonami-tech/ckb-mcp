@@ -1,6 +1,6 @@
 ## Description
 
-Transaction construction error debugging covering insufficient capacity, missing cell deps, invalid witnesses, script execution failures, header dependency issues, cycle limit exceeded, fee calculation errors, and serialization problems with solutions and debugging strategies.
+Transaction construction error debugging covering insufficient capacity, missing cell deps (including devnet resolution), RBF/cell contention in concurrent operations, indexer synchronization lag, invalid witnesses, script execution failures, header dependency issues, cycle limits, and fee calculation with comprehensive solutions and debugging strategies.
 
 ## Related Resources
 
@@ -74,15 +74,214 @@ const COMMON_CELL_DEPS = {
 // Add required deps based on scripts used
 function addRequiredCellDeps(tx: TransactionSkeleton): TransactionSkeleton {
   const scripts = extractUsedScripts(tx);
-  
+
   for (const script of scripts) {
     const dep = COMMON_CELL_DEPS[script.name];
     if (dep && !hasCellDep(tx, dep)) {
       tx = tx.update("cellDeps", deps => deps.push(dep));
     }
   }
-  
+
   return tx;
+}
+```
+
+**TransactionFailedToResolve on Custom Networks**:
+
+When deploying on devnet or custom networks, you may see:
+```
+TransactionFailedToResolve: Unknown(OutPoint(0x...))
+```
+
+This occurs when SDKs use hardcoded mainnet/testnet cell deps that don't exist on your network. The solution is network detection:
+
+```typescript
+// Detect network and load correct system scripts
+async function getSystemScriptCellDeps(rpc: RPC): Promise<CellDep[]> {
+  const genesisBlock = await rpc.getBlockByNumber("0x0");
+  const genesisHash = genesisBlock.header.hash;
+
+  // Check if known network
+  const KNOWN_NETWORKS = {
+    "0x92b197aa1fba0f63633922c61c92375c9c074a93e85963554f5499fe1450d0e5": "mainnet",
+    "0x10639e0895502b5688a6be8cf69460d76541bfa4821629d86d62ba0aae3f9606": "testnet",
+  };
+
+  if (KNOWN_NETWORKS[genesisHash]) {
+    return getWellKnownCellDeps(KNOWN_NETWORKS[genesisHash]);
+  }
+
+  // Custom network - extract deps from genesis
+  // System scripts are in genesis.transactions[1]
+  const systemTx = genesisBlock.transactions[1];
+
+  return [{
+    outPoint: {
+      txHash: systemTx.hash,
+      index: "0x0"  // dep_group at index 0
+    },
+    depType: "depGroup"
+  }];
+}
+```
+
+### ERROR: RBF / Cell Contention
+
+**Error Code**: `RBFRejected`, `PoolRejectedRBF`, `PoolRejectedDuplicatedTransaction`
+
+**Cause**: Multiple operations attempting to spend the same cells (UTXO contention), causing Replace-By-Fee conflicts.
+
+**Common Symptoms**:
+```
+PoolRejectedRBF(Reject(LowFeeRate(...)))
+PoolRejectedDuplicatedTransaction
+TransactionFailedToResolve (when inputs already spent)
+```
+
+**Root Cause**: When multiple tests or operations run concurrently and share a UTXO pool, they may both try to build transactions using the same unspent cells. The first transaction enters the mempool, and subsequent transactions conflict with it.
+
+**Solution A - Serialization (wait for confirmation)**:
+```typescript
+// Wait for transaction confirmation and indexer sync
+async function deployWithConfirmation(data: Uint8Array, rpc: RPC): Promise<string> {
+  // Build and send transaction
+  const tx = await buildDeployTransaction(data);
+  const txHash = await rpc.sendTransaction(tx);
+
+  // Poll for confirmation
+  let confirmed = false;
+  while (!confirmed) {
+    const txStatus = await rpc.getTransaction(txHash);
+    if (txStatus?.txStatus?.status === 'committed') {
+      confirmed = true;
+      console.log(`Transaction ${txHash} confirmed at block ${txStatus.txStatus.blockHash}`);
+    }
+    await sleep(1000);
+  }
+
+  // Wait for indexer to catch up
+  const blockNumber = await getBlockNumber(txStatus.txStatus.blockHash);
+  await waitForIndexerSync(rpc, blockNumber);
+
+  return txHash;
+}
+
+async function waitForIndexerSync(rpc: RPC, targetBlock: bigint) {
+  while (true) {
+    const indexerTip = await rpc.getIndexerTip();
+    if (BigInt(indexerTip.blockNumber) >= targetBlock) {
+      break;
+    }
+    await sleep(500);
+  }
+}
+```
+
+**Solution B - Isolation (separate UTXO pools)**:
+```typescript
+// Give each test its own funding cells
+async function setupIsolatedTest(): Promise<TestContext> {
+  const privateKey = generatePrivateKey();
+  const address = privateKeyToAddress(privateKey);
+
+  // Fund this address with dedicated cells
+  await fundAddress(address, 1000_00000000n);
+
+  // Each test uses its own isolated UTXOs
+  return { privateKey, address };
+}
+
+// Run tests in parallel with isolated contexts
+await Promise.all([
+  testWithContext(await setupIsolatedTest()),
+  testWithContext(await setupIsolatedTest()),
+  testWithContext(await setupIsolatedTest()),
+]);
+```
+
+### ERROR: Indexer Lag / Stale Data
+
+**Error Code**: `CellNotFound`, stale balance queries, missing recently created cells
+
+**Cause**: Indexer database lags behind blockchain consensus, causing queries to return stale or incomplete data.
+
+**Symptoms**:
+```
+- Transaction confirmed but cells not visible in queries
+- Balance shows old value after transaction
+- Recently deployed cell not found by out_point
+- "Cell not found" errors for newly created cells
+```
+
+**Root Cause**: CKB uses a separate indexing service that processes blocks asynchronously from consensus. After a block is mined, the indexer needs time to:
+1. Receive the new block
+2. Process all transactions
+3. Update its database
+4. Make data available for queries
+
+**Solution - Poll Indexer Tip**:
+```typescript
+// Wait for indexer to process a specific block
+async function waitForIndexerSync(
+  rpc: RPC,
+  targetBlockNumber: bigint,
+  timeoutMs: number = 30000
+): Promise<void> {
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < timeoutMs) {
+    const tip = await rpc.getIndexerTip();
+    const indexerBlock = BigInt(tip.blockNumber);
+
+    if (indexerBlock >= targetBlockNumber) {
+      console.log(`Indexer synced to block ${indexerBlock}`);
+      return;
+    }
+
+    console.log(`Waiting for indexer: ${indexerBlock} / ${targetBlockNumber}`);
+    await sleep(500);
+  }
+
+  throw new Error(`Indexer sync timeout after ${timeoutMs}ms`);
+}
+
+// Use after operations that modify state
+async function deployAndVerify(data: Uint8Array, rpc: RPC) {
+  // Deploy transaction
+  const tx = await buildTransaction(data);
+  const txHash = await rpc.sendTransaction(tx);
+
+  // Wait for confirmation
+  const receipt = await waitForConfirmation(txHash, rpc);
+  const blockNumber = await getBlockNumber(receipt.blockHash);
+
+  // Critical: Wait for indexer to process the block
+  await waitForIndexerSync(rpc, blockNumber);
+
+  // Now queries will see the new state
+  const cell = await rpc.getCellByOutPoint({
+    txHash: txHash,
+    index: "0x0"
+  });
+
+  console.log("Cell deployed and indexed:", cell);
+}
+```
+
+**Prevention Pattern**:
+```typescript
+// Always sync indexer before dependent operations
+class CKBClient {
+  async sendTransactionAndSync(tx: Transaction): Promise<string> {
+    const txHash = await this.rpc.sendTransaction(tx);
+    const receipt = await this.waitForConfirmation(txHash);
+
+    // Automatically sync indexer
+    const blockNum = await this.getBlockNumber(receipt.blockHash);
+    await this.waitForIndexerSync(blockNum);
+
+    return txHash;
+  }
 }
 ```
 
@@ -340,10 +539,12 @@ async function debugTransaction(tx: Transaction) {
 ## Prevention Best Practices
 
 1. **Always validate capacity**: Check minimum capacity before creating cells
-2. **Include all dependencies**: Add cell deps for all scripts used
-3. **Match witness count**: Ensure witnesses align with inputs
-4. **Test locally first**: Use dry run before broadcasting
-5. **Handle all script types**: Different scripts have different requirements
-6. **Check epoch maturity**: Headers need 4 epochs to mature
-7. **Monitor cycle usage**: Complex transactions may exceed limits
-8. **Calculate accurate fees**: Use dynamic fee calculation based on size
+2. **Include all dependencies**: Add cell deps for all scripts used, detect network and load correct deps for devnet
+3. **Avoid cell contention**: Either serialize operations or use isolated UTXO pools for parallel operations
+4. **Wait for indexer sync**: Poll indexer tip after transactions before dependent operations
+5. **Match witness count**: Ensure witnesses align with inputs
+6. **Test locally first**: Use dry run before broadcasting
+7. **Handle all script types**: Different scripts have different requirements
+8. **Check epoch maturity**: Headers need 4 epochs to mature
+9. **Monitor cycle usage**: Complex transactions may exceed limits
+10. **Calculate accurate fees**: Use dynamic fee calculation based on size

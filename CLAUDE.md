@@ -48,6 +48,11 @@ cargo test -p ckb-tools-server
 RUST_LOG=debug cargo test
 ```
 
+**IMPORTANT: Test Timing Expectations**
+- **ckb-rpc-server** tests: Fast (< 5 seconds total).
+- **ckb-docs-server** tests: Fast (< 5 seconds total).
+- **ckb-tools-server** tests: Slow - deployment tests wait up to 60 seconds per test for blockchain transaction confirmation. The full test suite can take several minutes. This is expected behavior as these tests deploy actual cells to the blockchain and verify confirmation.
+
 ### Building and Running
 
 **IMPORTANT: Server Management**
