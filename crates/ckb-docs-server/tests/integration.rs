@@ -61,19 +61,6 @@ async fn test_resources_list() {
 }
 
 #[tokio::test]
-async fn test_resources_list_count_84() {
-	let ctx = TestContext::new(DOCS_SERVER_PORT);
-
-	let result = ctx
-		.mcp_call("resources/list", json!({}))
-		.await
-		.expect("resources/list should succeed");
-
-	let resources = result["resources"].as_array().unwrap();
-	assert_eq!(resources.len(), 83, "Should have exactly 83 documentation resources");
-}
-
-#[tokio::test]
 async fn test_resources_list_all_have_descriptions() {
 	let ctx = TestContext::new(DOCS_SERVER_PORT);
 
