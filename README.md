@@ -255,15 +255,24 @@ ckb-tools-server [OPTIONS]
 
 ### Testing
 
+**REQUIRED**: Tests require the `CKB_RPC_URL` environment variable to be set to your CKB node URL.
+
 ```bash
+# Set the CKB RPC URL (required for running tests)
+export CKB_RPC_URL=http://192.168.0.73:28114  # For devnet
+# or
+export CKB_RPC_URL=http://192.168.0.73:18114  # For testnet
+
 # Run all tests
-cargo test
+CKB_RPC_URL=http://192.168.0.73:28114 cargo test --workspace
 
 # Test specific server
-cargo test -p ckb-rpc-server
+CKB_RPC_URL=http://192.168.0.73:28114 cargo test -p ckb-rpc-server
+CKB_RPC_URL=http://192.168.0.73:28114 cargo test -p ckb-docs-server
+CKB_RPC_URL=http://192.168.0.73:28114 cargo test -p ckb-tools-server
 
 # Run tests with logging
-RUST_LOG=debug cargo test
+CKB_RPC_URL=http://192.168.0.73:28114 RUST_LOG=debug cargo test
 ```
 
 ### Utilities
@@ -285,7 +294,7 @@ See `utils/README.md` for complete utility documentation.
 ### Environment Variables
 
 - `RUST_LOG`: Logging level (debug, info, warn, error).
-- `CKB_RPC_URL`: Default CKB node RPC endpoint.
+- `CKB_RPC_URL`: **Required for tests**. CKB node RPC endpoint (e.g., `http://192.168.0.73:28114` for devnet or `http://192.168.0.73:18114` for testnet). This must match the URL used when starting the servers.
 
 ### Documentation Structure
 

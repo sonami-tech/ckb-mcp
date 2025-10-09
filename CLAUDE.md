@@ -35,17 +35,24 @@ ckb-mcp/
 
 ### Testing
 
+**REQUIRED**: Tests need the `CKB_RPC_URL` environment variable set to the CKB node URL. This should match the URL used when starting the servers.
+
 ```bash
+# Set the CKB RPC URL (required for tests)
+export CKB_RPC_URL=http://192.168.0.73:28114  # For devnet
+# or
+export CKB_RPC_URL=http://192.168.0.73:18114  # For testnet
+
 # Run all tests
-cargo test
+CKB_RPC_URL=http://192.168.0.73:28114 cargo test --workspace
 
 # Run tests for specific server
-cargo test -p ckb-rpc-server
-cargo test -p ckb-docs-server
-cargo test -p ckb-tools-server
+CKB_RPC_URL=http://192.168.0.73:28114 cargo test -p ckb-rpc-server
+CKB_RPC_URL=http://192.168.0.73:28114 cargo test -p ckb-docs-server
+CKB_RPC_URL=http://192.168.0.73:28114 cargo test -p ckb-tools-server
 
 # Run tests with logging
-RUST_LOG=debug cargo test
+CKB_RPC_URL=http://192.168.0.73:28114 RUST_LOG=debug cargo test
 ```
 
 **IMPORTANT: Test Timing Expectations**
