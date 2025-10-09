@@ -7,7 +7,6 @@ mod common;
 use common::TestContext;
 
 const TOOLS_SERVER_PORT: u16 = 8003;
-const RPC_SERVER_PORT: u16 = 8001;
 
 /// Extract tx_hash from deployment result and wait for confirmation and indexer sync
 async fn wait_for_deployment_confirmation(content: &str) {
@@ -15,15 +14,14 @@ async fn wait_for_deployment_confirmation(content: &str) {
 		let hash_start = start + 12;
 		if let Some(end) = content[hash_start..].find('"') {
 			let tx_hash = &content[hash_start..hash_start + end];
-			let rpc_ctx = TestContext::new(RPC_SERVER_PORT);
 
 			// Wait for transaction to be confirmed and get the block number
-			let block_number = TestContext::wait_for_tx_confirmation(&rpc_ctx, tx_hash)
+			let block_number = TestContext::wait_for_tx_confirmation(tx_hash)
 				.await
 				.expect("Transaction should confirm");
 
 			// Wait for indexer to sync past the confirmation block
-			TestContext::wait_for_indexer_sync(&rpc_ctx, block_number)
+			TestContext::wait_for_indexer_sync(block_number)
 				.await
 				.expect("Indexer should sync");
 		}

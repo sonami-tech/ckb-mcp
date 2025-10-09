@@ -1,6 +1,6 @@
 [package]
 name = "ckb-rpc-server"
-version = "0.4.141"
+version = "0.4.144"
 edition = "2021"
 
 [[bin]]
