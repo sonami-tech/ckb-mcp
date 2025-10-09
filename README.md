@@ -40,9 +40,9 @@ ckb-mcp/
 
 ### Prerequisites
 
-- Rust 1.70+.
-- CKB node running (for RPC server).
-- CKB development tools (for tools server).
+- Rust 1.75+ (stable).
+- CKB node access (local or remote).
+- Docker (optional, for containerized deployment).
 
 ### Build and Run
 
@@ -51,26 +51,40 @@ ckb-mcp/
 cargo build --release
 
 # Development: Auto-rebuild and run on changes.
-cargo watch --why -x "build --workspace" -i "crates/**/Cargo.*" -i "Cargo.lock" -s 'killall ckb-rpc-server ckb-docs-server ckb-tools-server 2>/dev/null || true; sleep 1; parallel --line-buffer ::: "target/debug/ckb-docs-server" "target/debug/ckb-rpc-server --ckb-rpc http://192.168.0.73:18114" "target/debug/ckb-tools-server"'
+# Replace http://127.0.0.1:8114 with your CKB node URL
+cargo watch --why -x "build --workspace" -i "crates/**/Cargo.*" -i "Cargo.lock" -s 'killall ckb-rpc-server ckb-docs-server ckb-tools-server 2>/dev/null || true; sleep 1; parallel --line-buffer ::: "target/debug/ckb-docs-server" "target/debug/ckb-rpc-server --ckb-rpc http://127.0.0.1:8114" "target/debug/ckb-tools-server --ckb-rpc http://127.0.0.1:8114"'
 
 # Simple run (starts on ports 8001, 8002, 8003).
+# Uses default CKB node at http://127.0.0.1:8114
 cargo run --bin ckb-rpc-server & \
 cargo run --bin ckb-docs-server & \
 cargo run --bin ckb-tools-server & \
+wait
+
+# Or specify a custom CKB node.
+cargo run --bin ckb-rpc-server -- --ckb-rpc http://your-node-ip:18114 & \
+cargo run --bin ckb-docs-server & \
+cargo run --bin ckb-tools-server -- --ckb-rpc http://your-node-ip:18114 & \
 wait
 ```
 
 ### Run Individual Servers
 
 ```bash
-# CKB RPC Server (port 8001)
+# CKB RPC Server (port 8001) - defaults to http://127.0.0.1:8114
 cargo run --bin ckb-rpc-server
 
-# CKB Docs Server (port 8002)  
+# With custom CKB node.
+cargo run --bin ckb-rpc-server -- --ckb-rpc http://your-node-ip:18114
+
+# CKB Docs Server (port 8002)
 cargo run --bin ckb-docs-server
 
-# CKB Tools Server (port 8003)
+# CKB Tools Server (port 8003) - defaults to http://127.0.0.1:8114
 cargo run --bin ckb-tools-server
+
+# With custom CKB node.
+cargo run --bin ckb-tools-server -- --ckb-rpc http://your-node-ip:18114
 ```
 
 ## MCP Integration
@@ -164,8 +178,10 @@ The servers provide context-aware assistance for CKB development workflows.
 **Usage**:
 ```bash
 ckb-rpc-server [OPTIONS]
-  -p, --port <PORT>           Port [default: 8001]
-      --ckb-rpc <URL>         CKB RPC URL [default: http://127.0.0.1:8114]
+  -p, --port <PORT>            Port [default: 8001]
+      --host <HOST>            Host [default: 0.0.0.0]
+      --ckb-rpc <CKB_RPC>      CKB node RPC URL [default: http://127.0.0.1:8114]
+      --log-level <LOG_LEVEL>  Log level [default: info]
 ```
 
 ### CKB Docs Server
@@ -210,8 +226,10 @@ All 84 documentation resources are available through the MCP server. Key resourc
 **Usage**:
 ```bash
 ckb-docs-server [OPTIONS]
-  -p, --port <PORT>           Port [default: 8002]
-      --docs-path <PATH>      Custom docs directory
+  -p, --port <PORT>            Port [default: 8002]
+      --host <HOST>            Host [default: 0.0.0.0]
+      --docs-path <DOCS_PATH>  Custom docs directory
+      --log-level <LOG_LEVEL>  Log level [default: info]
 ```
 
 ### CKB Tools Server
@@ -232,9 +250,12 @@ ckb-docs-server [OPTIONS]
 **Usage**:
 ```bash
 ckb-tools-server [OPTIONS]
-  -p, --port <PORT>           Port [default: 8003]
-      --ckb-rpc <URL>         CKB RPC URL [default: http://127.0.0.1:8114]
-      --private-key <HEX>     Private key for signing transactions
+  -p, --port <PORT>                Port [default: 8003]
+      --host <HOST>                Host [default: 0.0.0.0]
+      --ckb-rpc <CKB_RPC>          CKB node RPC URL [default: http://127.0.0.1:8114]
+      --private-key <PRIVATE_KEY>  Private key (hex, with/without 0x prefix)
+                                   Default: Test key - DO NOT USE IN PRODUCTION
+      --log-level <LOG_LEVEL>      Log level [default: info]
 ```
 
 ## Development
@@ -259,20 +280,25 @@ ckb-tools-server [OPTIONS]
 
 ```bash
 # Set the CKB RPC URL (required for running tests)
-export CKB_RPC_URL=http://192.168.0.73:28114  # For devnet
-# or
-export CKB_RPC_URL=http://192.168.0.73:18114  # For testnet
+export CKB_RPC_URL=http://127.0.0.1:8114  # For local mainnet node
+# or use a remote devnet/testnet node
+export CKB_RPC_URL=http://your-node-ip:8114     # Mainnet (port 8114)
+export CKB_RPC_URL=http://your-node-ip:18114    # Testnet (port 18114)
+export CKB_RPC_URL=http://your-node-ip:28114    # Devnet (port 28114)
 
-# Run all tests
-CKB_RPC_URL=http://192.168.0.73:28114 cargo test --workspace
+# Run all tests (uses CKB_RPC_URL from environment)
+cargo test --workspace
 
-# Test specific server
-CKB_RPC_URL=http://192.168.0.73:28114 cargo test -p ckb-rpc-server
-CKB_RPC_URL=http://192.168.0.73:28114 cargo test -p ckb-docs-server
-CKB_RPC_URL=http://192.168.0.73:28114 cargo test -p ckb-tools-server
+# Or specify URL inline for a single test run
+CKB_RPC_URL=http://your-node-ip:18114 cargo test --workspace
+
+# Test specific server with custom node
+CKB_RPC_URL=http://your-node-ip:18114 cargo test -p ckb-rpc-server
+CKB_RPC_URL=http://your-node-ip:18114 cargo test -p ckb-docs-server
+CKB_RPC_URL=http://your-node-ip:18114 cargo test -p ckb-tools-server
 
 # Run tests with logging
-CKB_RPC_URL=http://192.168.0.73:28114 RUST_LOG=debug cargo test
+CKB_RPC_URL=http://your-node-ip:18114 RUST_LOG=debug cargo test
 ```
 
 ### Utilities
@@ -294,7 +320,12 @@ See `utils/README.md` for complete utility documentation.
 ### Environment Variables
 
 - `RUST_LOG`: Logging level (debug, info, warn, error).
-- `CKB_RPC_URL`: **Required for tests**. CKB node RPC endpoint (e.g., `http://192.168.0.73:28114` for devnet or `http://192.168.0.73:18114` for testnet). This must match the URL used when starting the servers.
+- `CKB_RPC_URL`: **Required for tests**. CKB node RPC endpoint. Examples:
+  - `http://127.0.0.1:8114` - Local mainnet node
+  - `http://your-node-ip:18114` - Remote testnet node
+  - `http://your-node-ip:28114` - Remote devnet node
+
+  This must match the URL used when starting the servers.
 
 ### Documentation Structure
 
@@ -322,4 +353,4 @@ For production deployment using Docker containers, see **[DEPLOY.md](DEPLOY.md)*
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT

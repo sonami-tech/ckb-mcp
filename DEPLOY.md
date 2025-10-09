@@ -68,7 +68,7 @@ All compose files support these environment variables:
 Override via `.env` files or environment variables:
 ```bash
 # Example .env file
-CKB_RPC_URL=http://192.168.0.73:18114
+CKB_RPC_URL=http://your-ckb-node:8114
 RUST_LOG=debug
 ```
 

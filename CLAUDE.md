@@ -39,20 +39,25 @@ ckb-mcp/
 
 ```bash
 # Set the CKB RPC URL (required for tests)
-export CKB_RPC_URL=http://192.168.0.73:28114  # For devnet
-# or
-export CKB_RPC_URL=http://192.168.0.73:18114  # For testnet
+export CKB_RPC_URL=http://127.0.0.1:8114  # For local mainnet node
+# or use a remote devnet/testnet node
+export CKB_RPC_URL=http://your-node-ip:8114     # Mainnet (port 8114)
+export CKB_RPC_URL=http://your-node-ip:18114    # Testnet (port 18114)
+export CKB_RPC_URL=http://your-node-ip:28114    # Devnet (port 28114)
 
-# Run all tests
-CKB_RPC_URL=http://192.168.0.73:28114 cargo test --workspace
+# Run all tests (uses CKB_RPC_URL from environment)
+cargo test --workspace
 
-# Run tests for specific server
-CKB_RPC_URL=http://192.168.0.73:28114 cargo test -p ckb-rpc-server
-CKB_RPC_URL=http://192.168.0.73:28114 cargo test -p ckb-docs-server
-CKB_RPC_URL=http://192.168.0.73:28114 cargo test -p ckb-tools-server
+# Or specify URL inline for a single test run
+CKB_RPC_URL=http://your-node-ip:18114 cargo test --workspace
+
+# Run tests for specific server with custom node
+CKB_RPC_URL=http://your-node-ip:18114 cargo test -p ckb-rpc-server
+CKB_RPC_URL=http://your-node-ip:18114 cargo test -p ckb-docs-server
+CKB_RPC_URL=http://your-node-ip:18114 cargo test -p ckb-tools-server
 
 # Run tests with logging
-CKB_RPC_URL=http://192.168.0.73:28114 RUST_LOG=debug cargo test
+CKB_RPC_URL=http://your-node-ip:18114 RUST_LOG=debug cargo test
 ```
 
 **IMPORTANT: Test Timing Expectations**
