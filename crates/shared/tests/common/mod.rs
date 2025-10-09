@@ -67,10 +67,11 @@ impl TestContext {
 
 	/// Wait for a transaction to be confirmed by polling via MCP tools/call
 	/// This method requires the RPC server context (port 8001) to query transaction status.
+	/// Returns the block number where the transaction was confirmed.
 	pub async fn wait_for_tx_confirmation(
 		rpc_server_ctx: &TestContext,
 		tx_hash: &str,
-	) -> Result<(), String> {
+	) -> Result<u64, String> {
 		// Poll for up to 60 seconds
 		for _ in 0..60 {
 			let result = rpc_server_ctx
@@ -83,7 +84,18 @@ impl TestContext {
 					if let Some(first) = content_array.first() {
 						if let Some(text) = first.get("text").and_then(|t| t.as_str()) {
 							if text.contains("\"status\": \"committed\"") {
-								return Ok(());
+								// Extract block_number from the response
+								if let Some(block_num_start) = text.find("\"block_number\": \"0x") {
+									let hex_start = block_num_start + 19;
+									if let Some(hex_end) = text[hex_start..].find('"') {
+										let block_hex = &text[hex_start..hex_start + hex_end];
+										if let Ok(block_number) = u64::from_str_radix(block_hex, 16) {
+											return Ok(block_number);
+										}
+									}
+								}
+								// Fallback if we can't parse block number
+								return Err("Transaction confirmed but couldn't parse block number".to_string());
 							}
 						}
 					}
@@ -94,5 +106,42 @@ impl TestContext {
 		}
 
 		Err("Transaction confirmation timeout".to_string())
+	}
+
+	/// Wait for the indexer to catch up to at least the specified block number
+	/// This ensures cells from confirmed transactions are available for collection
+	pub async fn wait_for_indexer_sync(
+		rpc_server_ctx: &TestContext,
+		target_block: u64,
+	) -> Result<(), String> {
+		// Poll for up to 30 seconds
+		for _ in 0..30 {
+			let result = rpc_server_ctx
+				.call_tool("get_indexer_tip", json!({}))
+				.await?;
+
+			if let Some(content) = result.get("content") {
+				if let Some(content_array) = content.as_array() {
+					if let Some(first) = content_array.first() {
+						if let Some(text) = first.get("text").and_then(|t| t.as_str()) {
+							// Parse the JSON response to get block_number
+							if let Ok(tip_info) = serde_json::from_str::<Value>(text) {
+								if let Some(block_num_hex) = tip_info.get("block_number").and_then(|v| v.as_str()) {
+									if let Ok(indexer_tip) = u64::from_str_radix(block_num_hex.trim_start_matches("0x"), 16) {
+										if indexer_tip >= target_block {
+											return Ok(());
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+		}
+
+		Err(format!("Indexer failed to sync to block {}", target_block))
 	}
 }
