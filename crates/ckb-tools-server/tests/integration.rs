@@ -30,6 +30,7 @@ async fn wait_for_deployment_confirmation(content: &str) {
 
 /// Run first - fail fast if server not available
 #[tokio::test]
+#[serial]
 async fn test_00_server_running() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 

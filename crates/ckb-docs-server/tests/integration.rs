@@ -1,4 +1,5 @@
 use serde_json::json;
+use serial_test::serial;
 
 #[path = "../../shared/tests/common/mod.rs"]
 mod common;
@@ -9,6 +10,7 @@ const DOCS_SERVER_PORT: u16 = 8002;
 
 /// Run first - fail fast if server not available
 #[tokio::test]
+#[serial]
 async fn test_00_server_running() {
 	let ctx = TestContext::new(DOCS_SERVER_PORT);
 
