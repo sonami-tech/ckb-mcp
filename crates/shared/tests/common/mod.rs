@@ -6,6 +6,7 @@ use std::sync::OnceLock;
 /// Shared test data collected once during Phase 3 setup.
 /// This data is gathered via direct CKB RPC calls (not through MCP).
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct SharedTestData {
 	pub chain_type: String,
 	pub genesis_hash: String,
@@ -71,6 +72,7 @@ impl SharedTestData {
 
 	/// Initialize shared test data by querying CKB RPC directly.
 	/// This should be called once in the Phase 3 test.
+	#[allow(dead_code)]
 	pub async fn initialize() -> Result<(), String> {
 		let data = Self::collect().await?;
 		SHARED_DATA
@@ -80,6 +82,7 @@ impl SharedTestData {
 	}
 
 	/// Get the shared test data. Returns None if not yet initialized.
+	#[allow(dead_code)]
 	pub fn get() -> Option<&'static SharedTestData> {
 		SHARED_DATA.get()
 	}
@@ -134,6 +137,7 @@ impl TestContext {
 	}
 
 	/// Sanity check: verify server is running and healthy
+	#[allow(dead_code)]
 	pub async fn verify_server_running(&self) -> Result<(), String> {
 		let health_url = format!("{}/health", self.base_url);
 
