@@ -133,138 +133,6 @@ async fn test_resources_list_all_use_correct_uri_scheme() {
 	}
 }
 
-// Sample Resource Reads - 10 tests
-#[tokio::test]
-async fn test_read_ai_quick_reference() {
-	let ctx = TestContext::new(DOCS_SERVER_PORT);
-
-	let result = ctx
-		.mcp_call("resources/read", json!({"uri": "ckb-dev-context://ai-quick-reference"}))
-		.await
-		.expect("Should read ai-quick-reference");
-
-	assert!(result["contents"].is_array());
-	let content = result["contents"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-}
-
-#[tokio::test]
-async fn test_read_cell_model() {
-	let ctx = TestContext::new(DOCS_SERVER_PORT);
-
-	let result = ctx
-		.mcp_call("resources/read", json!({"uri": "ckb-dev-context://concepts/cell-model"}))
-		.await
-		.expect("Should read cell-model");
-
-	let content = result["contents"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-}
-
-#[tokio::test]
-async fn test_read_transaction_structure() {
-	let ctx = TestContext::new(DOCS_SERVER_PORT);
-
-	let result = ctx
-		.mcp_call("resources/read", json!({"uri": "ckb-dev-context://concepts/transaction-structure"}))
-		.await
-		.expect("Should read transaction-structure");
-
-	let content = result["contents"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-}
-
-#[tokio::test]
-async fn test_read_minimal_lock_script() {
-	let ctx = TestContext::new(DOCS_SERVER_PORT);
-
-	let result = ctx
-		.mcp_call("resources/read", json!({"uri": "ckb-dev-context://patterns/minimal-lock-script"}))
-		.await
-		.expect("Should read minimal-lock-script");
-
-	let content = result["contents"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-}
-
-#[tokio::test]
-async fn test_read_syscalls_quick_ref() {
-	let ctx = TestContext::new(DOCS_SERVER_PORT);
-
-	let result = ctx
-		.mcp_call("resources/read", json!({"uri": "ckb-dev-context://api-reference/syscalls-quick-ref"}))
-		.await
-		.expect("Should read syscalls-quick-ref");
-
-	let content = result["contents"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-}
-
-#[tokio::test]
-async fn test_read_spore_protocol() {
-	let ctx = TestContext::new(DOCS_SERVER_PORT);
-
-	let result = ctx
-		.mcp_call("resources/read", json!({"uri": "ckb-dev-context://protocols/spore-protocol"}))
-		.await
-		.expect("Should read spore-protocol");
-
-	let content = result["contents"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-}
-
-#[tokio::test]
-async fn test_read_common_script_errors() {
-	let ctx = TestContext::new(DOCS_SERVER_PORT);
-
-	let result = ctx
-		.mcp_call("resources/read", json!({"uri": "ckb-dev-context://troubleshooting/common-script-errors"}))
-		.await
-		.expect("Should read common-script-errors");
-
-	let content = result["contents"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-}
-
-#[tokio::test]
-async fn test_read_ickb_protocol() {
-	let ctx = TestContext::new(DOCS_SERVER_PORT);
-
-	let result = ctx
-		.mcp_call("resources/read", json!({"uri": "ckb-dev-context://protocols/ickb-protocol"}))
-		.await
-		.expect("Should read ickb-protocol");
-
-	let content = result["contents"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-}
-
-#[tokio::test]
-async fn test_read_xudt_protocol() {
-	let ctx = TestContext::new(DOCS_SERVER_PORT);
-
-	let result = ctx
-		.mcp_call("resources/read", json!({"uri": "ckb-dev-context://protocols/xudt-protocol"}))
-		.await
-		.expect("Should read xudt-protocol");
-
-	let content = result["contents"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-}
-
-#[tokio::test]
-async fn test_read_cobuild_protocol() {
-	let ctx = TestContext::new(DOCS_SERVER_PORT);
-
-	let result = ctx
-		.mcp_call("resources/read", json!({"uri": "ckb-dev-context://protocols/cobuild"}))
-		.await
-		.expect("Should read cobuild protocol");
-
-	let content = result["contents"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-}
-
 // Error Cases - 8 tests
 #[tokio::test]
 async fn test_read_nonexistent_resource() {
@@ -354,7 +222,7 @@ async fn test_resources_read_null_uri() {
 	assert!(result.is_err(), "Should fail for null URI");
 }
 
-// All 84 Resources Validation - one test per resource
+// All 84 Resources Comprehensive Validation - one test per resource
 macro_rules! test_resource {
 	($name:ident, $uri:expr) => {
 		#[tokio::test]
