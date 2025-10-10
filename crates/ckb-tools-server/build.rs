@@ -3,6 +3,20 @@ use std::path::Path;
 use sysinfo::System;
 
 fn main() {
+    // Check if running tests with cargo test instead of nextest
+    if is_running_tests() && !is_running_nextest() {
+        panic!(
+            "\n\n\
+            ERROR: Tests must be run with 'cargo nextest run', not 'cargo test'.\n\
+            \n\
+            Install nextest: cargo install cargo-nextest\n\
+            Run tests: cargo nextest run\n\
+            Run specific package: cargo nextest run -p ckb-tools-server\n\
+            \n\
+            "
+        );
+    }
+
     // Skip version increment if running under cargo test
     if is_running_tests() {
         return;
@@ -77,4 +91,8 @@ fn is_running_tests() -> bool {
     }
 
     false
+}
+
+fn is_running_nextest() -> bool {
+    std::env::var("NEXTEST").is_ok()
 }
