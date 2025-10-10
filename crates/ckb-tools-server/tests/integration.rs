@@ -130,6 +130,9 @@ async fn test_get_default_account_info_no_private_key_exposed() {
 		.expect("GetDefaultAccountInfo should succeed");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
+	// GetDefaultAccountInfo intentionally hides private key for security.
+	// See test_generate_lock_info_returns_private_key for contrast - GenerateLockInfo
+	// returns private key for educational purposes when generating new keys.
 	assert!(!content.contains("\"private_key\""), "Should not expose private_key field");
 	// Verify we have expected fields but not the private key
 	assert!(content.contains("public_key"), "Should contain public_key");
@@ -203,8 +206,11 @@ async fn test_get_genesis_hash_valid_format() {
 		.expect("GetGenesisHash should succeed");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
-	assert!(content.starts_with("0x"), "Should be hex hash");
-	assert!(content.len() > 60, "Should be full hash length");
+	let hash = content.trim();
+	assert!(hash.starts_with("0x"), "Should be hex hash starting with 0x");
+	assert_eq!(hash.len(), 66, "Should be exactly 66 characters (0x + 64 hex digits)");
+	// Verify all characters after 0x are valid hex digits
+	assert!(hash[2..].chars().all(|c| c.is_ascii_hexdigit()), "Should contain only hex digits after 0x");
 }
 
 #[tokio::test]
@@ -266,13 +272,16 @@ async fn test_generate_lock_info_returns_private_key() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	let test_key = "0xd00c06bfd800d27397002dca6fb0993d5ba6399b4238b2f29ee9deb97593d2bc";
-	
+
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "GenerateLockInfo", "arguments": {"private_key": test_key}}))
 		.await
 		.expect("GenerateLockInfo should succeed");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
+	// GenerateLockInfo intentionally returns private key for educational purposes when
+	// users are generating/analyzing new keys. This contrasts with GetDefaultAccountInfo
+	// which hides the private key for security. See test_get_default_account_info_no_private_key_exposed.
 	assert!(content.contains("private_key"), "GenerateLockInfo returns private key for educational purposes");
 }
 
@@ -509,7 +518,8 @@ async fn test_get_address_balance_has_ckb_and_shannon() {
 		.expect("GetAddressBalance should succeed");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
-	assert!(content.contains("capacity_shannons") || content.contains("capacity_ckb"));
+	assert!(content.contains("capacity_shannons"), "Should contain capacity_shannons field");
+	assert!(content.contains("capacity_ckb"), "Should contain capacity_ckb field");
 }
 
 // Cell Deployment - DeployCellData Tests
