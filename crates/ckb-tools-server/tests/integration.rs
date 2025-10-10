@@ -816,6 +816,9 @@ async fn test_deploy_cell_data_from_file_directory_not_file() {
 }
 
 #[tokio::test]
+#[ignore] // This test creates a file in the project directory, which triggers cargo watch to rebuild,
+          // causing the server to restart mid-test and resulting in connection failures.
+          // Run manually with: cargo nextest run --ignored test_deploy_cell_data_from_file_relative_path
 async fn test_deploy_cell_data_from_file_relative_path() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
