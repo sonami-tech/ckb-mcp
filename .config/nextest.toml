@@ -8,8 +8,8 @@ retries = 2
 # Mark tests as slow after 30s, terminate after 60s (2 periods)
 slow-timeout = { period = "30s", terminate-after = 2 }
 
-[profile.ci]
-# CI can use more parallelism if needed
-test-threads = 4
-retries = 2
-slow-timeout = { period = "30s", terminate-after = 2 }
+# [profile.ci]
+# # CI can use more parallelism if needed
+# test-threads = 4
+# retries = 2
+# slow-timeout = { period = "30s", terminate-after = 2 }
