@@ -2011,6 +2011,38 @@ async fn test_get_deployments_info() {
 }
 
 #[tokio::test]
+async fn test_calculate_dao_maximum_withdraw_missing_params() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	// Test missing out_point
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "calculate_dao_maximum_withdraw",
+			"arguments": {
+				"kind": "0xa5f5c85987a15de25661e5a214f2c1449cd803f071acc7999820f25246471f40"
+			}
+		}))
+		.await;
+
+	assert!(result.is_err(), "Should fail when out_point is missing");
+
+	// Test missing kind
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "calculate_dao_maximum_withdraw",
+			"arguments": {
+				"out_point": {
+					"tx_hash": "0xa4037a893eb48e18ed4ef61034ce26eba9c585f15c9cee102ae58505565eccc3",
+					"index": "0x0"
+				}
+			}
+		}))
+		.await;
+
+	assert!(result.is_err(), "Should fail when kind is missing");
+}
+
+#[tokio::test]
 async fn test_test_tx_pool_accept_missing_tx() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 

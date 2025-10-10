@@ -433,6 +433,29 @@ impl McpHandler {
 					"properties": {}
 				}),
 			},
+			// Experiment Methods
+			ToolDefinition {
+				name: "calculate_dao_maximum_withdraw".to_string(),
+				description: "Calculate maximum DAO withdrawal amount given a deposited cell and reference block or phase 1 transaction".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"out_point": {
+							"type": "object",
+							"description": "Reference to the DAO deposit cell (tx_hash and index)",
+							"properties": {
+								"tx_hash": {"type": "string"},
+								"index": {"type": "string"}
+							},
+							"required": ["tx_hash", "index"]
+						},
+						"kind": {
+							"description": "Block hash (string) for phase 1 reference OR out_point (object) of phase 1 tx"
+						}
+					},
+					"required": ["out_point", "kind"]
+				}),
+			},
 		];
 
 		let result = json!({ "tools": tools });
@@ -492,6 +515,8 @@ impl McpHandler {
 			"get_consensus" => self.call_get_consensus().await,
 			"tx_pool_info" => self.call_tx_pool_info().await,
 			"get_deployments_info" => self.call_get_deployments_info().await,
+			// Experiment Methods
+			"calculate_dao_maximum_withdraw" => self.call_calculate_dao_maximum_withdraw(arguments).await,
 			_ => {
 				return Ok(create_error_response(
 					id,
@@ -771,5 +796,24 @@ impl McpHandler {
 	// Stats Method Handlers (continued)
 	async fn call_get_deployments_info(&self) -> Result<Value> {
 		self.rpc_client.get_deployments_info().await
+	}
+
+	// Experiment Method Handlers
+	async fn call_calculate_dao_maximum_withdraw(&self, args: &Value) -> Result<Value> {
+		let out_point = args
+			.get("out_point")
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("Missing out_point".to_string())
+			})?
+			.clone();
+
+		let kind = args
+			.get("kind")
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("Missing kind".to_string())
+			})?
+			.clone();
+
+		self.rpc_client.calculate_dao_maximum_withdraw(out_point, kind).await
 	}
 }

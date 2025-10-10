@@ -31,6 +31,7 @@ pub trait CkbRpcClientExt {
 	async fn sync_state(&self) -> Result<Value>;
 	async fn get_peers(&self) -> Result<Value>;
 	async fn get_deployments_info(&self) -> Result<Value>;
+	async fn calculate_dao_maximum_withdraw(&self, out_point: Value, kind: Value) -> Result<Value>;
 }
 
 impl CkbRpcClientExt for CkbRpcClient {
@@ -174,5 +175,11 @@ impl CkbRpcClientExt for CkbRpcClient {
 	/// Get soft fork deployments information.
 	async fn get_deployments_info(&self) -> Result<Value> {
 		self.call("get_deployments_info", serde_json::json!([])).await
+	}
+
+	/// Calculate maximum DAO withdrawal amount.
+	async fn calculate_dao_maximum_withdraw(&self, out_point: Value, kind: Value) -> Result<Value> {
+		let params = serde_json::json!([out_point, kind]);
+		self.call("calculate_dao_maximum_withdraw", params).await
 	}
 }
