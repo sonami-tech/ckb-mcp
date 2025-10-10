@@ -1,0 +1,7 @@
+[profile.default]
+# Run tests one at a time in alphabetical order
+test-threads = 1
+
+[profile.ci]
+# CI can use more parallelism if needed
+test-threads = 4

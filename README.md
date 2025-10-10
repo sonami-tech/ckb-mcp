@@ -286,20 +286,26 @@ export CKB_RPC_URL=http://your-node-ip:8114     # Mainnet (port 8114)
 export CKB_RPC_URL=http://your-node-ip:18114    # Testnet (port 18114)
 export CKB_RPC_URL=http://your-node-ip:28114    # Devnet (port 28114)
 
-# Run all tests (uses CKB_RPC_URL from environment)
+# Recommended: Use cargo-nextest for better test output and guaranteed sequential order
+cargo install cargo-nextest  # One-time install
+cargo nextest run --workspace
+
+# Or use standard cargo test
 cargo test --workspace
 
 # Or specify URL inline for a single test run
-CKB_RPC_URL=http://your-node-ip:18114 cargo test --workspace
+CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run --workspace
 
 # Test specific server with custom node
-CKB_RPC_URL=http://your-node-ip:18114 cargo test -p ckb-rpc-server
-CKB_RPC_URL=http://your-node-ip:18114 cargo test -p ckb-docs-server
-CKB_RPC_URL=http://your-node-ip:18114 cargo test -p ckb-tools-server
+CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run -p ckb-rpc-server
+CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run -p ckb-docs-server
+CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run -p ckb-tools-server
 
 # Run tests with logging
-CKB_RPC_URL=http://your-node-ip:18114 RUST_LOG=debug cargo test
+CKB_RPC_URL=http://your-node-ip:18114 RUST_LOG=debug cargo nextest run
 ```
+
+**Note**: The project includes `.config/nextest.toml` which configures tests to run sequentially (`test-threads = 1`), ensuring `test_00_*` sanity checks run before other tests.
 
 ### Utilities
 
