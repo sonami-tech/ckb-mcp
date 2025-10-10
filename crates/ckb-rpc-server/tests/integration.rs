@@ -1148,7 +1148,7 @@ async fn test_get_transactions_pagination_order_desc() {
 }
 
 #[tokio::test]
-async fn test_get_transactions_pagination_multiple_pages() {
+async fn test_get_transactions_pagination_multiple_pages_grouped() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
 	let mut all_tx_hashes = Vec::new();
@@ -1166,7 +1166,8 @@ async fn test_get_transactions_pagination_multiple_pages() {
 				"script_type": "lock"
 			},
 			"order": "asc",
-			"limit": 2
+			"limit": 2,
+			"group_by_transaction": true
 		});
 
 		if let Some(ref c) = cursor {
@@ -1194,7 +1195,7 @@ async fn test_get_transactions_pagination_multiple_pages() {
 		for obj in objects {
 			let tx_hash = obj["tx_hash"].clone();
 
-			// Ensure this transaction hasn't appeared before
+			// With group_by_transaction=true, each tx_hash should appear only once
 			assert!(
 				!all_tx_hashes.contains(&tx_hash),
 				"Duplicate transaction found across pages: {:?}",
@@ -1220,6 +1221,86 @@ async fn test_get_transactions_pagination_multiple_pages() {
 
 	// Should have traversed at least one page
 	assert!(!all_tx_hashes.is_empty(), "Should have collected at least some results");
+}
+
+#[tokio::test]
+async fn test_get_transactions_pagination_multiple_pages_ungrouped() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let mut all_entries = Vec::new();
+	let mut cursor: Option<String> = None;
+	let max_pages = 5;
+
+	for page_num in 0..max_pages {
+		let mut args = json!({
+			"search_key": {
+				"script": {
+					"code_hash": "0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8",
+					"hash_type": "type",
+					"args": "0x"
+				},
+				"script_type": "lock"
+			},
+			"order": "asc",
+			"limit": 2,
+			"group_by_transaction": false
+		});
+
+		if let Some(ref c) = cursor {
+			args["after_cursor"] = json!(c);
+		}
+
+		let result = ctx
+			.mcp_call("tools/call", json!({"name": "get_transactions", "arguments": args}))
+			.await
+			.expect(&format!("Page {} request should succeed", page_num + 1));
+
+		let content = result["content"][0]["text"].as_str().unwrap();
+		let page: serde_json::Value = serde_json::from_str(content)
+			.expect("Response should be valid JSON");
+
+		let objects = page["objects"].as_array()
+			.expect("Response should have objects array");
+
+		if objects.is_empty() {
+			println!("Reached end of results at page {}", page_num + 1);
+			break;
+		}
+
+		// Collect transaction entries (tx_hash + io_type + io_index) from this page
+		for obj in objects {
+			let entry = json!({
+				"tx_hash": obj["tx_hash"],
+				"io_type": obj["io_type"],
+				"io_index": obj["io_index"]
+			});
+
+			// With group_by_transaction=false, each entry (not just tx_hash) should be unique
+			assert!(
+				!all_entries.contains(&entry),
+				"Duplicate transaction entry found across pages: {:?}",
+				entry
+			);
+
+			all_entries.push(entry);
+		}
+
+		// Get cursor for next page
+		let cursor_value = page.get("last_cursor")
+			.expect("Response should have last_cursor field");
+
+		if cursor_value.is_null() {
+			println!("No more pages after page {}", page_num + 1);
+			break;
+		}
+
+		cursor = Some(cursor_value.as_str()
+			.expect("last_cursor should be a string")
+			.to_string());
+	}
+
+	// Should have traversed at least one page
+	assert!(!all_entries.is_empty(), "Should have collected at least some results");
 }
 
 #[tokio::test]
