@@ -2,8 +2,8 @@
 # Run tests one at a time in alphabetical order
 test-threads = 1
 
-# Retry flaky tests (network/blockchain timing issues)
-retries = 2
+# Retry flaky tests once (2 total attempts: initial + 1 retry)
+retries = 1
 
 # Mark tests as slow after 30s, terminate after 60s (2 periods)
 slow-timeout = { period = "30s", terminate-after = 2 }
