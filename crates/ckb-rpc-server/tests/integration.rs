@@ -1857,6 +1857,27 @@ async fn test_get_pool_tx_detail_info_invalid_tx_hash() {
 }
 
 #[tokio::test]
+async fn test_tx_pool_ready() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({"name": "tx_pool_ready", "arguments": {}}))
+		.await
+		.expect("tx_pool_ready should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let ready: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Should be a boolean
+	assert!(ready.is_boolean(), "Response should be a boolean");
+
+	// For a running node, pool should typically be ready
+	let ready_bool = ready.as_bool().expect("Should be a boolean value");
+	assert!(ready_bool, "tx-pool service should be ready on running node");
+}
+
+#[tokio::test]
 async fn test_test_tx_pool_accept_missing_tx() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 

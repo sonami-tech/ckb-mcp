@@ -27,6 +27,7 @@ pub trait CkbRpcClientExt {
 	async fn tx_pool_info(&self) -> Result<Value>;
 	async fn get_raw_tx_pool(&self, verbose: Option<bool>) -> Result<Value>;
 	async fn get_pool_tx_detail_info(&self, tx_hash: &str) -> Result<Value>;
+	async fn tx_pool_ready(&self) -> Result<Value>;
 }
 
 impl CkbRpcClientExt for CkbRpcClient {
@@ -150,5 +151,10 @@ impl CkbRpcClientExt for CkbRpcClient {
 	async fn get_pool_tx_detail_info(&self, tx_hash: &str) -> Result<Value> {
 		let params = serde_json::json!([tx_hash]);
 		self.call("get_pool_tx_detail_info", params).await
+	}
+
+	/// Check if tx-pool service is started and ready for requests.
+	async fn tx_pool_ready(&self) -> Result<Value> {
+		self.call("tx_pool_ready", serde_json::json!([])).await
 	}
 }

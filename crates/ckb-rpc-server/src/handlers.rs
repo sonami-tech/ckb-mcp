@@ -399,6 +399,14 @@ impl McpHandler {
 					"required": ["tx_hash"]
 				}),
 			},
+			ToolDefinition {
+				name: "tx_pool_ready".to_string(),
+				description: "Check if tx-pool service is started and ready for requests".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {}
+				}),
+			},
 		];
 
 		let result = json!({ "tools": tools });
@@ -449,6 +457,7 @@ impl McpHandler {
 			"test_tx_pool_accept" => self.call_test_tx_pool_accept(arguments).await,
 			"get_raw_tx_pool" => self.call_get_raw_tx_pool(arguments).await,
 			"get_pool_tx_detail_info" => self.call_get_pool_tx_detail_info(arguments).await,
+			"tx_pool_ready" => self.call_tx_pool_ready().await,
 			// Stats Methods
 			"get_blockchain_info" => self.call_get_blockchain_info().await,
 			"get_consensus" => self.call_get_consensus().await,
@@ -714,5 +723,9 @@ impl McpHandler {
 			})?;
 
 		self.rpc_client.get_pool_tx_detail_info(tx_hash).await
+	}
+
+	async fn call_tx_pool_ready(&self) -> Result<Value> {
+		self.rpc_client.tx_pool_ready().await
 	}
 }
