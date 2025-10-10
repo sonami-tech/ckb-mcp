@@ -1878,6 +1878,44 @@ async fn test_tx_pool_ready() {
 }
 
 #[tokio::test]
+async fn test_sync_state() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({"name": "sync_state", "arguments": {}}))
+		.await
+		.expect("sync_state should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let sync_state: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Verify key sync state fields
+	assert!(sync_state.get("ibd").is_some(), "Response should have 'ibd' field");
+	assert!(sync_state.get("tip_hash").is_some(), "Response should have 'tip_hash' field");
+	assert!(sync_state.get("tip_number").is_some(), "Response should have 'tip_number' field");
+	assert!(sync_state.get("best_known_block_number").is_some(), "Response should have 'best_known_block_number' field");
+	assert!(sync_state.get("best_known_block_timestamp").is_some(), "Response should have 'best_known_block_timestamp' field");
+	assert!(sync_state.get("orphan_blocks_count").is_some(), "Response should have 'orphan_blocks_count' field");
+	assert!(sync_state.get("inflight_blocks_count").is_some(), "Response should have 'inflight_blocks_count' field");
+	assert!(sync_state.get("fast_time").is_some(), "Response should have 'fast_time' field");
+	assert!(sync_state.get("normal_time").is_some(), "Response should have 'normal_time' field");
+	assert!(sync_state.get("low_time").is_some(), "Response should have 'low_time' field");
+
+	// Verify ibd is boolean
+	sync_state["ibd"].as_bool().expect("ibd should be a boolean");
+
+	// Verify tip_hash format
+	let tip_hash = sync_state["tip_hash"].as_str().expect("tip_hash should be a string");
+	assert!(tip_hash.starts_with("0x"), "tip_hash should be in hex format");
+	assert_eq!(tip_hash.len(), 66, "tip_hash should be 66 characters");
+
+	// Verify numeric fields are in hex format
+	let tip_number = sync_state["tip_number"].as_str().expect("tip_number should be a string");
+	assert!(tip_number.starts_with("0x"), "tip_number should be in hex format");
+}
+
+#[tokio::test]
 async fn test_test_tx_pool_accept_missing_tx() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 

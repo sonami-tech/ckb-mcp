@@ -407,6 +407,15 @@ impl McpHandler {
 					"properties": {}
 				}),
 			},
+			// Net Methods
+			ToolDefinition {
+				name: "sync_state".to_string(),
+				description: "Get chain synchronization state including tip info, IBD status, and sync progress".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {}
+				}),
+			},
 		];
 
 		let result = json!({ "tools": tools });
@@ -458,6 +467,8 @@ impl McpHandler {
 			"get_raw_tx_pool" => self.call_get_raw_tx_pool(arguments).await,
 			"get_pool_tx_detail_info" => self.call_get_pool_tx_detail_info(arguments).await,
 			"tx_pool_ready" => self.call_tx_pool_ready().await,
+			// Net Methods
+			"sync_state" => self.call_sync_state().await,
 			// Stats Methods
 			"get_blockchain_info" => self.call_get_blockchain_info().await,
 			"get_consensus" => self.call_get_consensus().await,
@@ -727,5 +738,10 @@ impl McpHandler {
 
 	async fn call_tx_pool_ready(&self) -> Result<Value> {
 		self.rpc_client.tx_pool_ready().await
+	}
+
+	// Net Method Handlers
+	async fn call_sync_state(&self) -> Result<Value> {
+		self.rpc_client.sync_state().await
 	}
 }
