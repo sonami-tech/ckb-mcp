@@ -20,7 +20,7 @@ async fn test_00_server_running() {
 }
 
 #[tokio::test]
-async fn test_mcp_initialize() {
+async fn test_01_mcp_initialize() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
 	let result = ctx
@@ -339,15 +339,28 @@ async fn test_get_cells_basic_search() {
 async fn test_get_cells_capacity() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
+	// Get genesis block to extract a real lock script
+	let block_result = ctx
+		.mcp_call("tools/call", json!({"name": "get_block_by_number", "arguments": {"block_number": 0}}))
+		.await
+		.expect("get_block_by_number should succeed");
+
+	let block_content = block_result["content"][0]["text"].as_str().unwrap();
+	let block_json: serde_json::Value = serde_json::from_str(block_content)
+		.expect("Block content should be valid JSON");
+
+	// Extract lock script from the first output of the first transaction
+	let lock_script = &block_json["transactions"][0]["outputs"][0]["lock"];
+
 	let result = ctx
 		.mcp_call("tools/call", json!({
 			"name": "get_cells_capacity",
 			"arguments": {
 				"search_key": {
 					"script": {
-						"code_hash": "0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8",
-						"hash_type": "type",
-						"args": "0x"
+						"code_hash": lock_script["code_hash"],
+						"hash_type": lock_script["hash_type"],
+						"args": lock_script["args"]
 					},
 					"script_type": "lock"
 				}
@@ -358,6 +371,7 @@ async fn test_get_cells_capacity() {
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
+	assert!(content.contains("capacity"), "Response should contain capacity field");
 }
 
 // Indexer Methods - Error Cases

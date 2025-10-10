@@ -1,6 +1,6 @@
 [package]
 name = "ckb-tools-server"
-version = "0.4.253"
+version = "0.4.266"
 edition = "2021"
 
 [[bin]]
