@@ -258,6 +258,11 @@ impl McpHandler {
 						"after_cursor": {
 							"type": "string",
 							"description": "Pagination cursor (optional)"
+						},
+						"group_by_transaction": {
+							"type": "boolean",
+							"description": "Group results by transaction hash (default: false returns individual entries with io_type/io_index)",
+							"default": false
 						}
 					},
 					"required": ["search_key"]
@@ -483,7 +488,7 @@ impl McpHandler {
 	}
 
 	async fn call_get_transactions(&self, args: &Value) -> Result<Value> {
-		let search_key = args
+		let mut search_key = args
 			.get("search_key")
 			.ok_or_else(|| {
 				shared::error::CkbMcpError::InvalidParameter("Missing search_key".to_string())
@@ -497,6 +502,14 @@ impl McpHandler {
 
 		let limit = args.get("limit").and_then(|v| v.as_u64()).map(|l| l as u32);
 		let after_cursor = args.get("after_cursor").and_then(|v| v.as_str());
+		let group_by_transaction = args.get("group_by_transaction").and_then(|v| v.as_bool()).unwrap_or(false);
+
+		// Add group_by_transaction to search_key if specified
+		if group_by_transaction {
+			if let Some(obj) = search_key.as_object_mut() {
+				obj.insert("group_by_transaction".to_string(), json!(true));
+			}
+		}
 
 		self.rpc_client.get_transactions(search_key, order, limit, after_cursor).await
 	}
