@@ -288,13 +288,13 @@ export CKB_RPC_URL=http://your-node-ip:28114    # Devnet (port 28114)
 
 # Recommended: Use cargo-nextest for better test output and guaranteed sequential order
 cargo install cargo-nextest  # One-time install
-cargo nextest run --workspace
+cargo nextest run
 
 # Or use standard cargo test
-cargo test --workspace
+cargo test
 
 # Or specify URL inline for a single test run
-CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run --workspace
+CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run
 
 # Test specific server with custom node
 CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run -p ckb-rpc-server
