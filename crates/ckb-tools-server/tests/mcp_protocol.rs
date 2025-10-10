@@ -7,7 +7,7 @@ use serde_json::json;
 const TOOLS_SERVER_PORT: u16 = 8003;
 
 #[tokio::test]
-async fn test_mcp_initialize() {
+async fn test_03_mcp_initialize() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	let result = ctx
