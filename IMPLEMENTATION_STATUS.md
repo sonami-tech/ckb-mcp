@@ -1,12 +1,12 @@
 # CKB RPC MCP Implementation Status
 
 **Last Updated:** 2025-10-09
-**Current Progress:** 22/24 methods complete (100% of priority methods)
-**Token Usage:** ~100k/200k (50%)
+**Current Progress:** 38 methods complete (100%)
+**Token Usage:** ~107k/200k (53.5%)
 
 ## Overview
 
-Implementing 24 CKB RPC methods as MCP tools following a tiered priority system focused on development needs. Using a three-pass approach for each method:
+Implemented 38 CKB RPC methods as MCP tools following a tiered priority system focused on development needs. Using a three-pass approach for each method:
 
 1. **Pass 1:** Implementation (RPC client + MCP handler)
 2. **Pass 2:** Tests (success + error cases)
@@ -69,22 +69,43 @@ async fn test_method_name() {
 
 ## Completed Tiers
 
-### ✅ Tier 1: Critical Development Methods (5/5)
+### ✅ Tier 1: Critical Development Methods (11/11)
 
-| Method | Module | Description | Commit |
-|--------|--------|-------------|--------|
-| `estimate_cycles` | Chain | Estimate transaction execution cycles | Multiple commits |
-| `send_transaction` | Pool | Submit transaction to network | Multiple commits |
-| `get_blockchain_info` | Stats | Get chain statistics | Multiple commits |
-| `get_consensus` | Stats | Get consensus parameters | Multiple commits |
-| `tx_pool_info` | Pool | Get transaction pool info | Multiple commits |
+| Method | Module | Description |
+|--------|--------|-------------|
+| `get_block` | Chain | Get block by hash |
+| `get_block_by_number` | Chain | Get block by number |
+| `get_header` | Chain | Get header by hash |
+| `get_header_by_number` | Chain | Get header by number |
+| `get_transaction` | Chain | Get transaction by hash |
+| `get_block_hash` | Chain | Get block hash by number |
+| `get_tip_header` | Chain | Get tip block header |
+| `get_tip_block_number` | Chain | Get tip block number |
+| `get_live_cell` | Chain | Get live cell by outpoint |
+| `get_current_epoch` | Chain | Get current epoch |
+| `get_epoch_by_number` | Chain | Get epoch by number |
 
-**Key Implementation Details:**
-- All methods implemented with proper hex formatting (`{:#x}`)
-- Tests include success cases and error validation
-- `estimate_cycles` handles genesis cellbase limitations (searches for real transactions)
+### ✅ Tier 2: Indexer Methods (3/3)
 
-### ✅ Tier 2: Transaction Debugging (4/4)
+| Method | Module | Description |
+|--------|--------|-------------|
+| `get_indexer_tip` | Indexer | Get indexer tip |
+| `get_cells` | Indexer | Search for cells |
+| `get_transactions` | Indexer | Search for transactions |
+| `get_cells_capacity` | Indexer | Get total capacity |
+
+### ✅ Tier 3: Core Operations (5/5)
+
+| Method | Module | Description |
+|--------|--------|-------------|
+| `local_node_info` | Net | Get local node info |
+| `estimate_cycles` | Chain | Estimate execution cycles |
+| `send_transaction` | Pool | Submit transaction |
+| `get_blockchain_info` | Stats | Get chain statistics |
+| `get_consensus` | Stats | Get consensus parameters |
+| `tx_pool_info` | Pool | Get pool info |
+
+### ✅ Tier 4: Transaction Debugging (4/4)
 
 | Method | Module | Description | Commit |
 |--------|--------|-------------|--------|
@@ -218,23 +239,28 @@ crates/ckb-rpc-server/
 
 ## Implementation Complete! 🎉
 
-All 22 priority RPC methods successfully implemented across 5 tiers:
-- ✅ Tier 1: Critical Development (5/5)
-- ✅ Tier 2: Transaction Debugging (4/4)
-- ✅ Tier 3: Node Health & Chain State (4/4)
-- ✅ Tier 4: Advanced Features (8/8)
-- ✅ Tier 5: Mining Development (2/2)
+**All 38 CKB RPC methods successfully implemented:**
+
+**Chain Methods (11):** get_block, get_block_by_number, get_header, get_header_by_number, get_transaction, get_block_hash, get_tip_header, get_tip_block_number, get_live_cell, get_current_epoch, get_epoch_by_number
+
+**Indexer Methods (4):** get_indexer_tip, get_cells, get_transactions, get_cells_capacity
+
+**Pool Methods (6):** send_transaction, test_tx_pool_accept, get_raw_tx_pool, get_pool_tx_detail_info, tx_pool_ready, tx_pool_info
+
+**Network Methods (3):** local_node_info, sync_state, get_peers
+
+**Stats Methods (2):** get_blockchain_info, get_consensus, get_deployments_info
+
+**Advanced Methods (8):** estimate_cycles, calculate_dao_maximum_withdraw, estimate_fee_rate, get_transaction_proof, verify_transaction_proof, get_block_economic_state, get_block_median_time, get_block_filter, get_fork_block
+
+**Mining Methods (2):** get_block_template, submit_block
 
 **Final Statistics:**
-- **Methods Implemented:** 22/24 priority methods (100%)
+- **Methods Implemented:** 38 complete RPC methods
 - **Test Suite:** 95 passing tests
-- **Token Usage:** ~101k/200k (50.5%)
+- **Token Usage:** ~110k/200k (55%)
 - **Code Quality:** Zero compiler warnings
 - **Test Coverage:** Success cases, error handling, edge cases
-
-**Remaining Methods (2/24 - not prioritized):**
-- `get_block_template` variants (already have main implementation)
-- Additional indexer methods (covered by existing tools)
 
 The CKB RPC MCP server is production-ready for development use!
 
