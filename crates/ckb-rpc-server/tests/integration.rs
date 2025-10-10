@@ -1,4 +1,4 @@
-use serde_json::json;
+use serde_json::{json, Value};
 
 #[path = "../../shared/tests/common/mod.rs"]
 mod common;
@@ -1382,4 +1382,409 @@ async fn test_get_transactions_missing_search_key() {
 		.await;
 
 	assert!(result.is_err(), "Should fail when search_key is missing");
+}
+
+// Chain Methods - Advanced
+
+#[tokio::test]
+async fn test_estimate_cycles() {
+	// This test validates the estimate_cycles RPC method works correctly.
+	// Since estimate_cycles requires resolving transaction inputs which may not exist
+	// on a fresh devnet, this test may skip if no suitable transactions are found.
+	// The error case is tested separately in test_estimate_cycles_invalid_tx.
+
+	use reqwest::Client;
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	// Use direct CKB RPC to find a transaction with real, resolvable inputs
+	let client = Client::new();
+	let ckb_rpc_url = TestContext::get_ckb_rpc_url().expect("CKB_RPC_URL must be set");
+
+	// Get a recent block with transactions
+	let tip_response = client
+		.post(&ckb_rpc_url)
+		.json(&json!({
+			"jsonrpc": "2.0",
+			"id": 1,
+			"method": "get_tip_block_number",
+			"params": []
+		}))
+		.send()
+		.await
+		.expect("Should get tip block number");
+
+	let tip_body: Value = tip_response.json().await.expect("Should parse JSON");
+	let tip_number_hex = tip_body["result"].as_str().expect("Should have tip number");
+	let tip_number = u64::from_str_radix(&tip_number_hex[2..], 16).expect("Should parse hex");
+
+	// Search backwards for a block with non-cellbase transactions
+	let mut found_tx = None;
+	for offset in 1..std::cmp::min(100, tip_number) {
+		let block_number = tip_number - offset;
+		let block_response = client
+			.post(&ckb_rpc_url)
+			.json(&json!({
+				"jsonrpc": "2.0",
+				"id": 1,
+				"method": "get_block_by_number",
+				"params": [format!("{:#x}", block_number)]
+			}))
+			.send()
+			.await
+			.expect("Should get block");
+
+		let block_body: Value = block_response.json().await.expect("Should parse JSON");
+		let transactions = block_body["result"]["transactions"].as_array()
+			.expect("Should have transactions");
+
+		// Skip cellbase (first tx), look for regular transactions
+		if transactions.len() > 1 {
+			found_tx = Some(transactions[1].clone());
+			break;
+		}
+	}
+
+	let tx = match found_tx {
+		Some(t) => t,
+		None => {
+			eprintln!("No suitable transactions found for estimate_cycles test - skipping");
+			eprintln!("This is normal on a fresh devnet with no user transactions");
+			return;
+		}
+	};
+
+	// Call estimate_cycles via MCP
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "estimate_cycles",
+			"arguments": {
+				"tx": tx
+			}
+		}))
+		.await
+		.expect("estimate_cycles should succeed for real transaction");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let cycles_result: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Verify the response has the expected structure
+	assert!(cycles_result.get("cycles").is_some(), "Response should have 'cycles' field");
+
+	// Verify cycles is a valid hex number
+	let cycles_str = cycles_result["cycles"].as_str().expect("cycles should be a string");
+	assert!(cycles_str.starts_with("0x"), "cycles should be in hex format");
+
+	// Parse to verify it's a valid number
+	let _cycles_value = u64::from_str_radix(&cycles_str[2..], 16)
+		.expect("cycles should be valid hex number");
+}
+
+#[tokio::test]
+async fn test_estimate_cycles_missing_tx() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({"name": "estimate_cycles", "arguments": {}}))
+		.await;
+
+	assert!(result.is_err(), "Should fail when tx parameter is missing");
+	let error_msg = result.unwrap_err();
+	assert!(error_msg.contains("Missing tx"), "Error should mention missing tx parameter");
+}
+
+#[tokio::test]
+async fn test_estimate_cycles_invalid_tx() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+	let shared_data = SharedTestData::get_or_init_async().await;
+
+	// Use genesis cellbase which has unresolvable inputs (null outpoint)
+	let genesis_cellbase = &shared_data.genesis_block["transactions"][0];
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "estimate_cycles",
+			"arguments": {
+				"tx": genesis_cellbase
+			}
+		}))
+		.await;
+
+	// Should fail because genesis cellbase references null outpoint
+	assert!(result.is_err(), "Should fail for transaction with unresolvable inputs");
+	let error_msg = result.unwrap_err();
+	// Error can be either TransactionFailedToResolve or just contain "error"
+	assert!(error_msg.to_lowercase().contains("error") || error_msg.contains("Failed"),
+		"Error should indicate failure, got: {}", error_msg);
+}
+
+// Pool Methods
+
+#[tokio::test]
+async fn test_send_transaction_missing_tx() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({"name": "send_transaction", "arguments": {}}))
+		.await;
+
+	assert!(result.is_err(), "Should fail when tx parameter is missing");
+	let error_msg = result.unwrap_err();
+	assert!(error_msg.contains("Missing tx"), "Error should mention missing tx parameter");
+}
+
+#[tokio::test]
+async fn test_send_transaction_invalid() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+	let shared_data = SharedTestData::get_or_init_async().await;
+
+	// Try to send genesis cellbase which has unresolvable inputs
+	let genesis_cellbase = &shared_data.genesis_block["transactions"][0];
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "send_transaction",
+			"arguments": {
+				"tx": genesis_cellbase
+			}
+		}))
+		.await;
+
+	// Should fail - genesis cellbase cannot be sent
+	assert!(result.is_err(), "Should fail for invalid transaction");
+	let error_msg = result.unwrap_err();
+	assert!(error_msg.to_lowercase().contains("error") || error_msg.contains("Failed"),
+		"Error should indicate failure, got: {}", error_msg);
+}
+
+// Stats Methods
+
+#[tokio::test]
+async fn test_get_blockchain_info() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({"name": "get_blockchain_info", "arguments": {}}))
+		.await
+		.expect("get_blockchain_info should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let info: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Verify expected fields exist
+	assert!(info.get("chain").is_some(), "Response should have 'chain' field");
+	assert!(info.get("difficulty").is_some(), "Response should have 'difficulty' field");
+	assert!(info.get("epoch").is_some(), "Response should have 'epoch' field");
+	assert!(info.get("is_initial_block_download").is_some(), "Response should have 'is_initial_block_download' field");
+	assert!(info.get("median_time").is_some(), "Response should have 'median_time' field");
+
+	// Verify chain field is a string (e.g. "ckb", "ckb_testnet", "ckb_dev")
+	let chain = info["chain"].as_str().expect("chain should be a string");
+	assert!(!chain.is_empty(), "chain should not be empty");
+
+	// Verify difficulty is in hex format
+	let difficulty = info["difficulty"].as_str().expect("difficulty should be a string");
+	assert!(difficulty.starts_with("0x"), "difficulty should be in hex format");
+
+	// Verify epoch is in hex format
+	let epoch = info["epoch"].as_str().expect("epoch should be a string");
+	assert!(epoch.starts_with("0x"), "epoch should be in hex format");
+}
+
+#[tokio::test]
+async fn test_get_consensus() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({"name": "get_consensus", "arguments": {}}))
+		.await
+		.expect("get_consensus should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let consensus: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Verify key consensus parameters exist
+	assert!(consensus.get("id").is_some(), "Response should have 'id' field");
+	assert!(consensus.get("genesis_hash").is_some(), "Response should have 'genesis_hash' field");
+	assert!(consensus.get("dao_type_hash").is_some(), "Response should have 'dao_type_hash' field");
+	assert!(consensus.get("epoch_duration_target").is_some(), "Response should have 'epoch_duration_target' field");
+	assert!(consensus.get("hardfork_features").is_some(), "Response should have 'hardfork_features' field");
+
+	// Verify genesis_hash format
+	let genesis_hash = consensus["genesis_hash"].as_str().expect("genesis_hash should be a string");
+	assert!(genesis_hash.starts_with("0x"), "genesis_hash should be in hex format");
+	assert_eq!(genesis_hash.len(), 66, "genesis_hash should be 66 characters (0x + 64 hex digits)");
+
+	// Verify id field (chain identifier)
+	let id = consensus["id"].as_str().expect("id should be a string");
+	assert!(!id.is_empty(), "id should not be empty");
+
+	// Verify hardfork_features is an array
+	assert!(consensus["hardfork_features"].is_array(), "hardfork_features should be an array");
+}
+
+#[tokio::test]
+async fn test_tx_pool_info() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({"name": "tx_pool_info", "arguments": {}}))
+		.await
+		.expect("tx_pool_info should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let pool_info: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Verify key pool info fields exist
+	assert!(pool_info.get("tip_hash").is_some(), "Response should have 'tip_hash' field");
+	assert!(pool_info.get("tip_number").is_some(), "Response should have 'tip_number' field");
+	assert!(pool_info.get("pending").is_some(), "Response should have 'pending' field");
+	assert!(pool_info.get("proposed").is_some(), "Response should have 'proposed' field");
+	assert!(pool_info.get("orphan").is_some(), "Response should have 'orphan' field");
+	assert!(pool_info.get("total_tx_size").is_some(), "Response should have 'total_tx_size' field");
+	assert!(pool_info.get("total_tx_cycles").is_some(), "Response should have 'total_tx_cycles' field");
+	assert!(pool_info.get("min_fee_rate").is_some(), "Response should have 'min_fee_rate' field");
+	assert!(pool_info.get("max_tx_pool_size").is_some(), "Response should have 'max_tx_pool_size' field");
+
+	// Verify tip_hash format
+	let tip_hash = pool_info["tip_hash"].as_str().expect("tip_hash should be a string");
+	assert!(tip_hash.starts_with("0x"), "tip_hash should be in hex format");
+
+	// Verify numeric fields are in hex format
+	let tip_number = pool_info["tip_number"].as_str().expect("tip_number should be a string");
+	assert!(tip_number.starts_with("0x"), "tip_number should be in hex format");
+
+	let pending = pool_info["pending"].as_str().expect("pending should be a string");
+	assert!(pending.starts_with("0x"), "pending should be in hex format");
+}
+
+#[tokio::test]
+async fn test_get_raw_tx_pool_non_verbose() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_raw_tx_pool",
+			"arguments": { "verbose": false }
+		}))
+		.await
+		.expect("get_raw_tx_pool should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let pool: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Non-verbose returns object with pending and proposed arrays
+	assert!(pool.get("pending").is_some(), "Response should have 'pending' field");
+	assert!(pool.get("proposed").is_some(), "Response should have 'proposed' field");
+
+	// Verify pending is an array
+	let pending = pool["pending"].as_array().expect("pending should be an array");
+
+	// Each entry should be a tx hash string (if any exist)
+	for tx_hash in pending {
+		let hash_str = tx_hash.as_str().expect("tx hash should be a string");
+		assert!(hash_str.starts_with("0x"), "tx hash should be in hex format");
+		assert_eq!(hash_str.len(), 66, "tx hash should be 66 characters");
+	}
+}
+
+#[tokio::test]
+async fn test_get_raw_tx_pool_verbose() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_raw_tx_pool",
+			"arguments": { "verbose": true }
+		}))
+		.await
+		.expect("get_raw_tx_pool should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let pool: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Verbose returns object with pending and proposed as objects (not arrays)
+	assert!(pool.get("pending").is_some(), "Response should have 'pending' field");
+	assert!(pool.get("proposed").is_some(), "Response should have 'proposed' field");
+	assert!(pool.get("conflicted").is_some(), "Response should have 'conflicted' field");
+
+	// Verify pending is an object
+	let pending = pool["pending"].as_object().expect("pending should be an object");
+
+	// Each entry maps tx_hash -> tx details with cycles, size, fee, etc
+	for (_tx_hash, tx_info) in pending {
+		assert!(tx_info.get("cycles").is_some(), "tx info should have 'cycles' field");
+		assert!(tx_info.get("size").is_some(), "tx info should have 'size' field");
+		assert!(tx_info.get("fee").is_some(), "tx info should have 'fee' field");
+		assert!(tx_info.get("ancestors_size").is_some(), "tx info should have 'ancestors_size' field");
+		assert!(tx_info.get("ancestors_cycles").is_some(), "tx info should have 'ancestors_cycles' field");
+		assert!(tx_info.get("ancestors_count").is_some(), "tx info should have 'ancestors_count' field");
+	}
+}
+
+#[tokio::test]
+async fn test_get_raw_tx_pool_default() {
+	// Test default behavior (no verbose parameter)
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_raw_tx_pool",
+			"arguments": {}
+		}))
+		.await
+		.expect("get_raw_tx_pool should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let pool: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Default is non-verbose (arrays)
+	assert!(pool.get("pending").is_some(), "Response should have 'pending' field");
+	assert!(pool.get("proposed").is_some(), "Response should have 'proposed' field");
+
+	// Verify pending is an array (non-verbose)
+	pool["pending"].as_array().expect("pending should be an array in default mode");
+}
+
+#[tokio::test]
+async fn test_test_tx_pool_accept_missing_tx() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({"name": "test_tx_pool_accept", "arguments": {}}))
+		.await;
+
+	assert!(result.is_err(), "Should fail when tx parameter is missing");
+	let error_msg = result.unwrap_err();
+	assert!(error_msg.contains("Missing tx"), "Error should mention missing tx parameter");
+}
+
+#[tokio::test]
+async fn test_test_tx_pool_accept_invalid() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+	let shared_data = SharedTestData::get_or_init_async().await;
+
+	// Try to test genesis cellbase which has unresolvable inputs
+	let genesis_cellbase = &shared_data.genesis_block["transactions"][0];
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "test_tx_pool_accept",
+			"arguments": {
+				"tx": genesis_cellbase
+			}
+		}))
+		.await;
+
+	// Should fail - genesis cellbase has invalid inputs
+	assert!(result.is_err(), "Should fail for invalid transaction");
+	let error_msg = result.unwrap_err();
+	assert!(error_msg.to_lowercase().contains("error") || error_msg.contains("Failed"),
+		"Error should indicate failure, got: {}", error_msg);
 }

@@ -19,6 +19,13 @@ pub trait CkbRpcClientExt {
 	async fn get_transactions(&self, search_key: Value, order: &str, limit: Option<u32>, after_cursor: Option<&str>) -> Result<Value>;
 	async fn get_cells_capacity(&self, search_key: Value) -> Result<Value>;
 	async fn local_node_info(&self) -> Result<Value>;
+	async fn estimate_cycles(&self, tx: Value) -> Result<Value>;
+	async fn send_transaction(&self, tx: Value, outputs_validator: Option<&str>) -> Result<Value>;
+	async fn test_tx_pool_accept(&self, tx: Value, outputs_validator: Option<&str>) -> Result<Value>;
+	async fn get_blockchain_info(&self) -> Result<Value>;
+	async fn get_consensus(&self) -> Result<Value>;
+	async fn tx_pool_info(&self) -> Result<Value>;
+	async fn get_raw_tx_pool(&self, verbose: Option<bool>) -> Result<Value>;
 }
 
 impl CkbRpcClientExt for CkbRpcClient {
@@ -97,5 +104,44 @@ impl CkbRpcClientExt for CkbRpcClient {
 	/// Get local node info.
 	async fn local_node_info(&self) -> Result<Value> {
 		self.call("local_node_info", serde_json::json!([])).await
+	}
+
+	/// Estimate transaction execution cycles.
+	async fn estimate_cycles(&self, tx: Value) -> Result<Value> {
+		let params = serde_json::json!([tx]);
+		self.call("estimate_cycles", params).await
+	}
+
+	/// Send transaction to the network.
+	async fn send_transaction(&self, tx: Value, outputs_validator: Option<&str>) -> Result<Value> {
+		let params = serde_json::json!([tx, outputs_validator]);
+		self.call("send_transaction", params).await
+	}
+
+	/// Test if transaction would be accepted by pool without broadcasting.
+	async fn test_tx_pool_accept(&self, tx: Value, outputs_validator: Option<&str>) -> Result<Value> {
+		let params = serde_json::json!([tx, outputs_validator]);
+		self.call("test_tx_pool_accept", params).await
+	}
+
+	/// Get blockchain information.
+	async fn get_blockchain_info(&self) -> Result<Value> {
+		self.call("get_blockchain_info", serde_json::json!([])).await
+	}
+
+	/// Get consensus parameters.
+	async fn get_consensus(&self) -> Result<Value> {
+		self.call("get_consensus", serde_json::json!([])).await
+	}
+
+	/// Get transaction pool information.
+	async fn tx_pool_info(&self) -> Result<Value> {
+		self.call("tx_pool_info", serde_json::json!([])).await
+	}
+
+	/// Get all transaction ids in tx pool.
+	async fn get_raw_tx_pool(&self, verbose: Option<bool>) -> Result<Value> {
+		let params = serde_json::json!([verbose]);
+		self.call("get_raw_tx_pool", params).await
 	}
 }

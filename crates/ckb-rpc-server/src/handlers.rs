@@ -291,6 +291,100 @@ impl McpHandler {
 					"properties": {}
 				}),
 			},
+			// Chain Methods - Advanced
+			ToolDefinition {
+				name: "estimate_cycles".to_string(),
+				description: "Estimate transaction execution cycles".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"tx": {
+							"type": "object",
+							"description": "Transaction object to estimate"
+						}
+					},
+					"required": ["tx"]
+				}),
+			},
+			// Pool Methods
+			ToolDefinition {
+				name: "send_transaction".to_string(),
+				description: "Submit transaction to the network".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"tx": {
+							"type": "object",
+							"description": "Transaction object to send"
+						},
+						"outputs_validator": {
+							"type": "string",
+							"description": "Outputs validator mode (optional, default: passthrough)",
+							"enum": ["passthrough", "well_known_scripts_only"],
+							"default": "passthrough"
+						}
+					},
+					"required": ["tx"]
+				}),
+			},
+			ToolDefinition {
+				name: "test_tx_pool_accept".to_string(),
+				description: "Test if transaction would be accepted without broadcasting".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"tx": {
+							"type": "object",
+							"description": "Transaction object to test"
+						},
+						"outputs_validator": {
+							"type": "string",
+							"description": "Outputs validator mode (optional, default: passthrough)",
+							"enum": ["passthrough", "well_known_scripts_only"],
+							"default": "passthrough"
+						}
+					},
+					"required": ["tx"]
+				}),
+			},
+			// Stats Methods
+			ToolDefinition {
+				name: "get_blockchain_info".to_string(),
+				description: "Get blockchain information including chain type, difficulty, and epoch".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {}
+				}),
+			},
+			ToolDefinition {
+				name: "get_consensus".to_string(),
+				description: "Get consensus parameters including genesis hash, epoch duration, and hard fork features".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {}
+				}),
+			},
+			ToolDefinition {
+				name: "tx_pool_info".to_string(),
+				description: "Get transaction pool information including pending count, size limits, and fee rates".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {}
+				}),
+			},
+			ToolDefinition {
+				name: "get_raw_tx_pool".to_string(),
+				description: "Get all transaction ids in tx pool (verbose=false) or detailed info per transaction (verbose=true)".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"verbose": {
+							"type": "boolean",
+							"description": "True for detailed json object with tx info, false for array of tx ids (default: false)"
+						}
+					}
+				}),
+			},
 		];
 
 		let result = json!({ "tools": tools });
@@ -334,6 +428,16 @@ impl McpHandler {
 			"get_cells_capacity" => self.call_get_cells_capacity(arguments).await,
 			// Network Methods
 			"local_node_info" => self.call_local_node_info().await,
+			// Chain Methods - Advanced
+			"estimate_cycles" => self.call_estimate_cycles(arguments).await,
+			// Pool Methods
+			"send_transaction" => self.call_send_transaction(arguments).await,
+			"test_tx_pool_accept" => self.call_test_tx_pool_accept(arguments).await,
+			"get_raw_tx_pool" => self.call_get_raw_tx_pool(arguments).await,
+			// Stats Methods
+			"get_blockchain_info" => self.call_get_blockchain_info().await,
+			"get_consensus" => self.call_get_consensus().await,
+			"tx_pool_info" => self.call_tx_pool_info().await,
 			_ => {
 				return Ok(create_error_response(
 					id,
@@ -528,5 +632,61 @@ impl McpHandler {
 	// Network Method Handlers
 	async fn call_local_node_info(&self) -> Result<Value> {
 		self.rpc_client.local_node_info().await
+	}
+
+	// Chain Method Handlers - Advanced
+	async fn call_estimate_cycles(&self, args: &Value) -> Result<Value> {
+		let tx = args
+			.get("tx")
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("Missing tx".to_string())
+			})?
+			.clone();
+		self.rpc_client.estimate_cycles(tx).await
+	}
+
+	// Pool Method Handlers
+	async fn call_send_transaction(&self, args: &Value) -> Result<Value> {
+		let tx = args
+			.get("tx")
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("Missing tx".to_string())
+			})?
+			.clone();
+
+		let outputs_validator = args.get("outputs_validator").and_then(|v| v.as_str());
+
+		self.rpc_client.send_transaction(tx, outputs_validator).await
+	}
+
+	async fn call_test_tx_pool_accept(&self, args: &Value) -> Result<Value> {
+		let tx = args
+			.get("tx")
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("Missing tx".to_string())
+			})?
+			.clone();
+
+		let outputs_validator = args.get("outputs_validator").and_then(|v| v.as_str());
+
+		self.rpc_client.test_tx_pool_accept(tx, outputs_validator).await
+	}
+
+	// Stats Method Handlers
+	async fn call_get_blockchain_info(&self) -> Result<Value> {
+		self.rpc_client.get_blockchain_info().await
+	}
+
+	async fn call_get_consensus(&self) -> Result<Value> {
+		self.rpc_client.get_consensus().await
+	}
+
+	async fn call_tx_pool_info(&self) -> Result<Value> {
+		self.rpc_client.tx_pool_info().await
+	}
+
+	async fn call_get_raw_tx_pool(&self, args: &Value) -> Result<Value> {
+		let verbose = args.get("verbose").and_then(|v| v.as_bool());
+		self.rpc_client.get_raw_tx_pool(verbose).await
 	}
 }
