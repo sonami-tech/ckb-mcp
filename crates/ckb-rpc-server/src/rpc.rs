@@ -37,6 +37,8 @@ pub trait CkbRpcClientExt {
 	async fn verify_transaction_proof(&self, tx_proof: Value) -> Result<Value>;
 	async fn get_block_economic_state(&self, block_hash: &str) -> Result<Value>;
 	async fn get_block_median_time(&self, block_hash: &str) -> Result<Value>;
+	async fn get_block_filter(&self, block_hash: &str) -> Result<Value>;
+	async fn get_fork_block(&self, block_hash: &str, verbosity: Option<u32>) -> Result<Value>;
 }
 
 impl CkbRpcClientExt for CkbRpcClient {
@@ -216,5 +218,18 @@ impl CkbRpcClientExt for CkbRpcClient {
 	async fn get_block_median_time(&self, block_hash: &str) -> Result<Value> {
 		let params = serde_json::json!([block_hash]);
 		self.call("get_block_median_time", params).await
+	}
+
+	/// Get BIP-157 block filter for light clients.
+	async fn get_block_filter(&self, block_hash: &str) -> Result<Value> {
+		let params = serde_json::json!([block_hash]);
+		self.call("get_block_filter", params).await
+	}
+
+	/// Get fork block information by hash.
+	async fn get_fork_block(&self, block_hash: &str, verbosity: Option<u32>) -> Result<Value> {
+		let verbosity_hex = verbosity.map(|v| format!("{:#x}", v));
+		let params = serde_json::json!([block_hash, verbosity_hex]);
+		self.call("get_fork_block", params).await
 	}
 }

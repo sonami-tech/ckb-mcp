@@ -546,6 +546,38 @@ impl McpHandler {
 					"required": ["block_hash"]
 				}),
 			},
+			ToolDefinition {
+				name: "get_block_filter".to_string(),
+				description: "Get BIP-157 block filter data for light client SPV verification".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"block_hash": {
+							"type": "string",
+							"description": "Block hash to get filter for"
+						}
+					},
+					"required": ["block_hash"]
+				}),
+			},
+			ToolDefinition {
+				name: "get_fork_block".to_string(),
+				description: "Get fork block information by hash (may return null depending on sync state)".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"block_hash": {
+							"type": "string",
+							"description": "Fork block hash"
+						},
+						"verbosity": {
+							"type": "integer",
+							"description": "Result format: 0 (hex string) or 2 (JSON object, default)"
+						}
+					},
+					"required": ["block_hash"]
+				}),
+			},
 		];
 
 		let result = json!({ "tools": tools });
@@ -614,6 +646,9 @@ impl McpHandler {
 			// Chain Methods - Economics
 			"get_block_economic_state" => self.call_get_block_economic_state(arguments).await,
 			"get_block_median_time" => self.call_get_block_median_time(arguments).await,
+			// Chain Methods - Filters and Forks
+			"get_block_filter" => self.call_get_block_filter(arguments).await,
+			"get_fork_block" => self.call_get_fork_block(arguments).await,
 			_ => {
 				return Ok(create_error_response(
 					id,
@@ -974,5 +1009,29 @@ impl McpHandler {
 			})?;
 
 		self.rpc_client.get_block_median_time(block_hash).await
+	}
+
+	async fn call_get_block_filter(&self, args: &Value) -> Result<Value> {
+		let block_hash = args
+			.get("block_hash")
+			.and_then(|v| v.as_str())
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("block_hash is required".to_string())
+			})?;
+
+		self.rpc_client.get_block_filter(block_hash).await
+	}
+
+	async fn call_get_fork_block(&self, args: &Value) -> Result<Value> {
+		let block_hash = args
+			.get("block_hash")
+			.and_then(|v| v.as_str())
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("block_hash is required".to_string())
+			})?;
+
+		let verbosity = args.get("verbosity").and_then(|v| v.as_u64()).map(|v| v as u32);
+
+		self.rpc_client.get_fork_block(block_hash, verbosity).await
 	}
 }
