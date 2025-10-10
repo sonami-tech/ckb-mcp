@@ -2043,6 +2043,53 @@ async fn test_calculate_dao_maximum_withdraw_missing_params() {
 }
 
 #[tokio::test]
+async fn test_estimate_fee_rate() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({"name": "estimate_fee_rate", "arguments": {}}))
+		.await
+		.expect("estimate_fee_rate should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let fee_rate: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Should be a hex string representing shannons per KB
+	let fee_rate_str = fee_rate.as_str().expect("fee_rate should be a string");
+	assert!(fee_rate_str.starts_with("0x"), "fee_rate should be in hex format");
+
+	// Parse as u64 to verify it's a valid number
+	let fee_value = u64::from_str_radix(&fee_rate_str[2..], 16)
+		.expect("fee_rate should be valid hex number");
+	assert!(fee_value > 0, "fee_rate should be greater than 0");
+}
+
+#[tokio::test]
+async fn test_estimate_fee_rate_with_params() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "estimate_fee_rate",
+			"arguments": {
+				"estimate_mode": "no_priority",
+				"enable_fallback": true
+			}
+		}))
+		.await
+		.expect("estimate_fee_rate should succeed with params");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let fee_rate: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Verify it's a hex string
+	let fee_rate_str = fee_rate.as_str().expect("fee_rate should be a string");
+	assert!(fee_rate_str.starts_with("0x"), "fee_rate should be in hex format");
+}
+
+#[tokio::test]
 async fn test_test_tx_pool_accept_missing_tx() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 

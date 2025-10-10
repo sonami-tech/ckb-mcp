@@ -456,6 +456,23 @@ impl McpHandler {
 					"required": ["out_point", "kind"]
 				}),
 			},
+			ToolDefinition {
+				name: "estimate_fee_rate".to_string(),
+				description: "Estimate transaction fee rate in shannons per kilobyte based on recent transactions".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"estimate_mode": {
+							"type": "string",
+							"description": "Fee estimate mode (optional, default: no_priority)"
+						},
+						"enable_fallback": {
+							"type": "boolean",
+							"description": "Enable fallback algorithm when lacking historical data (optional, default: true)"
+						}
+					}
+				}),
+			},
 		];
 
 		let result = json!({ "tools": tools });
@@ -517,6 +534,7 @@ impl McpHandler {
 			"get_deployments_info" => self.call_get_deployments_info().await,
 			// Experiment Methods
 			"calculate_dao_maximum_withdraw" => self.call_calculate_dao_maximum_withdraw(arguments).await,
+			"estimate_fee_rate" => self.call_estimate_fee_rate(arguments).await,
 			_ => {
 				return Ok(create_error_response(
 					id,
@@ -815,5 +833,12 @@ impl McpHandler {
 			.clone();
 
 		self.rpc_client.calculate_dao_maximum_withdraw(out_point, kind).await
+	}
+
+	async fn call_estimate_fee_rate(&self, args: &Value) -> Result<Value> {
+		let estimate_mode = args.get("estimate_mode").and_then(|v| v.as_str());
+		let enable_fallback = args.get("enable_fallback").and_then(|v| v.as_bool());
+
+		self.rpc_client.estimate_fee_rate(estimate_mode, enable_fallback).await
 	}
 }

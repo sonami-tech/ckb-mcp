@@ -32,6 +32,7 @@ pub trait CkbRpcClientExt {
 	async fn get_peers(&self) -> Result<Value>;
 	async fn get_deployments_info(&self) -> Result<Value>;
 	async fn calculate_dao_maximum_withdraw(&self, out_point: Value, kind: Value) -> Result<Value>;
+	async fn estimate_fee_rate(&self, estimate_mode: Option<&str>, enable_fallback: Option<bool>) -> Result<Value>;
 }
 
 impl CkbRpcClientExt for CkbRpcClient {
@@ -181,5 +182,11 @@ impl CkbRpcClientExt for CkbRpcClient {
 	async fn calculate_dao_maximum_withdraw(&self, out_point: Value, kind: Value) -> Result<Value> {
 		let params = serde_json::json!([out_point, kind]);
 		self.call("calculate_dao_maximum_withdraw", params).await
+	}
+
+	/// Estimate transaction fee rate.
+	async fn estimate_fee_rate(&self, estimate_mode: Option<&str>, enable_fallback: Option<bool>) -> Result<Value> {
+		let params = serde_json::json!([estimate_mode, enable_fallback]);
+		self.call("estimate_fee_rate", params).await
 	}
 }
