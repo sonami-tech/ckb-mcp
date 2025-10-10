@@ -1916,6 +1916,56 @@ async fn test_sync_state() {
 }
 
 #[tokio::test]
+async fn test_get_peers() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({"name": "get_peers", "arguments": {}}))
+		.await
+		.expect("get_peers should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let peers: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Should be an array
+	let peers_array = peers.as_array().expect("Response should be an array");
+
+	// If there are peers, verify structure
+	if !peers_array.is_empty() {
+		let peer = &peers_array[0];
+
+		// Verify key peer fields
+		assert!(peer.get("node_id").is_some(), "Peer should have 'node_id' field");
+		assert!(peer.get("addresses").is_some(), "Peer should have 'addresses' field");
+		assert!(peer.get("is_outbound").is_some(), "Peer should have 'is_outbound' field");
+		assert!(peer.get("connected_duration").is_some(), "Peer should have 'connected_duration' field");
+		assert!(peer.get("protocols").is_some(), "Peer should have 'protocols' field");
+		assert!(peer.get("version").is_some(), "Peer should have 'version' field");
+
+		// Verify node_id is a string
+		peer["node_id"].as_str().expect("node_id should be a string");
+
+		// Verify is_outbound is boolean
+		peer["is_outbound"].as_bool().expect("is_outbound should be a boolean");
+
+		// Verify addresses is an array
+		let addresses = peer["addresses"].as_array().expect("addresses should be an array");
+		if !addresses.is_empty() {
+			assert!(addresses[0].get("address").is_some(), "Address should have 'address' field");
+			assert!(addresses[0].get("score").is_some(), "Address should have 'score' field");
+		}
+
+		// Verify protocols is an array
+		let protocols = peer["protocols"].as_array().expect("protocols should be an array");
+		if !protocols.is_empty() {
+			assert!(protocols[0].get("id").is_some(), "Protocol should have 'id' field");
+			assert!(protocols[0].get("version").is_some(), "Protocol should have 'version' field");
+		}
+	}
+}
+
+#[tokio::test]
 async fn test_test_tx_pool_accept_missing_tx() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 

@@ -416,6 +416,14 @@ impl McpHandler {
 					"properties": {}
 				}),
 			},
+			ToolDefinition {
+				name: "get_peers".to_string(),
+				description: "Get connected peers information including addresses, protocols, sync state, and connection duration".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {}
+				}),
+			},
 		];
 
 		let result = json!({ "tools": tools });
@@ -469,6 +477,7 @@ impl McpHandler {
 			"tx_pool_ready" => self.call_tx_pool_ready().await,
 			// Net Methods
 			"sync_state" => self.call_sync_state().await,
+			"get_peers" => self.call_get_peers().await,
 			// Stats Methods
 			"get_blockchain_info" => self.call_get_blockchain_info().await,
 			"get_consensus" => self.call_get_consensus().await,
@@ -743,5 +752,9 @@ impl McpHandler {
 	// Net Method Handlers
 	async fn call_sync_state(&self) -> Result<Value> {
 		self.rpc_client.sync_state().await
+	}
+
+	async fn call_get_peers(&self) -> Result<Value> {
+		self.rpc_client.get_peers().await
 	}
 }

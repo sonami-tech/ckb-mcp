@@ -29,6 +29,7 @@ pub trait CkbRpcClientExt {
 	async fn get_pool_tx_detail_info(&self, tx_hash: &str) -> Result<Value>;
 	async fn tx_pool_ready(&self) -> Result<Value>;
 	async fn sync_state(&self) -> Result<Value>;
+	async fn get_peers(&self) -> Result<Value>;
 }
 
 impl CkbRpcClientExt for CkbRpcClient {
@@ -162,5 +163,10 @@ impl CkbRpcClientExt for CkbRpcClient {
 	/// Get chain synchronization state.
 	async fn sync_state(&self) -> Result<Value> {
 		self.call("sync_state", serde_json::json!([])).await
+	}
+
+	/// Get connected peers information.
+	async fn get_peers(&self) -> Result<Value> {
+		self.call("get_peers", serde_json::json!([])).await
 	}
 }
