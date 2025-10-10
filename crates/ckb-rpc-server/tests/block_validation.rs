@@ -1,5 +1,5 @@
 use serde_json::json;
-use test_common::{SharedTestData, TestContext};
+use test_common::TestContext;
 
 
 const RPC_SERVER_PORT: u16 = 8001;

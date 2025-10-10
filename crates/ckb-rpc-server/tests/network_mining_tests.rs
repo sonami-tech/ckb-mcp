@@ -1,8 +1,6 @@
 use serde_json::{json, Value};
 use test_common::{SharedTestData, TestContext};
 
-use test_common::{SharedTestData, TestContext};
-
 const RPC_SERVER_PORT: u16 = 8001;
 
 #[tokio::test]
