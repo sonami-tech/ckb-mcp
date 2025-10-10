@@ -87,9 +87,9 @@ impl ToolsProvider {
 		// Detect network type by querying genesis hash
 		let (network_type, sighash_cell_dep) = Self::detect_network(&ckb_rpc_url)?;
 
-		info!("Detected network type: {:?}", network_type);
+		info!("Detected network type: {:?}.", network_type);
 		if sighash_cell_dep.is_some() {
-			debug!("Using custom sighash cell_dep from genesis");
+			debug!("Using custom sighash cell_dep from genesis.");
 		}
 
 		Ok(Self {
@@ -123,7 +123,7 @@ impl ToolsProvider {
 			TESTNET_GENESIS => Ok((ckb_sdk::NetworkType::Testnet, None)),
 			_ => {
 				// Unknown genesis - assume devnet, fetch sighash cell_dep from genesis
-				info!("Unknown genesis hash {}, assuming devnet", genesis_hash);
+				info!("Unknown genesis hash {}, assuming devnet.", genesis_hash);
 
 				// Get second transaction which contains the dep_group
 				// In standard CKB genesis: tx[0] = cellbase with scripts, tx[1] = dep_group
@@ -191,7 +191,7 @@ impl ToolsProvider {
 	}
 
 	pub async fn get_genesis_hash(&self) -> Result<String> {
-		info!("Fetching genesis block hash");
+		info!("Fetching genesis block hash.");
 
 		// Get block 0 (genesis block)
 		let genesis_block = self.ckb_client.get_block_by_number(0).await?;
@@ -209,7 +209,7 @@ impl ToolsProvider {
 	}
 
 	pub async fn get_chain_type(&self) -> Result<String> {
-		info!("Determining chain type");
+		info!("Determining chain type.");
 
 		let genesis_hash = self.get_genesis_hash().await?;
 
@@ -230,7 +230,7 @@ impl ToolsProvider {
 	}
 
 	pub async fn get_address_balance(&self, address: Option<String>) -> Result<BalanceInfo> {
-		info!("Checking address balance");
+		info!("Checking address balance.");
 
 		// Use provided address or default to sender address from private key
 		let addr = match address {
@@ -290,7 +290,7 @@ impl ToolsProvider {
 	}
 
 	pub fn generate_lock_info(&self, private_key: Option<String>) -> Result<LockInfo> {
-		info!("Generating lock info from private key");
+		info!("Generating lock info from private key.");
 
 		// Use provided private key or default to configured private key
 		let key_hex = private_key.unwrap_or_else(|| self.private_key.clone());
@@ -341,7 +341,7 @@ impl ToolsProvider {
 	}
 
 	pub fn get_lock_info_from_address(&self, address: String) -> Result<LockInfo> {
-		info!("Extracting lock info from address");
+		info!("Extracting lock info from address.");
 
 		// Parse address
 		let addr = Address::from_str(&address)
@@ -390,7 +390,7 @@ impl ToolsProvider {
 	}
 
 	pub async fn request_testnet_funds(&self, address: Option<String>) -> Result<String> {
-		info!("Requesting testnet funds from faucet");
+		info!("Requesting testnet funds from faucet.");
 
 		let addr = match address {
 			Some(a) => Address::from_str(&a)
@@ -434,7 +434,7 @@ impl ToolsProvider {
 	}
 
 	pub async fn get_default_account_info(&self) -> Result<DefaultAccountInfo> {
-		info!("Getting default account information");
+		info!("Getting default account information.");
 
 		// Generate lock info from the configured private key
 		let lock_info = self.generate_lock_info(None)?;
@@ -478,7 +478,7 @@ impl ToolsProvider {
 					vec![custom_cell_dep.clone()]
 				)
 			);
-			debug!("Overrode sighash cell_dep with devnet genesis cell_dep");
+			debug!("Overrode sighash cell_dep with devnet genesis cell_dep.");
 		}
 
 		// Adjust fee configuration for more reliable transaction acceptance
@@ -540,7 +540,7 @@ impl ToolsProvider {
 			)
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to sign transaction: {}", e)))?;
 
-		debug!("Transaction signed successfully");
+		debug!("Transaction signed successfully.");
 
 		// Convert to JSON-RPC format and send
 		let tx_json = ckb_jsonrpc_types::TransactionView::from(tx_with_groups.get_tx_view().clone());
@@ -557,7 +557,7 @@ impl ToolsProvider {
 			.send_transaction(tx_json.inner, None)
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to send transaction: {}", e)))?;
 
-		info!("Transaction sent successfully: {:x}", tx_hash);
+		info!("Transaction sent successfully: {:#x}", tx_hash);
 
 		Ok(DeploymentResult {
 			tx_hash: format!("{:#x}", tx_hash),

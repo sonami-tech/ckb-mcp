@@ -30,13 +30,13 @@ impl CkbRpcClientExt for CkbRpcClient {
 
 	/// Get header by number.
 	async fn get_header_by_number(&self, block_number: u64) -> Result<Value> {
-		let params = serde_json::json!([format!("0x{:x}", block_number)]);
+		let params = serde_json::json!([format!("{:#x}", block_number)]);
 		self.call("get_header_by_number", params).await
 	}
 
 	/// Get block hash by number.
 	async fn get_block_hash(&self, block_number: u64) -> Result<Value> {
-		let params = serde_json::json!([format!("0x{:x}", block_number)]);
+		let params = serde_json::json!([format!("{:#x}", block_number)]);
 		self.call("get_block_hash", params).await
 	}
 
@@ -44,7 +44,7 @@ impl CkbRpcClientExt for CkbRpcClient {
 	async fn get_live_cell(&self, tx_hash: &str, index: u32, with_data: bool) -> Result<Value> {
 		let out_point = serde_json::json!({
 			"tx_hash": tx_hash,
-			"index": format!("0x{:x}", index)
+			"index": format!("{:#x}", index)
 		});
 		let params = serde_json::json!([out_point, with_data]);
 		self.call("get_live_cell", params).await
@@ -57,7 +57,7 @@ impl CkbRpcClientExt for CkbRpcClient {
 
 	/// Get epoch by number.
 	async fn get_epoch_by_number(&self, epoch_number: u64) -> Result<Value> {
-		let params = serde_json::json!([format!("0x{:x}", epoch_number)]);
+		let params = serde_json::json!([format!("{:#x}", epoch_number)]);
 		self.call("get_epoch_by_number", params).await
 	}
 
@@ -71,7 +71,7 @@ impl CkbRpcClientExt for CkbRpcClient {
 		let params = serde_json::json!([
 			search_key,
 			order,
-			limit.map(|l| format!("0x{:x}", l)),
+			limit.map(|l| format!("{:#x}", l)),
 			after_cursor
 		]);
 		self.call("get_cells", params).await
@@ -82,7 +82,7 @@ impl CkbRpcClientExt for CkbRpcClient {
 		let params = serde_json::json!([
 			search_key,
 			order,
-			limit.map(|l| format!("0x{:x}", l)),
+			limit.map(|l| format!("{:#x}", l)),
 			after_cursor
 		]);
 		self.call("get_transactions", params).await

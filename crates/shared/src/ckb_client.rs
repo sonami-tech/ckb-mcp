@@ -110,7 +110,7 @@ impl CkbRpcClient {
 
 	/// Get block by number.
 	pub async fn get_block_by_number(&self, block_number: u64) -> Result<Value> {
-		let params = serde_json::json!([format!("0x{:x}", block_number)]);
+		let params = serde_json::json!([format!("{:#x}", block_number)]);
 		self.call("get_block_by_number", params).await
 	}
 

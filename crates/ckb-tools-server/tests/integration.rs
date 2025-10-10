@@ -682,7 +682,7 @@ async fn test_get_lock_info_from_address_mainnet() {
 async fn test_deploy_cell_data_valid_hex() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
-	let unique_data = format!("{:x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
+	let unique_data = format!("{:#x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": unique_data}}))
 		.await
@@ -715,7 +715,7 @@ async fn test_deploy_cell_data_with_0x_prefix() {
 async fn test_deploy_cell_data_without_0x_prefix() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
-	let unique_data = format!("{:x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
+	let unique_data = format!("{:#x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": unique_data}}))
 		.await
@@ -732,7 +732,7 @@ async fn test_deploy_cell_data_large_payload() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	// Create a larger data payload (1KB of data) with unique timestamp prefix
-	let timestamp = format!("{:x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
+	let timestamp = format!("{:#x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
 	let large_data = format!("{}{}", timestamp, "00".repeat(512 - timestamp.len() / 2));
 
 	let result = ctx
@@ -750,7 +750,7 @@ async fn test_deploy_cell_data_large_payload() {
 async fn test_deploy_cell_data_returns_tx_hash() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
-	let unique_data = format!("{:x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
+	let unique_data = format!("{:#x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": unique_data}}))
 		.await
@@ -767,7 +767,7 @@ async fn test_deploy_cell_data_returns_tx_hash() {
 async fn test_deploy_cell_data_returns_capacity() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
-	let unique_data = format!("{:x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
+	let unique_data = format!("{:#x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": unique_data}}))
 		.await
