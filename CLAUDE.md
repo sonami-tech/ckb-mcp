@@ -32,6 +32,7 @@ ckb-mcp/
 - Implement comprehensive logging with `tracing`.
 - Write unit tests for all core functionality.
 - Document public APIs with rustdoc comments.
+- **CRITICAL**: Treat compiler warnings as errors. Always fix all warnings before committing code. Warnings indicate potential issues that must be resolved.
 
 ### Testing
 
@@ -58,6 +59,56 @@ CKB_RPC_URL=http://your-node-ip:18114 cargo test -p ckb-tools-server
 
 # Run tests with logging
 CKB_RPC_URL=http://your-node-ip:18114 RUST_LOG=debug cargo test
+```
+
+**CRITICAL: Test Independence and Isolation**
+
+When testing MCP servers, tests must maintain strict independence from the system under test:
+
+- **Setup**: Use direct CKB RPC client calls (NOT MCP server) to prepare test conditions and gather initial state.
+- **Execute**: Call the MCP server endpoint being tested.
+- **Verify**: Use direct CKB RPC client calls (NOT MCP server) to confirm results and validate outcomes.
+
+**Why this matters:**
+- Prevents circular dependencies (MCP verifying MCP).
+- Avoids cascading failures (if MCP query breaks, all tests fail).
+- Ensures accuracy (MCP bug could affect both creation and verification).
+
+**Example:**
+- ✅ **Correct**: Use direct `reqwest` calls to CKB RPC to verify transaction commitment after MCP creates it.
+- ❌ **Incorrect**: Use MCP's own transaction query endpoint to verify MCP's transaction creation.
+
+The MCP server is the **subject under test**, not a **test fixture**. All test setup and verification must use independent CKB RPC calls.
+
+**Test Execution Phases**
+
+Tests are organized into four sequential phases, enforced by alphabetical naming and nextest's `test-threads = 1` configuration:
+
+1. **Phase 1 (test_00_server_running)**: Verify MCP server HTTP health endpoint is accessible.
+   - On failure: Nextest stops, all tests abort.
+
+2. **Phase 2 (test_01_ckb_rpc_available)**: Verify direct CKB RPC connectivity (independent of MCP).
+   - Method: Direct `reqwest` call to CKB RPC (e.g., `get_tip_block_number`).
+   - On failure: Nextest stops, all tests abort.
+
+3. **Phase 3 (test_02_collect_shared_data)**: Collect shared blockchain data via direct CKB RPC.
+   - Gathers: Chain type, genesis block hash, genesis block data.
+   - Storage: `SharedTestData` static structure in `shared/tests/common/mod.rs`.
+   - On failure: Nextest stops, all tests abort.
+
+4. **Phase 4 (test_03_* and beyond)**: Individual feature tests.
+   - Setup: Read from `SharedTestData::get_or_panic()` instead of querying.
+   - Verification: Use direct CKB RPC calls (NOT MCP).
+   - On failure: Test fails, nextest continues with remaining tests.
+
+**Test Ordering**: Nextest runs tests alphabetically with `test-threads = 1`, ensuring phases 1-3 complete before individual tests run.
+
+**Shared Test Data**: Tests access pre-collected blockchain data via:
+```rust
+let shared_data = SharedTestData::get_or_panic();
+let genesis_hash = &shared_data.genesis_hash;
+let chain_type = &shared_data.chain_type;
+let genesis_block = &shared_data.genesis_block;
 ```
 
 **IMPORTANT: Test Timing Expectations**

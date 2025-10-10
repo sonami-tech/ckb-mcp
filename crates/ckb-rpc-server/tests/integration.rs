@@ -1,16 +1,14 @@
 use serde_json::json;
-use serial_test::serial;
 
 #[path = "../../shared/tests/common/mod.rs"]
 mod common;
 
-use common::TestContext;
+use common::{SharedTestData, TestContext};
 
 const RPC_SERVER_PORT: u16 = 8001;
 
-/// Run first - fail fast if server not available
+/// Phase 1: Verify MCP server is running
 #[tokio::test]
-#[serial]
 async fn test_00_server_running() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
@@ -19,8 +17,50 @@ async fn test_00_server_running() {
 		.expect("ckb-rpc-server must be running on port 8001. Start with: cargo run --bin ckb-rpc-server");
 }
 
+/// Phase 2: Verify CKB RPC is available (direct connection, not through MCP)
 #[tokio::test]
-async fn test_01_mcp_initialize() {
+async fn test_01_ckb_rpc_available() {
+	use reqwest::Client;
+
+	let ckb_rpc_url = TestContext::get_ckb_rpc_url()
+		.expect("CKB_RPC_URL must be set");
+
+	let client = Client::new();
+	let response = client
+		.post(&ckb_rpc_url)
+		.json(&json!({
+			"jsonrpc": "2.0",
+			"id": 1,
+			"method": "get_tip_block_number",
+			"params": []
+		}))
+		.send()
+		.await
+		.expect("CKB RPC should be accessible");
+
+	let body: serde_json::Value = response.json().await.expect("Should parse JSON response");
+
+	assert!(body.get("error").is_none(), "CKB RPC should not return error");
+	assert!(body.get("result").is_some(), "CKB RPC should return result");
+}
+
+/// Phase 3: Collect shared test data from CKB RPC (not through MCP)
+#[tokio::test]
+async fn test_02_collect_shared_data() {
+	SharedTestData::initialize()
+		.await
+		.expect("Should successfully collect shared test data from CKB RPC");
+
+	let data = SharedTestData::get().expect("Shared data should be initialized");
+
+	// Verify data was collected correctly
+	assert!(!data.chain_type.is_empty(), "Chain type should not be empty");
+	assert!(data.genesis_hash.starts_with("0x"), "Genesis hash should be hex format");
+	assert!(data.genesis_block.get("header").is_some(), "Genesis block should have header");
+}
+
+#[tokio::test]
+async fn test_03_mcp_initialize() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
 	let result = ctx
@@ -339,18 +379,9 @@ async fn test_get_cells_basic_search() {
 async fn test_get_cells_capacity() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
-	// Get genesis block to extract a real lock script
-	let block_result = ctx
-		.mcp_call("tools/call", json!({"name": "get_block_by_number", "arguments": {"block_number": 0}}))
-		.await
-		.expect("get_block_by_number should succeed");
-
-	let block_content = block_result["content"][0]["text"].as_str().unwrap();
-	let block_json: serde_json::Value = serde_json::from_str(block_content)
-		.expect("Block content should be valid JSON");
-
-	// Extract lock script from the first output of the first transaction
-	let lock_script = &block_json["transactions"][0]["outputs"][0]["lock"];
+	// Use shared genesis block data (collected via direct CKB RPC in Phase 3)
+	let shared_data = SharedTestData::get_or_init_async().await;
+	let lock_script = &shared_data.genesis_block["transactions"][0]["outputs"][0]["lock"];
 
 	let result = ctx
 		.mcp_call("tools/call", json!({
@@ -488,20 +519,9 @@ async fn test_invalid_json_rpc_request() {
 async fn test_get_transaction_valid() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
-	// Get genesis block to extract a real transaction hash
-	let block_result = ctx
-		.mcp_call("tools/call", json!({"name": "get_block_by_number", "arguments": {"block_number": 0}}))
-		.await
-		.expect("get_block_by_number should succeed");
-
-	let block_content = block_result["content"][0]["text"].as_str().unwrap();
-
-	// Parse the block JSON to extract a transaction hash
-	let block_json: serde_json::Value = serde_json::from_str(block_content)
-		.expect("Block content should be valid JSON");
-
-	// Extract the first transaction hash from the genesis block
-	let tx_hash = block_json["transactions"][0]["hash"]
+	// Use shared genesis block data (collected via direct CKB RPC in Phase 3)
+	let shared_data = SharedTestData::get_or_init_async().await;
+	let tx_hash = shared_data.genesis_block["transactions"][0]["hash"]
 		.as_str()
 		.expect("Genesis block should have at least one transaction with a hash");
 
@@ -560,18 +580,9 @@ async fn test_get_block_hash_negative_number() {
 async fn test_get_live_cell_valid() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
-	// Get genesis block to extract a real transaction hash
-	let block_result = ctx
-		.mcp_call("tools/call", json!({"name": "get_block_by_number", "arguments": {"block_number": 0}}))
-		.await
-		.expect("get_block_by_number should succeed");
-
-	let block_content = block_result["content"][0]["text"].as_str().unwrap();
-	let block_json: serde_json::Value = serde_json::from_str(block_content)
-		.expect("Block content should be valid JSON");
-
-	// Extract the first transaction hash from the genesis block
-	let tx_hash = block_json["transactions"][0]["hash"]
+	// Use shared genesis block data (collected via direct CKB RPC in Phase 3)
+	let shared_data = SharedTestData::get_or_init_async().await;
+	let tx_hash = shared_data.genesis_block["transactions"][0]["hash"]
 		.as_str()
 		.expect("Genesis block should have at least one transaction with a hash");
 
@@ -598,18 +609,9 @@ async fn test_get_live_cell_valid() {
 async fn test_get_live_cell_with_data() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
-	// Get genesis block to extract a real transaction hash
-	let block_result = ctx
-		.mcp_call("tools/call", json!({"name": "get_block_by_number", "arguments": {"block_number": 0}}))
-		.await
-		.expect("get_block_by_number should succeed");
-
-	let block_content = block_result["content"][0]["text"].as_str().unwrap();
-	let block_json: serde_json::Value = serde_json::from_str(block_content)
-		.expect("Block content should be valid JSON");
-
-	// Extract the first transaction hash from the genesis block
-	let tx_hash = block_json["transactions"][0]["hash"]
+	// Use shared genesis block data (collected via direct CKB RPC in Phase 3)
+	let shared_data = SharedTestData::get_or_init_async().await;
+	let tx_hash = shared_data.genesis_block["transactions"][0]["hash"]
 		.as_str()
 		.expect("Genesis block should have at least one transaction with a hash");
 
@@ -654,18 +656,9 @@ async fn test_get_live_cell_invalid_outpoint() {
 async fn test_get_live_cell_spent() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
-	// Get genesis block to extract a real transaction hash
-	let block_result = ctx
-		.mcp_call("tools/call", json!({"name": "get_block_by_number", "arguments": {"block_number": 0}}))
-		.await
-		.expect("get_block_by_number should succeed");
-
-	let block_content = block_result["content"][0]["text"].as_str().unwrap();
-	let block_json: serde_json::Value = serde_json::from_str(block_content)
-		.expect("Block content should be valid JSON");
-
-	// Extract the first transaction hash from the genesis block
-	let tx_hash = block_json["transactions"][0]["hash"]
+	// Use shared genesis block data (collected via direct CKB RPC in Phase 3)
+	let shared_data = SharedTestData::get_or_init_async().await;
+	let tx_hash = shared_data.genesis_block["transactions"][0]["hash"]
 		.as_str()
 		.expect("Genesis block should have at least one transaction with a hash");
 

@@ -1,10 +1,9 @@
 use serde_json::json;
-use serial_test::serial;
 
 #[path = "../../shared/tests/common/mod.rs"]
 mod common;
 
-use common::TestContext;
+use common::{SharedTestData, TestContext};
 
 const TOOLS_SERVER_PORT: u16 = 8003;
 
@@ -28,15 +27,56 @@ async fn wait_for_deployment_confirmation(content: &str) {
 	}
 }
 
-/// Run first - fail fast if server not available
+/// Phase 1: Verify MCP server is running
 #[tokio::test]
-#[serial]
 async fn test_00_server_running() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
 	ctx.verify_server_running()
 		.await
 		.expect("ckb-tools-server must be running on port 8003. Start with: cargo run --bin ckb-tools-server");
+}
+
+/// Phase 2: Verify CKB RPC is available (direct connection, not through MCP)
+#[tokio::test]
+async fn test_01_ckb_rpc_available() {
+	use reqwest::Client;
+
+	let ckb_rpc_url = TestContext::get_ckb_rpc_url()
+		.expect("CKB_RPC_URL must be set");
+
+	let client = Client::new();
+	let response = client
+		.post(&ckb_rpc_url)
+		.json(&json!({
+			"jsonrpc": "2.0",
+			"id": 1,
+			"method": "get_tip_block_number",
+			"params": []
+		}))
+		.send()
+		.await
+		.expect("CKB RPC should be accessible");
+
+	let body: serde_json::Value = response.json().await.expect("Should parse JSON response");
+
+	assert!(body.get("error").is_none(), "CKB RPC should not return error");
+	assert!(body.get("result").is_some(), "CKB RPC should return result");
+}
+
+/// Phase 3: Collect shared test data from CKB RPC (not through MCP)
+#[tokio::test]
+async fn test_02_collect_shared_data() {
+	SharedTestData::initialize()
+		.await
+		.expect("Should successfully collect shared test data from CKB RPC");
+
+	let data = SharedTestData::get().expect("Shared data should be initialized");
+
+	// Verify data was collected correctly
+	assert!(!data.chain_type.is_empty(), "Chain type should not be empty");
+	assert!(data.genesis_hash.starts_with("0x"), "Genesis hash should be hex format");
+	assert!(data.genesis_block.get("header").is_some(), "Genesis block should have header");
 }
 
 #[tokio::test]
@@ -496,7 +536,6 @@ async fn test_deploy_cell_data_missing_data_param() {
 }
 
 #[tokio::test]
-#[serial]
 async fn test_deploy_cell_data_empty_data() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
@@ -678,7 +717,6 @@ async fn test_get_lock_info_from_address_mainnet() {
 
 // Cell Deployment Success Cases
 #[tokio::test]
-#[serial]
 async fn test_deploy_cell_data_valid_hex() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
@@ -695,7 +733,6 @@ async fn test_deploy_cell_data_valid_hex() {
 }
 
 #[tokio::test]
-#[serial]
 async fn test_deploy_cell_data_with_0x_prefix() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
@@ -711,7 +748,6 @@ async fn test_deploy_cell_data_with_0x_prefix() {
 }
 
 #[tokio::test]
-#[serial]
 async fn test_deploy_cell_data_without_0x_prefix() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
@@ -727,7 +763,6 @@ async fn test_deploy_cell_data_without_0x_prefix() {
 }
 
 #[tokio::test]
-#[serial]
 async fn test_deploy_cell_data_large_payload() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
@@ -746,7 +781,6 @@ async fn test_deploy_cell_data_large_payload() {
 }
 
 #[tokio::test]
-#[serial]
 async fn test_deploy_cell_data_returns_tx_hash() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
@@ -763,7 +797,6 @@ async fn test_deploy_cell_data_returns_tx_hash() {
 }
 
 #[tokio::test]
-#[serial]
 async fn test_deploy_cell_data_returns_capacity() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
@@ -780,7 +813,6 @@ async fn test_deploy_cell_data_returns_capacity() {
 
 // Cell Deployment From File Tests
 #[tokio::test]
-#[serial]
 async fn test_deploy_cell_data_from_file_valid() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
@@ -815,10 +847,12 @@ async fn test_deploy_cell_data_from_file_directory_not_file() {
 	assert!(result.is_err(), "Should fail when path is a directory");
 }
 
+// Commented out because this test creates a file in the project directory, which triggers cargo watch to rebuild,
+// causing the server to restart mid-test and resulting in connection failures.
+// Run manually with: cargo nextest run --ignored test_deploy_cell_data_from_file_relative_path
+/*
 #[tokio::test]
-#[ignore] // This test creates a file in the project directory, which triggers cargo watch to rebuild,
-          // causing the server to restart mid-test and resulting in connection failures.
-          // Run manually with: cargo nextest run --ignored test_deploy_cell_data_from_file_relative_path
+#[ignore]
 async fn test_deploy_cell_data_from_file_relative_path() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
@@ -849,9 +883,9 @@ async fn test_deploy_cell_data_from_file_relative_path() {
 	// Cleanup
 	let _ = fs::remove_file(test_file);
 }
+*/
 
 #[tokio::test]
-#[serial]
 async fn test_deploy_cell_data_from_file_absolute_path() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
