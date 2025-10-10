@@ -1753,6 +1753,110 @@ async fn test_get_raw_tx_pool_default() {
 }
 
 #[tokio::test]
+async fn test_get_pool_tx_detail_info() {
+	// This test attempts to query detailed pool info for a transaction.
+	// On a fresh/empty devnet, the pool may be empty, so we gracefully skip.
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	// First, get raw tx pool to find a transaction
+	let pool_result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_raw_tx_pool",
+			"arguments": { "verbose": false }
+		}))
+		.await
+		.expect("get_raw_tx_pool should succeed");
+
+	let pool_content = pool_result["content"][0]["text"].as_str().unwrap();
+	let pool: serde_json::Value = serde_json::from_str(pool_content)
+		.expect("Pool response should be valid JSON");
+
+	let pending = pool["pending"].as_array().expect("pending should be an array");
+
+	if pending.is_empty() {
+		eprintln!("No pending transactions in pool - skipping test (normal on empty devnet)");
+		return;
+	}
+
+	let tx_hash = pending[0].as_str().expect("tx hash should be a string");
+
+	// Query detailed info for this transaction
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_pool_tx_detail_info",
+			"arguments": { "tx_hash": tx_hash }
+		}))
+		.await
+		.expect("get_pool_tx_detail_info should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let detail: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Verify expected fields
+	assert!(detail.get("entry_status").is_some(), "Response should have 'entry_status' field");
+	assert!(detail.get("pending_count").is_some(), "Response should have 'pending_count' field");
+	assert!(detail.get("proposed_count").is_some(), "Response should have 'proposed_count' field");
+	assert!(detail.get("ancestors_count").is_some(), "Response should have 'ancestors_count' field");
+	assert!(detail.get("descendants_count").is_some(), "Response should have 'descendants_count' field");
+	assert!(detail.get("timestamp").is_some(), "Response should have 'timestamp' field");
+
+	// Verify entry_status is a valid string
+	let entry_status = detail["entry_status"].as_str().expect("entry_status should be a string");
+	assert!(["pending", "proposed", "conflicted"].contains(&entry_status), "entry_status should be one of: pending, proposed, conflicted");
+
+	// Verify score_sortkey exists if status is pending
+	if entry_status == "pending" {
+		assert!(detail.get("score_sortkey").is_some(), "pending tx should have 'score_sortkey' field");
+		let score_sortkey = &detail["score_sortkey"];
+		assert!(score_sortkey.get("fee").is_some(), "score_sortkey should have 'fee' field");
+		assert!(score_sortkey.get("weight").is_some(), "score_sortkey should have 'weight' field");
+	}
+}
+
+#[tokio::test]
+async fn test_get_pool_tx_detail_info_missing_tx_hash() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_pool_tx_detail_info",
+			"arguments": {}
+		}))
+		.await;
+
+	assert!(result.is_err(), "Should fail when tx_hash is missing");
+	let error = result.unwrap_err();
+	assert!(error.to_string().contains("Missing tx_hash") || error.to_string().contains("required"),
+		"Error should mention missing tx_hash");
+}
+
+#[tokio::test]
+async fn test_get_pool_tx_detail_info_invalid_tx_hash() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_pool_tx_detail_info",
+			"arguments": { "tx_hash": "0xinvalid" }
+		}))
+		.await;
+
+	// Either fails or returns None
+	if let Ok(response) = result {
+		let content = response["content"][0]["text"].as_str().unwrap();
+
+		// Check if it's a null response (transaction not in pool)
+		let value: serde_json::Value = serde_json::from_str(content)
+			.expect("Response should be valid JSON");
+
+		// CKB returns null for transaction not in pool
+		assert!(value.is_null(), "Should return null for transaction not in pool");
+	}
+	// Error is also acceptable (invalid format)
+}
+
+#[tokio::test]
 async fn test_test_tx_pool_accept_missing_tx() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 

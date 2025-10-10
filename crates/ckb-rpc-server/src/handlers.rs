@@ -385,6 +385,20 @@ impl McpHandler {
 					}
 				}),
 			},
+			ToolDefinition {
+				name: "get_pool_tx_detail_info".to_string(),
+				description: "Get detailed information about a specific transaction in the pool (for troubleshooting)".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"tx_hash": {
+							"type": "string",
+							"description": "Hash of transaction to query"
+						}
+					},
+					"required": ["tx_hash"]
+				}),
+			},
 		];
 
 		let result = json!({ "tools": tools });
@@ -434,6 +448,7 @@ impl McpHandler {
 			"send_transaction" => self.call_send_transaction(arguments).await,
 			"test_tx_pool_accept" => self.call_test_tx_pool_accept(arguments).await,
 			"get_raw_tx_pool" => self.call_get_raw_tx_pool(arguments).await,
+			"get_pool_tx_detail_info" => self.call_get_pool_tx_detail_info(arguments).await,
 			// Stats Methods
 			"get_blockchain_info" => self.call_get_blockchain_info().await,
 			"get_consensus" => self.call_get_consensus().await,
@@ -688,5 +703,16 @@ impl McpHandler {
 	async fn call_get_raw_tx_pool(&self, args: &Value) -> Result<Value> {
 		let verbose = args.get("verbose").and_then(|v| v.as_bool());
 		self.rpc_client.get_raw_tx_pool(verbose).await
+	}
+
+	async fn call_get_pool_tx_detail_info(&self, args: &Value) -> Result<Value> {
+		let tx_hash = args
+			.get("tx_hash")
+			.and_then(|v| v.as_str())
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("Missing tx_hash".to_string())
+			})?;
+
+		self.rpc_client.get_pool_tx_detail_info(tx_hash).await
 	}
 }

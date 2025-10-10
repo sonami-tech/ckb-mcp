@@ -26,6 +26,7 @@ pub trait CkbRpcClientExt {
 	async fn get_consensus(&self) -> Result<Value>;
 	async fn tx_pool_info(&self) -> Result<Value>;
 	async fn get_raw_tx_pool(&self, verbose: Option<bool>) -> Result<Value>;
+	async fn get_pool_tx_detail_info(&self, tx_hash: &str) -> Result<Value>;
 }
 
 impl CkbRpcClientExt for CkbRpcClient {
@@ -143,5 +144,11 @@ impl CkbRpcClientExt for CkbRpcClient {
 	async fn get_raw_tx_pool(&self, verbose: Option<bool>) -> Result<Value> {
 		let params = serde_json::json!([verbose]);
 		self.call("get_raw_tx_pool", params).await
+	}
+
+	/// Get details of a transaction in the pool for troubleshooting.
+	async fn get_pool_tx_detail_info(&self, tx_hash: &str) -> Result<Value> {
+		let params = serde_json::json!([tx_hash]);
+		self.call("get_pool_tx_detail_info", params).await
 	}
 }
