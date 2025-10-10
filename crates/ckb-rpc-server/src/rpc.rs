@@ -35,6 +35,8 @@ pub trait CkbRpcClientExt {
 	async fn estimate_fee_rate(&self, estimate_mode: Option<&str>, enable_fallback: Option<bool>) -> Result<Value>;
 	async fn get_transaction_proof(&self, tx_hashes: Vec<String>, block_hash: Option<&str>) -> Result<Value>;
 	async fn verify_transaction_proof(&self, tx_proof: Value) -> Result<Value>;
+	async fn get_block_economic_state(&self, block_hash: &str) -> Result<Value>;
+	async fn get_block_median_time(&self, block_hash: &str) -> Result<Value>;
 }
 
 impl CkbRpcClientExt for CkbRpcClient {
@@ -202,5 +204,17 @@ impl CkbRpcClientExt for CkbRpcClient {
 	async fn verify_transaction_proof(&self, tx_proof: Value) -> Result<Value> {
 		let params = serde_json::json!([tx_proof]);
 		self.call("verify_transaction_proof", params).await
+	}
+
+	/// Get block economic state including issuance and miner rewards.
+	async fn get_block_economic_state(&self, block_hash: &str) -> Result<Value> {
+		let params = serde_json::json!([block_hash]);
+		self.call("get_block_economic_state", params).await
+	}
+
+	/// Get median timestamp of a block.
+	async fn get_block_median_time(&self, block_hash: &str) -> Result<Value> {
+		let params = serde_json::json!([block_hash]);
+		self.call("get_block_median_time", params).await
 	}
 }

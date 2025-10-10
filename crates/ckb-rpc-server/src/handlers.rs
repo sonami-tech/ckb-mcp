@@ -518,6 +518,34 @@ impl McpHandler {
 					"required": ["tx_proof"]
 				}),
 			},
+			ToolDefinition {
+				name: "get_block_economic_state".to_string(),
+				description: "Get block issuance, miner rewards, and transaction fees for economics analysis".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"block_hash": {
+							"type": "string",
+							"description": "Block hash to analyze rewards for"
+						}
+					},
+					"required": ["block_hash"]
+				}),
+			},
+			ToolDefinition {
+				name: "get_block_median_time".to_string(),
+				description: "Get past median timestamp of 37 consecutive blocks ending at specified block".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"block_hash": {
+							"type": "string",
+							"description": "Block hash indicating highest block in the sequence"
+						}
+					},
+					"required": ["block_hash"]
+				}),
+			},
 		];
 
 		let result = json!({ "tools": tools });
@@ -583,6 +611,9 @@ impl McpHandler {
 			// Chain Methods - Proof
 			"get_transaction_proof" => self.call_get_transaction_proof(arguments).await,
 			"verify_transaction_proof" => self.call_verify_transaction_proof(arguments).await,
+			// Chain Methods - Economics
+			"get_block_economic_state" => self.call_get_block_economic_state(arguments).await,
+			"get_block_median_time" => self.call_get_block_median_time(arguments).await,
 			_ => {
 				return Ok(create_error_response(
 					id,
@@ -921,5 +952,27 @@ impl McpHandler {
 			.clone();
 
 		self.rpc_client.verify_transaction_proof(tx_proof).await
+	}
+
+	async fn call_get_block_economic_state(&self, args: &Value) -> Result<Value> {
+		let block_hash = args
+			.get("block_hash")
+			.and_then(|v| v.as_str())
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("block_hash is required".to_string())
+			})?;
+
+		self.rpc_client.get_block_economic_state(block_hash).await
+	}
+
+	async fn call_get_block_median_time(&self, args: &Value) -> Result<Value> {
+		let block_hash = args
+			.get("block_hash")
+			.and_then(|v| v.as_str())
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("block_hash is required".to_string())
+			})?;
+
+		self.rpc_client.get_block_median_time(block_hash).await
 	}
 }

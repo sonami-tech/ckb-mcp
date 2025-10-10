@@ -2249,6 +2249,90 @@ async fn test_verify_transaction_proof_missing_proof() {
 }
 
 #[tokio::test]
+async fn test_get_block_economic_state() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+	let shared_data = SharedTestData::get_or_init_async().await;
+
+	// Genesis block returns null for economic state
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_block_economic_state",
+			"arguments": {
+				"block_hash": shared_data.genesis_hash
+			}
+		}))
+		.await
+		.expect("get_block_economic_state should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let state: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Genesis block should return null (per documentation)
+	assert!(state.is_null(), "Genesis block should have null economic state");
+}
+
+#[tokio::test]
+async fn test_get_block_median_time() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+	let shared_data = SharedTestData::get_or_init_async().await;
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_block_median_time",
+			"arguments": {
+				"block_hash": shared_data.genesis_hash
+			}
+		}))
+		.await
+		.expect("get_block_median_time should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let median_time: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Should return a hex timestamp
+	let time_str = median_time.as_str().expect("median_time should be a string");
+	assert!(time_str.starts_with("0x"), "median_time should be in hex format");
+
+	// Parse as u64 to verify it's a valid timestamp (genesis has timestamp 0, which is valid)
+	let _time_value = u64::from_str_radix(&time_str[2..], 16)
+		.expect("median_time should be valid hex number");
+}
+
+#[tokio::test]
+async fn test_get_block_economic_state_missing_hash() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_block_economic_state",
+			"arguments": {}
+		}))
+		.await;
+
+	assert!(result.is_err(), "Should fail when block_hash is missing");
+	let error_msg = result.unwrap_err();
+	assert!(error_msg.contains("block_hash"), "Error should mention block_hash");
+}
+
+#[tokio::test]
+async fn test_get_block_median_time_missing_hash() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_block_median_time",
+			"arguments": {}
+		}))
+		.await;
+
+	assert!(result.is_err(), "Should fail when block_hash is missing");
+	let error_msg = result.unwrap_err();
+	assert!(error_msg.contains("block_hash"), "Error should mention block_hash");
+}
+
+#[tokio::test]
 async fn test_test_tx_pool_accept_missing_tx() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
