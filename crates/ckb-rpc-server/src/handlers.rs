@@ -424,6 +424,15 @@ impl McpHandler {
 					"properties": {}
 				}),
 			},
+			// Stats Methods (continued)
+			ToolDefinition {
+				name: "get_deployments_info".to_string(),
+				description: "Get soft fork deployment information including activation status, thresholds, and epochs".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {}
+				}),
+			},
 		];
 
 		let result = json!({ "tools": tools });
@@ -482,6 +491,7 @@ impl McpHandler {
 			"get_blockchain_info" => self.call_get_blockchain_info().await,
 			"get_consensus" => self.call_get_consensus().await,
 			"tx_pool_info" => self.call_tx_pool_info().await,
+			"get_deployments_info" => self.call_get_deployments_info().await,
 			_ => {
 				return Ok(create_error_response(
 					id,
@@ -756,5 +766,10 @@ impl McpHandler {
 
 	async fn call_get_peers(&self) -> Result<Value> {
 		self.rpc_client.get_peers().await
+	}
+
+	// Stats Method Handlers (continued)
+	async fn call_get_deployments_info(&self) -> Result<Value> {
+		self.rpc_client.get_deployments_info().await
 	}
 }

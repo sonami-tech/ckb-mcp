@@ -30,6 +30,7 @@ pub trait CkbRpcClientExt {
 	async fn tx_pool_ready(&self) -> Result<Value>;
 	async fn sync_state(&self) -> Result<Value>;
 	async fn get_peers(&self) -> Result<Value>;
+	async fn get_deployments_info(&self) -> Result<Value>;
 }
 
 impl CkbRpcClientExt for CkbRpcClient {
@@ -168,5 +169,10 @@ impl CkbRpcClientExt for CkbRpcClient {
 	/// Get connected peers information.
 	async fn get_peers(&self) -> Result<Value> {
 		self.call("get_peers", serde_json::json!([])).await
+	}
+
+	/// Get soft fork deployments information.
+	async fn get_deployments_info(&self) -> Result<Value> {
+		self.call("get_deployments_info", serde_json::json!([])).await
 	}
 }

@@ -1966,6 +1966,51 @@ async fn test_get_peers() {
 }
 
 #[tokio::test]
+async fn test_get_deployments_info() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({"name": "get_deployments_info", "arguments": {}}))
+		.await
+		.expect("get_deployments_info should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let deployments_info: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Verify key deployment info fields
+	assert!(deployments_info.get("hash").is_some(), "Response should have 'hash' field");
+	assert!(deployments_info.get("epoch").is_some(), "Response should have 'epoch' field");
+	assert!(deployments_info.get("deployments").is_some(), "Response should have 'deployments' field");
+
+	// Verify hash format
+	let hash = deployments_info["hash"].as_str().expect("hash should be a string");
+	assert!(hash.starts_with("0x"), "hash should be in hex format");
+	assert_eq!(hash.len(), 66, "hash should be 66 characters");
+
+	// Verify epoch format
+	let epoch = deployments_info["epoch"].as_str().expect("epoch should be a string");
+	assert!(epoch.starts_with("0x"), "epoch should be in hex format");
+
+	// Verify deployments is an object
+	let deployments = deployments_info["deployments"].as_object().expect("deployments should be an object");
+
+	// If there are deployments, verify structure
+	for (deployment_name, deployment_info) in deployments {
+		// Deployment should have state and bit fields at minimum
+		assert!(deployment_info.get("state").is_some(), "Deployment '{}' should have 'state' field", deployment_name);
+		assert!(deployment_info.get("bit").is_some(), "Deployment '{}' should have 'bit' field", deployment_name);
+
+		// Verify state is a string
+		deployment_info["state"].as_str().expect(&format!("Deployment '{}' state should be a string", deployment_name));
+
+		// Verify bit is a number (in hex format)
+		deployment_info["bit"].as_u64().or_else(|| deployment_info["bit"].as_str().and_then(|s| u64::from_str_radix(&s[2..], 16).ok()))
+			.expect(&format!("Deployment '{}' bit should be a number", deployment_name));
+	}
+}
+
+#[tokio::test]
 async fn test_test_tx_pool_accept_missing_tx() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
