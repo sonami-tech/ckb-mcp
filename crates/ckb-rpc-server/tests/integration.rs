@@ -2090,6 +2090,165 @@ async fn test_estimate_fee_rate_with_params() {
 }
 
 #[tokio::test]
+async fn test_get_transaction_proof() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+	let shared_data = SharedTestData::get_or_init_async().await;
+
+	// Use genesis block transaction
+	let genesis_tx_hash = shared_data.genesis_block["transactions"][0]["hash"]
+		.as_str()
+		.expect("Genesis should have transaction hash");
+	let genesis_hash = &shared_data.genesis_hash;
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_transaction_proof",
+			"arguments": {
+				"tx_hashes": [genesis_tx_hash],
+				"block_hash": genesis_hash
+			}
+		}))
+		.await
+		.expect("get_transaction_proof should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let proof: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Verify proof structure
+	assert!(proof["block_hash"].is_string(), "Should have block_hash");
+	assert!(proof["witnesses_root"].is_string(), "Should have witnesses_root");
+	assert!(proof["proof"]["indices"].is_array(), "Should have proof indices");
+	assert!(proof["proof"]["lemmas"].is_array(), "Should have proof lemmas");
+}
+
+#[tokio::test]
+async fn test_get_transaction_proof_without_block_hash() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+	let shared_data = SharedTestData::get_or_init_async().await;
+
+	// Use genesis block transaction
+	let genesis_tx_hash = shared_data.genesis_block["transactions"][0]["hash"]
+		.as_str()
+		.expect("Genesis should have transaction hash");
+
+	// Without block_hash, should still work (searches for the transaction)
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_transaction_proof",
+			"arguments": {
+				"tx_hashes": [genesis_tx_hash]
+			}
+		}))
+		.await
+		.expect("get_transaction_proof should succeed without block_hash");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let proof: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	assert!(proof["block_hash"].is_string(), "Should have block_hash");
+}
+
+#[tokio::test]
+async fn test_verify_transaction_proof() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+	let shared_data = SharedTestData::get_or_init_async().await;
+
+	// First get a proof
+	let genesis_tx_hash = shared_data.genesis_block["transactions"][0]["hash"]
+		.as_str()
+		.expect("Genesis should have transaction hash");
+	let genesis_hash = &shared_data.genesis_hash;
+
+	let proof_result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_transaction_proof",
+			"arguments": {
+				"tx_hashes": [genesis_tx_hash],
+				"block_hash": genesis_hash
+			}
+		}))
+		.await
+		.expect("get_transaction_proof should succeed");
+
+	let proof_content = proof_result["content"][0]["text"].as_str().unwrap();
+	let proof: serde_json::Value = serde_json::from_str(proof_content)
+		.expect("Proof should be valid JSON");
+
+	// Now verify the proof
+	let verify_result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "verify_transaction_proof",
+			"arguments": {
+				"tx_proof": proof
+			}
+		}))
+		.await
+		.expect("verify_transaction_proof should succeed");
+
+	let verify_content = verify_result["content"][0]["text"].as_str().unwrap();
+	let tx_hashes: serde_json::Value = serde_json::from_str(verify_content)
+		.expect("Response should be valid JSON array");
+
+	// Should return array of transaction hashes
+	assert!(tx_hashes.is_array(), "Should return array of tx hashes");
+	let tx_array = tx_hashes.as_array().unwrap();
+	assert!(!tx_array.is_empty(), "Should have at least one transaction hash");
+	assert_eq!(tx_array[0].as_str().unwrap(), genesis_tx_hash, "Should match original tx hash");
+}
+
+#[tokio::test]
+async fn test_get_transaction_proof_missing_tx_hashes() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_transaction_proof",
+			"arguments": {}
+		}))
+		.await;
+
+	assert!(result.is_err(), "Should fail when tx_hashes is missing");
+	let error_msg = result.unwrap_err();
+	assert!(error_msg.contains("tx_hashes"), "Error should mention tx_hashes");
+}
+
+#[tokio::test]
+async fn test_get_transaction_proof_empty_array() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_transaction_proof",
+			"arguments": {
+				"tx_hashes": []
+			}
+		}))
+		.await;
+
+	assert!(result.is_err(), "Should fail when tx_hashes is empty");
+	let error_msg = result.unwrap_err();
+	assert!(error_msg.contains("empty"), "Error should mention empty array");
+}
+
+#[tokio::test]
+async fn test_verify_transaction_proof_missing_proof() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "verify_transaction_proof",
+			"arguments": {}
+		}))
+		.await;
+
+	assert!(result.is_err(), "Should fail when tx_proof is missing");
+	let error_msg = result.unwrap_err();
+	assert!(error_msg.contains("tx_proof"), "Error should mention tx_proof");
+}
+
+#[tokio::test]
 async fn test_test_tx_pool_accept_missing_tx() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 

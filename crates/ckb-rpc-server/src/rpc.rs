@@ -33,6 +33,8 @@ pub trait CkbRpcClientExt {
 	async fn get_deployments_info(&self) -> Result<Value>;
 	async fn calculate_dao_maximum_withdraw(&self, out_point: Value, kind: Value) -> Result<Value>;
 	async fn estimate_fee_rate(&self, estimate_mode: Option<&str>, enable_fallback: Option<bool>) -> Result<Value>;
+	async fn get_transaction_proof(&self, tx_hashes: Vec<String>, block_hash: Option<&str>) -> Result<Value>;
+	async fn verify_transaction_proof(&self, tx_proof: Value) -> Result<Value>;
 }
 
 impl CkbRpcClientExt for CkbRpcClient {
@@ -188,5 +190,17 @@ impl CkbRpcClientExt for CkbRpcClient {
 	async fn estimate_fee_rate(&self, estimate_mode: Option<&str>, enable_fallback: Option<bool>) -> Result<Value> {
 		let params = serde_json::json!([estimate_mode, enable_fallback]);
 		self.call("estimate_fee_rate", params).await
+	}
+
+	/// Generate Merkle proof that transactions are included in a block.
+	async fn get_transaction_proof(&self, tx_hashes: Vec<String>, block_hash: Option<&str>) -> Result<Value> {
+		let params = serde_json::json!([tx_hashes, block_hash]);
+		self.call("get_transaction_proof", params).await
+	}
+
+	/// Verify Merkle proof that transactions are included in a block.
+	async fn verify_transaction_proof(&self, tx_proof: Value) -> Result<Value> {
+		let params = serde_json::json!([tx_proof]);
+		self.call("verify_transaction_proof", params).await
 	}
 }

@@ -473,6 +473,51 @@ impl McpHandler {
 					}
 				}),
 			},
+			ToolDefinition {
+				name: "get_transaction_proof".to_string(),
+				description: "Generate Merkle proof that transactions are included in a block for SPV verification".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"tx_hashes": {
+							"type": "array",
+							"items": { "type": "string" },
+							"description": "Transaction hashes (all must be in the same block)"
+						},
+						"block_hash": {
+							"type": "string",
+							"description": "Block hash to search for transactions (optional, searches if omitted)"
+						}
+					},
+					"required": ["tx_hashes"]
+				}),
+			},
+			ToolDefinition {
+				name: "verify_transaction_proof".to_string(),
+				description: "Verify Merkle proof and return transaction hashes it commits to".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"tx_proof": {
+							"type": "object",
+							"description": "Transaction proof object with block_hash, witnesses_root, and proof",
+							"properties": {
+								"block_hash": { "type": "string" },
+								"witnesses_root": { "type": "string" },
+								"proof": {
+									"type": "object",
+									"properties": {
+										"indices": { "type": "array", "items": { "type": "string" } },
+										"lemmas": { "type": "array", "items": { "type": "string" } }
+									}
+								}
+							},
+							"required": ["block_hash", "witnesses_root", "proof"]
+						}
+					},
+					"required": ["tx_proof"]
+				}),
+			},
 		];
 
 		let result = json!({ "tools": tools });
@@ -535,6 +580,9 @@ impl McpHandler {
 			// Experiment Methods
 			"calculate_dao_maximum_withdraw" => self.call_calculate_dao_maximum_withdraw(arguments).await,
 			"estimate_fee_rate" => self.call_estimate_fee_rate(arguments).await,
+			// Chain Methods - Proof
+			"get_transaction_proof" => self.call_get_transaction_proof(arguments).await,
+			"verify_transaction_proof" => self.call_verify_transaction_proof(arguments).await,
 			_ => {
 				return Ok(create_error_response(
 					id,
@@ -840,5 +888,38 @@ impl McpHandler {
 		let enable_fallback = args.get("enable_fallback").and_then(|v| v.as_bool());
 
 		self.rpc_client.estimate_fee_rate(estimate_mode, enable_fallback).await
+	}
+
+	async fn call_get_transaction_proof(&self, args: &Value) -> Result<Value> {
+		let tx_hashes = args
+			.get("tx_hashes")
+			.and_then(|v| v.as_array())
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("tx_hashes is required and must be an array".to_string())
+			})?
+			.iter()
+			.filter_map(|v| v.as_str().map(|s| s.to_string()))
+			.collect::<Vec<String>>();
+
+		if tx_hashes.is_empty() {
+			return Err(shared::error::CkbMcpError::InvalidParameter(
+				"tx_hashes array cannot be empty".to_string()
+			));
+		}
+
+		let block_hash = args.get("block_hash").and_then(|v| v.as_str());
+
+		self.rpc_client.get_transaction_proof(tx_hashes, block_hash).await
+	}
+
+	async fn call_verify_transaction_proof(&self, args: &Value) -> Result<Value> {
+		let tx_proof = args
+			.get("tx_proof")
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("tx_proof is required".to_string())
+			})?
+			.clone();
+
+		self.rpc_client.verify_transaction_proof(tx_proof).await
 	}
 }
