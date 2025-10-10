@@ -1010,7 +1010,7 @@ impl McpHandler {
 			.get("tx_hashes")
 			.and_then(|v| v.as_array())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("tx_hashes is required and must be an array".to_string())
+				shared::error::CkbMcpError::InvalidParameter("Missing tx_hashes (must be an array)".to_string())
 			})?
 			.iter()
 			.filter_map(|v| v.as_str().map(|s| s.to_string()))
@@ -1031,7 +1031,7 @@ impl McpHandler {
 		let tx_proof = args
 			.get("tx_proof")
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("tx_proof is required".to_string())
+				shared::error::CkbMcpError::InvalidParameter("Missing tx_proof".to_string())
 			})?
 			.clone();
 
@@ -1043,7 +1043,7 @@ impl McpHandler {
 			.get("block_hash")
 			.and_then(|v| v.as_str())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("block_hash is required".to_string())
+				shared::error::CkbMcpError::InvalidParameter("Missing block_hash".to_string())
 			})?;
 
 		self.rpc_client.get_block_economic_state(block_hash).await
@@ -1054,7 +1054,7 @@ impl McpHandler {
 			.get("block_hash")
 			.and_then(|v| v.as_str())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("block_hash is required".to_string())
+				shared::error::CkbMcpError::InvalidParameter("Missing block_hash".to_string())
 			})?;
 
 		self.rpc_client.get_block_median_time(block_hash).await
@@ -1065,7 +1065,7 @@ impl McpHandler {
 			.get("block_hash")
 			.and_then(|v| v.as_str())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("block_hash is required".to_string())
+				shared::error::CkbMcpError::InvalidParameter("Missing block_hash".to_string())
 			})?;
 
 		self.rpc_client.get_block_filter(block_hash).await
@@ -1076,7 +1076,7 @@ impl McpHandler {
 			.get("block_hash")
 			.and_then(|v| v.as_str())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("block_hash is required".to_string())
+				shared::error::CkbMcpError::InvalidParameter("Missing block_hash".to_string())
 			})?;
 
 		let verbosity = args.get("verbosity").and_then(|v| v.as_u64()).map(|v| v as u32);
@@ -1097,13 +1097,13 @@ impl McpHandler {
 			.get("work_id")
 			.and_then(|v| v.as_str())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("work_id is required".to_string())
+				shared::error::CkbMcpError::InvalidParameter("Missing work_id".to_string())
 			})?;
 
 		let block = args
 			.get("block")
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("block is required".to_string())
+				shared::error::CkbMcpError::InvalidParameter("Missing block".to_string())
 			})?
 			.clone();
 
