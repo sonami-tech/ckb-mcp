@@ -87,6 +87,7 @@ impl SharedTestData {
 	/// Get the shared test data, initializing if not yet done.
 	/// This allows tests to run in any order while still collecting data only once.
 	/// MUST be called from within an async context (tokio test).
+	#[allow(dead_code)]
 	pub async fn get_or_init_async() -> &'static SharedTestData {
 		if let Some(data) = SHARED_DATA.get() {
 			return data;
