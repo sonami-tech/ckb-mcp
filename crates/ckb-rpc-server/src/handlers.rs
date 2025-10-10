@@ -578,6 +578,52 @@ impl McpHandler {
 					"required": ["block_hash"]
 				}),
 			},
+			ToolDefinition {
+				name: "get_block_template".to_string(),
+				description: "Get block template for mining with customizable limits".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"bytes_limit": {
+							"type": "integer",
+							"description": "Max serialization size in bytes (optional, defaults to consensus limit)"
+						},
+						"proposals_limit": {
+							"type": "integer",
+							"description": "Max count of proposals (optional, defaults to consensus limit)"
+						},
+						"max_version": {
+							"type": "integer",
+							"description": "Max block version (optional, defaults to current client version)"
+						}
+					}
+				}),
+			},
+			ToolDefinition {
+				name: "submit_block".to_string(),
+				description: "Submit mined block to the network".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"work_id": {
+							"type": "string",
+							"description": "Work ID from get_block_template"
+						},
+						"block": {
+							"type": "object",
+							"description": "Assembled block with solved PoW puzzle",
+							"properties": {
+								"header": { "type": "object" },
+								"transactions": { "type": "array" },
+								"proposals": { "type": "array" },
+								"uncles": { "type": "array" }
+							},
+							"required": ["header", "transactions"]
+						}
+					},
+					"required": ["work_id", "block"]
+				}),
+			},
 		];
 
 		let result = json!({ "tools": tools });
@@ -649,6 +695,9 @@ impl McpHandler {
 			// Chain Methods - Filters and Forks
 			"get_block_filter" => self.call_get_block_filter(arguments).await,
 			"get_fork_block" => self.call_get_fork_block(arguments).await,
+			// Miner Methods
+			"get_block_template" => self.call_get_block_template(arguments).await,
+			"submit_block" => self.call_submit_block(arguments).await,
 			_ => {
 				return Ok(create_error_response(
 					id,
@@ -1033,5 +1082,31 @@ impl McpHandler {
 		let verbosity = args.get("verbosity").and_then(|v| v.as_u64()).map(|v| v as u32);
 
 		self.rpc_client.get_fork_block(block_hash, verbosity).await
+	}
+
+	async fn call_get_block_template(&self, args: &Value) -> Result<Value> {
+		let bytes_limit = args.get("bytes_limit").and_then(|v| v.as_u64());
+		let proposals_limit = args.get("proposals_limit").and_then(|v| v.as_u64());
+		let max_version = args.get("max_version").and_then(|v| v.as_u64()).map(|v| v as u32);
+
+		self.rpc_client.get_block_template(bytes_limit, proposals_limit, max_version).await
+	}
+
+	async fn call_submit_block(&self, args: &Value) -> Result<Value> {
+		let work_id = args
+			.get("work_id")
+			.and_then(|v| v.as_str())
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("work_id is required".to_string())
+			})?;
+
+		let block = args
+			.get("block")
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("block is required".to_string())
+			})?
+			.clone();
+
+		self.rpc_client.submit_block(work_id, block).await
 	}
 }

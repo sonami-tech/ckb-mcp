@@ -39,6 +39,8 @@ pub trait CkbRpcClientExt {
 	async fn get_block_median_time(&self, block_hash: &str) -> Result<Value>;
 	async fn get_block_filter(&self, block_hash: &str) -> Result<Value>;
 	async fn get_fork_block(&self, block_hash: &str, verbosity: Option<u32>) -> Result<Value>;
+	async fn get_block_template(&self, bytes_limit: Option<u64>, proposals_limit: Option<u64>, max_version: Option<u32>) -> Result<Value>;
+	async fn submit_block(&self, work_id: &str, block: Value) -> Result<Value>;
 }
 
 impl CkbRpcClientExt for CkbRpcClient {
@@ -231,5 +233,20 @@ impl CkbRpcClientExt for CkbRpcClient {
 		let verbosity_hex = verbosity.map(|v| format!("{:#x}", v));
 		let params = serde_json::json!([block_hash, verbosity_hex]);
 		self.call("get_fork_block", params).await
+	}
+
+	/// Get block template for mining.
+	async fn get_block_template(&self, bytes_limit: Option<u64>, proposals_limit: Option<u64>, max_version: Option<u32>) -> Result<Value> {
+		let bytes_limit_hex = bytes_limit.map(|v| format!("{:#x}", v));
+		let proposals_limit_hex = proposals_limit.map(|v| format!("{:#x}", v));
+		let max_version_hex = max_version.map(|v| format!("{:#x}", v));
+		let params = serde_json::json!([bytes_limit_hex, proposals_limit_hex, max_version_hex]);
+		self.call("get_block_template", params).await
+	}
+
+	/// Submit mined block to the network.
+	async fn submit_block(&self, work_id: &str, block: Value) -> Result<Value> {
+		let params = serde_json::json!([work_id, block]);
+		self.call("submit_block", params).await
 	}
 }

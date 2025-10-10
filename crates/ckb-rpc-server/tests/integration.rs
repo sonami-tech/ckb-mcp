@@ -2484,3 +2484,102 @@ async fn test_get_fork_block_missing_hash() {
 	let error_msg = result.unwrap_err();
 	assert!(error_msg.contains("block_hash"), "Error should mention block_hash");
 }
+
+#[tokio::test]
+async fn test_get_block_template() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	// Get block template with default parameters
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_block_template",
+			"arguments": {}
+		}))
+		.await
+		.expect("get_block_template should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let template: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Verify block template structure
+	assert!(template["bytes_limit"].is_string(), "Should have bytes_limit");
+	assert!(template["cellbase"].is_object(), "Should have cellbase");
+	assert!(template["cellbase"]["data"].is_object(), "Cellbase should have data");
+	assert!(template["compact_target"].is_string(), "Should have compact_target");
+	assert!(template["current_time"].is_string(), "Should have current_time");
+	assert!(template["cycles_limit"].is_string(), "Should have cycles_limit");
+	assert!(template["dao"].is_string(), "Should have dao");
+	assert!(template["epoch"].is_string(), "Should have epoch");
+	assert!(template["number"].is_string(), "Should have block number");
+	assert!(template["parent_hash"].is_string(), "Should have parent_hash");
+	assert!(template["proposals"].is_array(), "Should have proposals array");
+	assert!(template["transactions"].is_array(), "Should have transactions array");
+	assert!(template["uncles"].is_array(), "Should have uncles array");
+	assert!(template["version"].is_string(), "Should have version");
+	assert!(template["work_id"].is_string(), "Should have work_id");
+}
+
+#[tokio::test]
+async fn test_get_block_template_with_limits() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	// Get block template with custom limits
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "get_block_template",
+			"arguments": {
+				"bytes_limit": 500000,
+				"proposals_limit": 1000
+			}
+		}))
+		.await
+		.expect("get_block_template should succeed with custom limits");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let template: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Should still have all required fields
+	assert!(template["work_id"].is_string(), "Should have work_id");
+	assert!(template["cellbase"].is_object(), "Should have cellbase");
+}
+
+#[tokio::test]
+async fn test_submit_block_missing_work_id() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "submit_block",
+			"arguments": {
+				"block": {
+					"header": {},
+					"transactions": []
+				}
+			}
+		}))
+		.await;
+
+	assert!(result.is_err(), "Should fail when work_id is missing");
+	let error_msg = result.unwrap_err();
+	assert!(error_msg.contains("work_id"), "Error should mention work_id");
+}
+
+#[tokio::test]
+async fn test_submit_block_missing_block() {
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "submit_block",
+			"arguments": {
+				"work_id": "test_work_id"
+			}
+		}))
+		.await;
+
+	assert!(result.is_err(), "Should fail when block is missing");
+	let error_msg = result.unwrap_err();
+	assert!(error_msg.contains("block"), "Error should mention block");
+}
