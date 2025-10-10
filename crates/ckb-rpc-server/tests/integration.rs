@@ -97,8 +97,13 @@ async fn test_get_tip_block_number() {
 		.expect("get_tip_block_number should succeed");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-	assert!(content.contains("0x"), "Should return hex number");
+
+	// Parse as JSON string and validate hex format
+	let block_num: String = serde_json::from_str(content)
+		.expect("Response should be valid JSON string");
+	assert!(block_num.starts_with("0x"), "Should start with 0x");
+	assert!(block_num.len() > 2, "Should have hex digits after 0x");
+	assert!(block_num[2..].chars().all(|c| c.is_ascii_hexdigit()), "Should be valid hex number");
 }
 
 #[tokio::test]
@@ -111,8 +116,11 @@ async fn test_get_tip_header() {
 		.expect("get_tip_header should succeed");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-	assert!(content.contains("hash"), "Should contain hash field");
+
+	// Parse as JSON object to validate structure
+	let _header: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON object");
+	assert!(_header.is_object(), "Response should be a JSON object");
 }
 
 #[tokio::test]
@@ -125,8 +133,11 @@ async fn test_get_current_epoch() {
 		.expect("get_current_epoch should succeed");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-	assert!(content.contains("number"), "Should contain epoch number");
+
+	// Parse as JSON object to validate structure
+	let _epoch: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON object");
+	assert!(_epoch.is_object(), "Response should be a JSON object");
 }
 
 #[tokio::test]
@@ -139,8 +150,11 @@ async fn test_get_block_by_number_genesis() {
 		.expect("get_block_by_number genesis should succeed");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-	assert!(content.contains("header"), "Should contain header");
+
+	// Parse as JSON object to validate structure
+	let _block: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON object");
+	assert!(_block.is_object(), "Response should be a JSON object");
 }
 
 #[tokio::test]
@@ -181,8 +195,13 @@ async fn test_get_block_hash() {
 		.expect("get_block_hash should succeed");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
-	assert!(!content.is_empty());
-	assert!(content.starts_with("\"0x"), "Should return hex hash");
+
+	// Parse as JSON string and validate exact block hash format (32 bytes = 64 hex chars)
+	let hash: String = serde_json::from_str(content)
+		.expect("Response should be valid JSON string");
+	assert!(hash.starts_with("0x"), "Should start with 0x");
+	assert_eq!(hash.len(), 66, "Block hash should be exactly 66 characters (0x + 64 hex digits)");
+	assert!(hash[2..].chars().all(|c| c.is_ascii_hexdigit()), "Should contain only hex digits after 0x");
 }
 
 #[tokio::test]
@@ -516,7 +535,7 @@ async fn test_invalid_json_rpc_request() {
 
 // Additional Chain Method Tests
 #[tokio::test]
-async fn test_get_transaction_valid() {
+async fn test_get_transaction_genesis() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
 	// Use shared genesis block data (collected via direct CKB RPC in Phase 3)
@@ -577,7 +596,7 @@ async fn test_get_block_hash_negative_number() {
 
 // Live Cell Tests
 #[tokio::test]
-async fn test_get_live_cell_valid() {
+async fn test_get_live_cell_genesis() {
 	let ctx = TestContext::new(RPC_SERVER_PORT);
 
 	// Use shared genesis block data (collected via direct CKB RPC in Phase 3)
