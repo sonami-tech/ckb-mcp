@@ -1,9 +1,6 @@
 use serde_json::json;
+use test_common::{SharedTestData, TestContext};
 
-#[path = "../../shared/tests/common/mod.rs"]
-mod common;
-
-use common::TestContext;
 
 const RPC_SERVER_PORT: u16 = 8001;
 

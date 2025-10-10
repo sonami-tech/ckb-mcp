@@ -1,9 +1,8 @@
+use test_common::{SharedTestData, TestContext};
 use serde_json::json;
 
-#[path = "../../shared/tests/common/mod.rs"]
-mod common;
 
-use common::TestContext;
+
 
 const DOCS_SERVER_PORT: u16 = 8002;
 

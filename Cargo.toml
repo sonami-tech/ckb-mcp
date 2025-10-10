@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
 	"crates/shared",
+	"crates/test-common",
 	"crates/ckb-rpc-server",
 	"crates/ckb-docs-server",
 	"crates/ckb-tools-server",
@@ -40,3 +41,4 @@ tokio-stream = { version = "0.1", features = ["sync"] }
 
 # Workspace crates
 shared = { path = "crates/shared" }
+test-common = { path = "crates/test-common" }

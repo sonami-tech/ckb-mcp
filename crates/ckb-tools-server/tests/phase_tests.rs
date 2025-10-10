@@ -1,9 +1,8 @@
 use serde_json::json;
 
-#[path = "../../shared/tests/common/mod.rs"]
-mod common;
 
-use common::{SharedTestData, TestContext};
+
+use test_common::{SharedTestData, TestContext};
 
 const TOOLS_SERVER_PORT: u16 = 8003;
 

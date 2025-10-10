@@ -6,7 +6,6 @@ use std::sync::OnceLock;
 /// Shared test data collected once during Phase 3 setup.
 /// This data is gathered via direct CKB RPC calls (not through MCP).
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct SharedTestData {
 	pub chain_type: String,
 	pub genesis_hash: String,
@@ -72,7 +71,6 @@ impl SharedTestData {
 
 	/// Initialize shared test data by querying CKB RPC directly.
 	/// This should be called once in the Phase 3 test.
-	#[allow(dead_code)]
 	pub async fn initialize() -> Result<(), String> {
 		let data = Self::collect().await?;
 		SHARED_DATA
@@ -82,7 +80,6 @@ impl SharedTestData {
 	}
 
 	/// Get the shared test data. Returns None if not yet initialized.
-	#[allow(dead_code)]
 	pub fn get() -> Option<&'static SharedTestData> {
 		SHARED_DATA.get()
 	}
@@ -90,7 +87,6 @@ impl SharedTestData {
 	/// Get the shared test data, initializing if not yet done.
 	/// This allows tests to run in any order while still collecting data only once.
 	/// MUST be called from within an async context (tokio test).
-	#[allow(dead_code)]
 	pub async fn get_or_init_async() -> &'static SharedTestData {
 		if let Some(data) = SHARED_DATA.get() {
 			return data;
@@ -137,7 +133,6 @@ impl TestContext {
 	}
 
 	/// Sanity check: verify server is running and healthy
-	#[allow(dead_code)]
 	pub async fn verify_server_running(&self) -> Result<(), String> {
 		let health_url = format!("{}/health", self.base_url);
 
@@ -176,7 +171,6 @@ impl TestContext {
 	}
 
 	/// Call an MCP tool
-	#[allow(dead_code)]
 	pub async fn call_tool(&self, name: &str, arguments: Value) -> Result<Value, String> {
 		self.mcp_call("tools/call", json!({ "name": name, "arguments": arguments }))
 			.await
@@ -184,7 +178,6 @@ impl TestContext {
 
 	/// Wait for a transaction to be confirmed by polling the CKB RPC directly.
 	/// Returns the block number where the transaction was confirmed.
-	#[allow(dead_code)]
 	pub async fn wait_for_tx_confirmation(tx_hash: &str) -> Result<u64, String> {
 		let client = Client::new();
 		let ckb_rpc_url = Self::get_ckb_rpc_url()?;
@@ -253,7 +246,6 @@ impl TestContext {
 
 	/// Wait for the indexer to catch up to at least the specified block number
 	/// This ensures cells from confirmed transactions are available for collection
-	#[allow(dead_code)]
 	pub async fn wait_for_indexer_sync(target_block: u64) -> Result<(), String> {
 		let client = Client::new();
 		let ckb_rpc_url = Self::get_ckb_rpc_url()?;
