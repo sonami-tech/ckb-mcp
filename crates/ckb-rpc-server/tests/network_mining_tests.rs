@@ -212,24 +212,106 @@ async fn test_get_deployments_info() {
 
 #[tokio::test]
 async fn test_estimate_cycles() {
-	// NOTE: This test is fundamentally difficult because estimate_cycles requires
-	// transactions with LIVE (unspent) inputs. Historical transactions from blocks
-	// have already spent their inputs, making them unresolvable.
-	//
-	// On devnet, building a valid transaction with live inputs requires:
-	// 1. Finding live cells (via get_cells)
-	// 2. Building a properly structured transaction
-	// 3. The transaction must be valid enough for script execution
-	//
-	// Since this is complex and the error cases are already tested in
-	// test_estimate_cycles_missing_tx and test_estimate_cycles_invalid_tx,
-	// we simply skip this test for now.
-	//
-	// TODO: Implement proper transaction building with live cells for success case testing
+	use reqwest::Client;
+	let ctx = TestContext::new(RPC_SERVER_PORT);
+	let shared_data = SharedTestData::get_or_init_async().await;
 
-	eprintln!("test_estimate_cycles: Skipping - requires complex transaction building with live cells");
-	eprintln!("Success case testing would require implementing full transaction construction");
-	eprintln!("Error cases are covered by test_estimate_cycles_missing_tx and test_estimate_cycles_invalid_tx");
+	// Build a valid transaction using LIVE cells from genesis
+	// Genesis block outputs are always available and unspent on fresh chains
+	let client = Client::new();
+	let ckb_rpc_url = TestContext::get_ckb_rpc_url().expect("CKB_RPC_URL must be set");
+
+	// Get secp256k1 lock script (standard lock)
+	let secp256k1_code_hash = "0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8";
+
+	// Search for live cells with secp256k1 lock
+	let search_response = client
+		.post(&ckb_rpc_url)
+		.json(&json!({
+			"jsonrpc": "2.0",
+			"id": 1,
+			"method": "get_cells",
+			"params": [{
+				"script": {
+					"code_hash": secp256k1_code_hash,
+					"hash_type": "type",
+					"args": "0x"
+				},
+				"script_type": "lock"
+			}, "asc", "0x64"]
+		}))
+		.send()
+		.await
+		.expect("Should search for cells");
+
+	let search_body: Value = search_response.json().await.expect("Should parse JSON");
+	let objects = search_body["result"]["objects"].as_array();
+
+	if objects.is_none() || objects.unwrap().is_empty() {
+		eprintln!("No live cells found for estimate_cycles test - skipping");
+		eprintln!("This is normal on a fresh devnet with no transactions");
+		return;
+	}
+
+	let first_cell = &objects.unwrap()[0];
+	let out_point = &first_cell["out_point"];
+	let output = &first_cell["output"];
+
+	// Build a simple transaction that consumes this cell
+	let tx = json!({
+		"version": "0x0",
+		"cell_deps": [{
+			"out_point": {
+				"tx_hash": shared_data.genesis_hash,
+				"index": "0x1"
+			},
+			"dep_type": "dep_group"
+		}],
+		"header_deps": [],
+		"inputs": [{
+			"since": "0x0",
+			"previous_output": out_point
+		}],
+		"outputs": [output],
+		"outputs_data": ["0x"],
+		"witnesses": ["0x5500000010000000550000005500000041000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"]
+	});
+
+	// Call estimate_cycles via MCP
+	let result = ctx
+		.mcp_call("tools/call", json!({
+			"name": "estimate_cycles",
+			"arguments": {
+				"tx": tx
+			}
+		}))
+		.await;
+
+	// If this fails with TransactionFailedToResolve, it means the cell was spent
+	// This can happen on active devnets - just skip the test
+	let result = match result {
+		Ok(r) => r,
+		Err(e) if e.contains("TransactionFailedToResolve") => {
+			eprintln!("Cell was spent before test could run - skipping");
+			return;
+		}
+		Err(e) => panic!("Unexpected error: {}", e),
+	};
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let cycles_result: serde_json::Value = serde_json::from_str(content)
+		.expect("Response should be valid JSON");
+
+	// Verify the response has the expected structure
+	assert!(cycles_result.get("cycles").is_some(), "Response should have 'cycles' field");
+
+	// Verify cycles is a valid hex number
+	let cycles_str = cycles_result["cycles"].as_str().expect("cycles should be a string");
+	assert!(cycles_str.starts_with("0x"), "cycles should be in hex format");
+
+	// Parse to verify it's a valid number
+	let _cycles_value = u64::from_str_radix(&cycles_str[2..], 16)
+		.expect("cycles should be valid hex number");
 }
 
 #[tokio::test]
