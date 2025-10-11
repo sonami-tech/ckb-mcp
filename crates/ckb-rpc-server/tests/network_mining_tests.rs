@@ -210,27 +210,27 @@ async fn test_get_deployments_info() {
 	}
 }
 
-#[tokio::test]
-async fn test_estimate_cycles() {
-	// NOTE: Testing the success case of estimate_cycles requires:
-	// 1. Finding live (unspent) cells
-	// 2. Building a valid transaction structure
-	// 3. Signing the transaction with a valid private key
-	//
-	// ckb-rpc-server doesn't have access to private keys for signing.
-	// Only ckb-tools-server has transaction signing capabilities.
-	//
-	// Error cases are already tested via:
-	// - test_estimate_cycles_missing_tx (missing parameter)
-	// - test_estimate_cycles_invalid_tx (malformed transaction)
-	//
-	// Success case testing belongs in ckb-tools-server integration tests
-	// where proper transaction building and signing is available.
-
-	eprintln!("test_estimate_cycles: Skipping success case");
-	eprintln!("Reason: ckb-rpc-server has no signing capability");
-	eprintln!("Error cases covered by test_estimate_cycles_missing_tx and test_estimate_cycles_invalid_tx");
-}
+// TODO: Implement success case testing for estimate_cycles
+//
+// This test is commented out because ckb-rpc-server has no transaction signing capability.
+// Testing estimate_cycles success case requires:
+// 1. Finding live (unspent) cells
+// 2. Building a valid transaction structure
+// 3. Signing the transaction with a valid private key (ckb-rpc-server doesn't have this)
+//
+// Options to implement this test:
+// - Move to ckb-tools-server tests (has private key and signing infrastructure)
+// - Add a test-only private key to ckb-rpc-server test harness
+// - Use unsigned transaction that doesn't require signature validation
+//
+// Error cases remain fully tested via:
+// - test_estimate_cycles_missing_tx (missing parameter)
+// - test_estimate_cycles_invalid_tx (malformed transaction)
+//
+// #[tokio::test]
+// async fn test_estimate_cycles() {
+// 	// Implementation would go here
+// }
 
 #[tokio::test]
 async fn test_estimate_cycles_missing_tx() {
