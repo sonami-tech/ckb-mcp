@@ -65,20 +65,6 @@ impl McpHandler {
 				}),
 			},
 			ToolDefinition {
-				name: "DeployCellDataFromFile".to_string(),
-				description: "Deploy a cell with data read from a file on the filesystem".to_string(),
-				input_schema: json!({
-					"type": "object",
-					"properties": {
-						"file_path": {
-							"type": "string",
-							"description": "Absolute path to the file containing data to deploy"
-						}
-					},
-					"required": ["file_path"]
-				}),
-			},
-			ToolDefinition {
 				name: "GetAddressBalance".to_string(),
 				description: "Get the CKB balance for an address. If no address is provided, returns balance of the default sender address.".to_string(),
 				input_schema: json!({
@@ -181,7 +167,6 @@ impl McpHandler {
 
 		let result = match tool_name {
 			"DeployCellData" => self.call_deploy_cell_data(arguments).await,
-			"DeployCellDataFromFile" => self.call_deploy_cell_data_from_file(arguments).await,
 			"GetAddressBalance" => self.call_get_address_balance(arguments).await,
 			"GetChainType" => self.call_get_chain_type().await,
 			"GetGenesisHash" => self.call_get_genesis_hash().await,
@@ -229,19 +214,6 @@ impl McpHandler {
 		})?;
 
 		let result = self.tools_provider.deploy_cell_data(data).await?;
-
-		Ok(serde_json::to_string_pretty(&result)?)
-	}
-
-	async fn call_deploy_cell_data_from_file(&self, args: &Value) -> Result<String> {
-		let file_path = args
-			.get("file_path")
-			.and_then(|v| v.as_str())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing file_path parameter".to_string())
-			})?;
-
-		let result = self.tools_provider.deploy_cell_data_from_file(file_path).await?;
 
 		Ok(serde_json::to_string_pretty(&result)?)
 	}

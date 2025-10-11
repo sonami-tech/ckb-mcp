@@ -2,7 +2,7 @@ use shared::{
 	ckb_client::CkbRpcClient,
 	error::{CkbMcpError, Result},
 };
-use std::{fs, str::FromStr};
+use std::str::FromStr;
 use tracing::{debug, info};
 use serde::{Deserialize, Serialize};
 use ckb_sdk::{
@@ -171,22 +171,6 @@ impl ToolsProvider {
 
 	pub async fn deploy_cell_data(&self, data: Vec<u8>) -> Result<DeploymentResult> {
 		info!("Deploying cell with data size: {} bytes", data.len());
-		self.deploy_data_internal(data).await
-	}
-
-	pub async fn deploy_cell_data_from_file(&self, file_path: &str) -> Result<DeploymentResult> {
-		debug!("Reading data from file: {}", file_path);
-
-		let data = fs::read(file_path).map_err(|e| {
-			CkbMcpError::Internal(format!("Failed to read file {}: {}", file_path, e))
-		})?;
-
-		info!(
-			"Deploying cell with data from file: {} ({} bytes)",
-			file_path,
-			data.len()
-		);
-
 		self.deploy_data_internal(data).await
 	}
 

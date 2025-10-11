@@ -238,7 +238,6 @@ ckb-docs-server [OPTIONS]
 
 **Tools**:
 - `DeployCellData` - Deploy a cell with hex-encoded data.
-- `DeployCellDataFromFile` - Deploy a cell with data from a file.
 - `GetAddressBalance` - Get CKB balance for an address.
 - `GetChainType` - Get chain type (mainnet/testnet/devnet).
 - `GetGenesisHash` - Get genesis block hash.
