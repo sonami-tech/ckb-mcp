@@ -38,7 +38,12 @@ ckb-mcp/
 
 **REQUIRED**: Tests need the `CKB_RPC_URL` environment variable set to the CKB node URL. This should match the URL used when starting the servers.
 
+**REQUIRED**: This project uses `cargo-nextest` instead of `cargo test` for guaranteed sequential test execution.
+
 ```bash
+# Install cargo-nextest (one-time setup)
+cargo install cargo-nextest
+
 # Set the CKB RPC URL (required for tests)
 export CKB_RPC_URL=http://127.0.0.1:8114  # For local mainnet node
 # or use a remote devnet/testnet node
@@ -47,18 +52,18 @@ export CKB_RPC_URL=http://your-node-ip:18114    # Testnet (port 18114)
 export CKB_RPC_URL=http://your-node-ip:28114    # Devnet (port 28114)
 
 # Run all tests (uses CKB_RPC_URL from environment)
-cargo test --workspace
+cargo nextest run
 
 # Or specify URL inline for a single test run
-CKB_RPC_URL=http://your-node-ip:18114 cargo test --workspace
+CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run
 
 # Run tests for specific server with custom node
-CKB_RPC_URL=http://your-node-ip:18114 cargo test -p ckb-rpc-server
-CKB_RPC_URL=http://your-node-ip:18114 cargo test -p ckb-docs-server
-CKB_RPC_URL=http://your-node-ip:18114 cargo test -p ckb-tools-server
+CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run -p ckb-rpc-server
+CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run -p ckb-docs-server
+CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run -p ckb-tools-server
 
 # Run tests with logging
-CKB_RPC_URL=http://your-node-ip:18114 RUST_LOG=debug cargo test
+CKB_RPC_URL=http://your-node-ip:18114 RUST_LOG=debug cargo nextest run
 ```
 
 **CRITICAL: Test Independence and Isolation**
