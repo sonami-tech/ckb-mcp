@@ -274,7 +274,13 @@ async fn test_test_tx_pool_accept_invalid() {
 	let shared_data = SharedTestData::get_or_init_async().await;
 
 	// Try to test genesis cellbase which has unresolvable inputs
-	let genesis_cellbase = &shared_data.genesis_block["transactions"][0];
+	let genesis_cellbase_view = &shared_data.genesis_block["transactions"][0];
+
+	// Convert TransactionView to Transaction by removing the hash field
+	// test_tx_pool_accept expects Transaction (without hash), not TransactionView
+	let mut genesis_cellbase = genesis_cellbase_view.as_object().unwrap().clone();
+	genesis_cellbase.remove("hash");
+	let genesis_cellbase = Value::Object(genesis_cellbase);
 
 	let result = ctx
 		.mcp_call("tools/call", json!({

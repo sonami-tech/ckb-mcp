@@ -268,7 +268,7 @@ async fn test_estimate_cycles() {
 		}
 	}
 
-	let tx = match found_tx {
+	let tx_view = match found_tx {
 		Some(t) => t,
 		None => {
 			eprintln!("No suitable transactions found for estimate_cycles test - skipping");
@@ -276,6 +276,12 @@ async fn test_estimate_cycles() {
 			return;
 		}
 	};
+
+	// Convert TransactionView to Transaction by removing the hash field
+	// estimate_cycles expects Transaction (without hash), not TransactionView
+	let mut tx = tx_view.as_object().unwrap().clone();
+	tx.remove("hash");
+	let tx = Value::Object(tx);
 
 	// Call estimate_cycles via MCP
 	let result = ctx
