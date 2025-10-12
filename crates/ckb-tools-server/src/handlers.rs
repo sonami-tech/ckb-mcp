@@ -147,7 +147,16 @@ impl McpHandler {
 			},
 			ToolDefinition {
 				name: "DeployCellDataChunked".to_string(),
-				description: "Multi-phase chunked upload for deploying large data files (up to 350KB) to CKB blockchain. Operations: initialize (create session), append (upload chunks), status (query session), finalize (validate and compute hashes), deploy (commit to chain), cancel (delete session). Recommended chunk size: 10KB. Maximum chunk size: 50KB.".to_string(),
+				description: "Multi-phase chunked upload for deploying large data files (up to 350KB) to CKB blockchain. \
+				Operations: initialize, append, status, finalize, deploy, cancel. \
+				Workflow: 1) initialize with expected_size → get session_key, 2) append chunks repeatedly with session_key + chunk_data, \
+				3) finalize to compute hashes, 4) deploy to blockchain. \
+				Examples: initialize: {\"operation\":\"initialize\",\"expected_size\":102400}; \
+				append: {\"operation\":\"append\",\"session_key\":\"uuid\",\"chunk_data\":\"base64...\"}; \
+				status: {\"operation\":\"status\",\"session_key\":\"uuid\"}; \
+				finalize: {\"operation\":\"finalize\",\"session_key\":\"uuid\"}; \
+				deploy: {\"operation\":\"deploy\",\"session_key\":\"uuid\"}. \
+				Chunk size: recommended 10KB, max 50KB. Total size: max 350KB.".to_string(),
 				input_schema: json!({
 					"type": "object",
 					"properties": {
@@ -194,6 +203,7 @@ impl McpHandler {
 		let arguments = params.get("arguments").unwrap_or(&default_args);
 
 		// Log tool calls with intelligent truncation for data-bearing tools
+		// Note: DeployCellDataChunked logging happens in individual operation handlers after validation
 		match tool_name {
 			"DeployCellData" => {
 				if let Some(data) = arguments.get("data").and_then(|v| v.as_str()) {
@@ -204,21 +214,7 @@ impl McpHandler {
 				}
 			}
 			"DeployCellDataChunked" => {
-				let operation = arguments.get("operation").and_then(|v| v.as_str()).unwrap_or("unknown");
-				if operation == "append" {
-					if let Some(chunk) = arguments.get("chunk_data").and_then(|v| v.as_str()) {
-						let size_bytes = chunk.len() * 3 / 4; // Base64 decoding estimate
-						info!("Calling tool: DeployCellDataChunked (append) with {} bytes", size_bytes);
-					} else {
-						info!("Calling tool: DeployCellDataChunked (append)");
-					}
-				} else if operation == "initialize" {
-					let size = arguments.get("expected_size").and_then(|v| v.as_u64()).unwrap_or(0);
-					info!("Calling tool: DeployCellDataChunked (initialize) expecting {} bytes", size);
-				} else {
-					let session_key = arguments.get("session_key").and_then(|v| v.as_str()).unwrap_or("unknown");
-					info!("Calling tool: DeployCellDataChunked ({}) for session {}", operation, session_key);
-				}
+				// Don't log here - logging happens after validation in each operation handler
 			}
 			_ => {
 				// For other tools with small arguments, log normally
@@ -237,12 +233,17 @@ impl McpHandler {
 			"GetDefaultAccountInfo" => self.call_get_default_account_info().await,
 			"DeployCellDataChunked" => {
 				// Dispatch based on operation parameter
-				let operation = arguments
-					.get("operation")
-					.and_then(|v| v.as_str())
-					.ok_or_else(|| {
-						shared::error::CkbMcpError::InvalidParameter("Missing operation parameter".to_string())
-					})?;
+				let operation = match arguments.get("operation").and_then(|v| v.as_str()) {
+					Some(op) => op,
+					None => {
+						return Ok(create_error_response(
+							id,
+							-32602,
+							"Missing required parameter 'operation'. Must be one of: initialize, append, status, finalize, deploy, cancel. \
+							Example: {\"operation\": \"initialize\", \"expected_size\": 102400}".to_string(),
+						))
+					}
+				};
 
 				match operation {
 					"initialize" => self.call_initialize_chunked(arguments).await,
@@ -255,7 +256,11 @@ impl McpHandler {
 						return Ok(create_error_response(
 							id,
 							-32602,
-							format!("Unknown operation: {}", operation),
+							format!(
+								"Unknown operation '{}'. Valid operations: initialize, append, status, finalize, deploy, cancel. \
+								See tool description for examples of each operation.",
+								operation
+							),
 						))
 					}
 				}
@@ -418,7 +423,10 @@ impl McpHandler {
 			.get("session_key")
 			.and_then(|v| v.as_str())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing session_key parameter".to_string())
+				shared::error::CkbMcpError::InvalidParameter(
+					"Missing required parameter 'session_key' for append operation. \
+					Example: {\"operation\": \"append\", \"session_key\": \"uuid-from-initialize\", \"chunk_data\": \"base64...\"}".to_string()
+				)
 			})?
 			.to_string();
 
@@ -426,13 +434,18 @@ impl McpHandler {
 			.get("chunk_data")
 			.and_then(|v| v.as_str())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing chunk_data parameter".to_string())
+				shared::error::CkbMcpError::InvalidParameter(
+					"Missing required parameter 'chunk_data' for append operation. Must be base64-encoded data (max 50KB after decoding). \
+					Example: {\"operation\": \"append\", \"session_key\": \"...\", \"chunk_data\": \"SGVsbG8gd29ybGQ=\"}".to_string()
+				)
 			})?;
 
 		// Decode base64 chunk data
 		let chunk_data = base64::decode(chunk_data_b64).map_err(|e| {
 			shared::error::CkbMcpError::InvalidParameter(format!("Invalid base64 chunk_data: {}", e))
 		})?;
+
+		info!("Appending {} bytes to session {}", chunk_data.len(), session_key);
 
 		let metadata = SessionManager::append_data(&session_key, &chunk_data)?;
 
@@ -449,9 +462,14 @@ impl McpHandler {
 			.get("session_key")
 			.and_then(|v| v.as_str())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing session_key parameter".to_string())
+				shared::error::CkbMcpError::InvalidParameter(
+					"Missing required parameter 'session_key' for status operation. \
+					Example: {\"operation\": \"status\", \"session_key\": \"uuid-from-initialize\"}".to_string()
+				)
 			})?
 			.to_string();
+
+		info!("Querying status for session {}", session_key);
 
 		let metadata = SessionManager::read_metadata_unlocked(&session_key)?;
 
@@ -489,16 +507,22 @@ impl McpHandler {
 			.get("session_key")
 			.and_then(|v| v.as_str())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing session_key parameter".to_string())
+				shared::error::CkbMcpError::InvalidParameter(
+					"Missing required parameter 'session_key' for finalize operation. \
+					Example: {\"operation\": \"finalize\", \"session_key\": \"uuid-from-initialize\"}".to_string()
+				)
 			})?
 			.to_string();
+
+		info!("Finalizing session {}", session_key);
 
 		let (mut metadata, _lock) = SessionManager::read_metadata_locked(&session_key)?;
 
 		// Check state
 		if metadata.state != SessionState::Receiving {
 			return Err(shared::error::CkbMcpError::InvalidParameter(format!(
-				"Cannot finalize session in {:?} state. Current state must be receiving.",
+				"Cannot finalize session in {:?} state. Current state must be 'receiving'. \
+				Use status operation to check current state.",
 				metadata.state
 			)));
 		}
@@ -567,16 +591,22 @@ impl McpHandler {
 			.get("session_key")
 			.and_then(|v| v.as_str())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing session_key parameter".to_string())
+				shared::error::CkbMcpError::InvalidParameter(
+					"Missing required parameter 'session_key' for deploy operation. \
+					Example: {\"operation\": \"deploy\", \"session_key\": \"uuid-from-initialize\"}".to_string()
+				)
 			})?
 			.to_string();
+
+		info!("Deploying session {} to blockchain", session_key);
 
 		let (mut metadata, _lock) = SessionManager::read_metadata_locked(&session_key)?;
 
 		// Check state
 		if metadata.state != SessionState::Finalized {
 			return Err(shared::error::CkbMcpError::InvalidParameter(format!(
-				"Cannot deploy session in {:?} state. Session must be finalized first.",
+				"Cannot deploy session in {:?} state. Session must be finalized first. \
+				Use finalize operation before deploying.",
 				metadata.state
 			)));
 		}
@@ -626,13 +656,16 @@ impl McpHandler {
 			.get("session_key")
 			.and_then(|v| v.as_str())
 			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing session_key parameter".to_string())
+				shared::error::CkbMcpError::InvalidParameter(
+					"Missing required parameter 'session_key' for cancel operation. \
+					Example: {\"operation\": \"cancel\", \"session_key\": \"uuid-from-initialize\"}".to_string()
+				)
 			})?
 			.to_string();
 
-		SessionManager::delete_session(&session_key)?;
+		info!("Cancelling session {}", session_key);
 
-		info!("Cancelled and deleted session {}", session_key);
+		SessionManager::delete_session(&session_key)?;
 
 		Ok(json!({
 			"session_key": session_key,
