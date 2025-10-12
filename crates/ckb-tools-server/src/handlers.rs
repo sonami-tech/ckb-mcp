@@ -52,13 +52,13 @@ impl McpHandler {
 		let tools = vec![
 			ToolDefinition {
 				name: "DeployCellData".to_string(),
-				description: "Deploy a cell with data provided directly to the MCP server".to_string(),
+				description: "Deploy a cell with data provided directly to the MCP server. Maximum data size: 20KB (20,480 bytes). For larger files, use DeployCellDataChunked.".to_string(),
 				input_schema: json!({
 					"type": "object",
 					"properties": {
 						"data": {
 							"type": "string",
-							"description": "Hex-encoded data to deploy in the cell (without 0x prefix)"
+							"description": "Hex-encoded data to deploy in the cell (without 0x prefix). Maximum 20KB (20,480 bytes) after decoding."
 						}
 					},
 					"required": ["data"]
@@ -212,6 +212,16 @@ impl McpHandler {
 		let data = hex::decode(data_hex.trim_start_matches("0x")).map_err(|e| {
 			shared::error::CkbMcpError::InvalidParameter(format!("Invalid hex data: {}", e))
 		})?;
+
+		// Enforce 20KB limit
+		const MAX_DATA_SIZE: usize = 20 * 1024; // 20KB
+		if data.len() > MAX_DATA_SIZE {
+			return Err(shared::error::CkbMcpError::InvalidParameter(format!(
+				"Data size {} bytes exceeds maximum limit of {} bytes (20KB). Use DeployCellDataChunked for larger files.",
+				data.len(),
+				MAX_DATA_SIZE
+			)));
+		}
 
 		let result = self.tools_provider.deploy_cell_data(data).await?;
 
