@@ -175,7 +175,7 @@ impl ToolsProvider {
 	}
 
 	pub async fn get_genesis_hash(&self) -> Result<String> {
-		info!("Fetching genesis block hash.");
+		debug!("Fetching genesis block hash.");
 
 		// Get block 0 (genesis block)
 		let genesis_block = self.ckb_client.get_block_by_number(0).await?;
@@ -193,7 +193,7 @@ impl ToolsProvider {
 	}
 
 	pub async fn get_chain_type(&self) -> Result<String> {
-		info!("Determining chain type.");
+		debug!("Determining chain type.");
 
 		let genesis_hash = self.get_genesis_hash().await?;
 
@@ -214,7 +214,7 @@ impl ToolsProvider {
 	}
 
 	pub async fn get_address_balance(&self, address: Option<String>) -> Result<BalanceInfo> {
-		info!("Checking address balance.");
+		debug!("Checking address balance.");
 
 		// Use provided address or default to sender address from private key
 		let addr = match address {
@@ -274,7 +274,7 @@ impl ToolsProvider {
 	}
 
 	pub fn generate_lock_info(&self, private_key: Option<String>) -> Result<LockInfo> {
-		info!("Generating lock info from private key.");
+		debug!("Generating lock info from private key.");
 
 		// Use provided private key or default to configured private key
 		let key_hex = private_key.unwrap_or_else(|| self.private_key.clone());
@@ -325,7 +325,7 @@ impl ToolsProvider {
 	}
 
 	pub fn get_lock_info_from_address(&self, address: String) -> Result<LockInfo> {
-		info!("Extracting lock info from address.");
+		debug!("Extracting lock info from address.");
 
 		// Parse address
 		let addr = Address::from_str(&address)
@@ -418,7 +418,7 @@ impl ToolsProvider {
 	}
 
 	pub async fn get_default_account_info(&self) -> Result<DefaultAccountInfo> {
-		info!("Getting default account information.");
+		debug!("Getting default account information.");
 
 		// Generate lock info from the configured private key
 		let lock_info = self.generate_lock_info(None)?;

@@ -412,7 +412,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-docs-server"
-version = "0.4.403"
+version = "0.4.424"
 dependencies = [
  "anyhow",
  "axum",
@@ -617,7 +617,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-rpc-server"
-version = "0.4.611"
+version = "0.4.632"
 dependencies = [
  "anyhow",
  "axum",
@@ -731,7 +731,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-tools-server"
-version = "0.4.533"
+version = "0.4.554"
 dependencies = [
  "anyhow",
  "axum",

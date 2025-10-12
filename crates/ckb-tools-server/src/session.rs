@@ -104,7 +104,6 @@ impl SessionLock {
 		loop {
 			match file.try_lock_exclusive() {
 				Ok(_) => {
-					debug!("Acquired lock on {:?}", lock_path);
 					return Ok(Self { _file: file });
 				}
 				Err(_) if start.elapsed() < timeout => {
@@ -125,7 +124,6 @@ impl SessionLock {
 impl Drop for SessionLock {
 	fn drop(&mut self) {
 		// Lock is automatically released when file is closed.
-		debug!("Released session lock");
 	}
 }
 

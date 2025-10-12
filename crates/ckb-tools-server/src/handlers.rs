@@ -193,7 +193,38 @@ impl McpHandler {
 		let default_args = json!({});
 		let arguments = params.get("arguments").unwrap_or(&default_args);
 
-		info!("Calling tool: {} with arguments: {}", tool_name, arguments);
+		// Log tool calls with intelligent truncation for data-bearing tools
+		match tool_name {
+			"DeployCellData" => {
+				if let Some(data) = arguments.get("data").and_then(|v| v.as_str()) {
+					let size_bytes = data.len() / 2; // Hex encoding: 2 chars per byte
+					info!("Calling tool: DeployCellData with {} bytes of data", size_bytes);
+				} else {
+					info!("Calling tool: DeployCellData");
+				}
+			}
+			"DeployCellDataChunked" => {
+				let operation = arguments.get("operation").and_then(|v| v.as_str()).unwrap_or("unknown");
+				if operation == "append" {
+					if let Some(chunk) = arguments.get("chunk_data").and_then(|v| v.as_str()) {
+						let size_bytes = chunk.len() * 3 / 4; // Base64 decoding estimate
+						info!("Calling tool: DeployCellDataChunked (append) with {} bytes", size_bytes);
+					} else {
+						info!("Calling tool: DeployCellDataChunked (append)");
+					}
+				} else if operation == "initialize" {
+					let size = arguments.get("expected_size").and_then(|v| v.as_u64()).unwrap_or(0);
+					info!("Calling tool: DeployCellDataChunked (initialize) expecting {} bytes", size);
+				} else {
+					let session_key = arguments.get("session_key").and_then(|v| v.as_str()).unwrap_or("unknown");
+					info!("Calling tool: DeployCellDataChunked ({}) for session {}", operation, session_key);
+				}
+			}
+			_ => {
+				// For other tools with small arguments, log normally
+				info!("Calling tool: {} with arguments: {}", tool_name, arguments);
+			}
+		}
 
 		let result = match tool_name {
 			"DeployCellData" => self.call_deploy_cell_data(arguments).await,
@@ -280,6 +311,9 @@ impl McpHandler {
 
 		let result = self.tools_provider.deploy_cell_data(data).await?;
 
+		info!("Deployed {} bytes to tx {}, output index {}",
+			result.data_size, result.tx_hash, result.output_index);
+
 		Ok(serde_json::to_string_pretty(&result)?)
 	}
 
@@ -340,7 +374,13 @@ impl McpHandler {
 			.and_then(|v| v.as_str())
 			.map(|s| s.to_string());
 
-		let result = self.tools_provider.request_testnet_funds(address).await?;
+		let result = self.tools_provider.request_testnet_funds(address.clone()).await?;
+
+		if let Some(addr) = address {
+			info!("Testnet funds requested for address: {}", addr);
+		} else {
+			info!("Testnet funds requested for default address");
+		}
 
 		Ok(result)
 	}
@@ -362,6 +402,9 @@ impl McpHandler {
 			})? as usize;
 
 		let metadata = SessionManager::create_session(expected_size)?;
+
+		info!("Initialized chunked upload session {} expecting {} bytes",
+			metadata.session_key, expected_size);
 
 		Ok(json!({
 			"session_key": metadata.session_key,

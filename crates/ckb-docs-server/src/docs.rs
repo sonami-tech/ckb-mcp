@@ -1,6 +1,6 @@
 use shared::error::{CkbMcpError, Result};
 use std::{collections::HashMap, fs, path::PathBuf};
-use tracing::{info, warn, error};
+use tracing::{debug, info, warn, error};
 
 #[derive(Clone)]
 pub struct DocsProvider {
@@ -194,7 +194,7 @@ impl DocsProvider {
 			match fs::read_to_string(&full_path) {
 				Ok(content) => {
 					self.built_in_docs.insert(uri.to_string(), content);
-					info!("Loaded documentation resource: {}", uri);
+					debug!("Loaded documentation resource: {}", uri);
 				}
 				Err(e) => {
 					error!("Failed to load documentation file {}: {}", full_path.display(), e);

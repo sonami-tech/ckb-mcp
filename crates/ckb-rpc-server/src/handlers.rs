@@ -645,7 +645,20 @@ impl McpHandler {
 		let default_args = json!({});
 		let arguments = params.get("arguments").unwrap_or(&default_args);
 
-		info!("Calling tool: {} with arguments: {}", tool_name, arguments);
+		// Log RPC calls with intelligent truncation for large payload tools
+		match tool_name {
+			"send_transaction" | "test_tx_pool_accept" | "estimate_cycles" => {
+				info!("Calling tool: {} with transaction object", tool_name);
+			}
+			"submit_block" => {
+				let work_id = arguments.get("work_id").and_then(|v| v.as_str()).unwrap_or("unknown");
+				info!("Calling tool: submit_block with work_id: {}", work_id);
+			}
+			_ => {
+				// For tools with small arguments (hashes, numbers, etc), log normally
+				info!("Calling tool: {} with arguments: {}", tool_name, arguments);
+			}
+		}
 
 		let result = match tool_name {
 			// Chain Methods
@@ -916,7 +929,15 @@ impl McpHandler {
 
 		let outputs_validator = args.get("outputs_validator").and_then(|v| v.as_str());
 
-		self.rpc_client.send_transaction(tx, outputs_validator).await
+		let result = self.rpc_client.send_transaction(tx, outputs_validator).await?;
+
+		if let Some(tx_hash) = result.as_str() {
+			info!("Transaction sent: {}", tx_hash);
+		} else {
+			info!("Transaction sent successfully");
+		}
+
+		Ok(result)
 	}
 
 	async fn call_test_tx_pool_accept(&self, args: &Value) -> Result<Value> {
@@ -1107,6 +1128,10 @@ impl McpHandler {
 			})?
 			.clone();
 
-		self.rpc_client.submit_block(work_id, block).await
+		let result = self.rpc_client.submit_block(work_id, block).await?;
+
+		info!("Block submitted successfully with work_id: {}", work_id);
+
+		Ok(result)
 	}
 }
