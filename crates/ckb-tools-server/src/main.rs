@@ -7,6 +7,7 @@ use shared::{
 use std::sync::Arc;
 
 mod handlers;
+mod session;
 mod tools;
 use handlers::McpHandler;
 use tools::ToolsProvider;

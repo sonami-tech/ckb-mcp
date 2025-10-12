@@ -1,6 +1,6 @@
 [package]
 name = "ckb-tools-server"
-version = "0.4.493"
+version = "0.4.534"
 edition = "2021"
 
 [[bin]]
@@ -31,6 +31,13 @@ ckb-jsonrpc-types = "0.202.0"
 ckb-hash = "0.202.0"
 hex = "0.4"
 secp256k1 = "0.29.1"
+
+# Chunked upload dependencies
+fs2 = "0.4"
+uuid = { version = "1.11", features = ["v4", "serde"] }
+sha2 = "0.10"
+blake2 = "0.10"
+base64 = "0.13"
 
 [dev-dependencies]
 test-common = { workspace = true }

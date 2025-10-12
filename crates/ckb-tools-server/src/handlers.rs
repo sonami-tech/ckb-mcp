@@ -5,7 +5,10 @@ use shared::{
 use serde_json::{json, Value};
 use tracing::{debug, error, info};
 
+use crate::session::{SessionManager, SessionState};
 use crate::tools::ToolsProvider;
+use blake2::{digest::consts::U32, Blake2b, Digest};
+use sha2::Sha256;
 
 pub struct McpHandler {
 	tools_provider: ToolsProvider,
@@ -142,6 +145,33 @@ impl McpHandler {
 					"properties": {}
 				}),
 			},
+			ToolDefinition {
+				name: "DeployCellDataChunked".to_string(),
+				description: "Multi-phase chunked upload for deploying large data files (up to 350KB) to CKB blockchain. Operations: initialize (create session), append (upload chunks), status (query session), finalize (validate and compute hashes), deploy (commit to chain), cancel (delete session). Recommended chunk size: 10KB. Maximum chunk size: 50KB.".to_string(),
+				input_schema: json!({
+					"type": "object",
+					"properties": {
+						"operation": {
+							"type": "string",
+							"enum": ["initialize", "append", "status", "finalize", "deploy", "cancel"],
+							"description": "Operation to perform: initialize (create session with expected_size), append (add chunk_data), status (query state), finalize (validate and hash), deploy (send to chain), cancel (delete)."
+						},
+						"expected_size": {
+							"type": "number",
+							"description": "For initialize: Total expected size in bytes (max 358,400 = 350KB). Required for initialize operation only."
+						},
+						"session_key": {
+							"type": "string",
+							"description": "Session key from initialize. Required for append, status, finalize, deploy, cancel operations."
+						},
+						"chunk_data": {
+							"type": "string",
+							"description": "For append: Base64-encoded chunk data (max 50KB after decoding). Required for append operation only."
+						}
+					},
+					"required": ["operation"]
+				}),
+			},
 		];
 
 		let result = json!({ "tools": tools });
@@ -174,6 +204,31 @@ impl McpHandler {
 			"GetLockInfoFromAddress" => self.call_get_lock_info_from_address(arguments),
 			"RequestTestnetFunds" => self.call_request_testnet_funds(arguments).await,
 			"GetDefaultAccountInfo" => self.call_get_default_account_info().await,
+			"DeployCellDataChunked" => {
+				// Dispatch based on operation parameter
+				let operation = arguments
+					.get("operation")
+					.and_then(|v| v.as_str())
+					.ok_or_else(|| {
+						shared::error::CkbMcpError::InvalidParameter("Missing operation parameter".to_string())
+					})?;
+
+				match operation {
+					"initialize" => self.call_initialize_chunked(arguments).await,
+					"append" => self.call_append_chunk(arguments).await,
+					"status" => self.call_status_chunked(arguments).await,
+					"finalize" => self.call_finalize_chunked(arguments).await,
+					"deploy" => self.call_deploy_chunked(arguments).await,
+					"cancel" => self.call_cancel_chunked(arguments).await,
+					_ => {
+						return Ok(create_error_response(
+							id,
+							-32602,
+							format!("Unknown operation: {}", operation),
+						))
+					}
+				}
+			}
 			_ => {
 				return Ok(create_error_response(
 					id,
@@ -294,5 +349,251 @@ impl McpHandler {
 		let result = self.tools_provider.get_default_account_info().await?;
 
 		Ok(serde_json::to_string_pretty(&result)?)
+	}
+
+	// Chunked upload handlers
+
+	async fn call_initialize_chunked(&self, args: &Value) -> Result<String> {
+		let expected_size = args
+			.get("expected_size")
+			.and_then(|v| v.as_u64())
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("Missing or invalid expected_size parameter".to_string())
+			})? as usize;
+
+		let metadata = SessionManager::create_session(expected_size)?;
+
+		Ok(json!({
+			"session_key": metadata.session_key,
+			"expected_size": metadata.expected_size,
+			"status": "initialized"
+		}).to_string())
+	}
+
+	async fn call_append_chunk(&self, args: &Value) -> Result<String> {
+		let session_key = args
+			.get("session_key")
+			.and_then(|v| v.as_str())
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("Missing session_key parameter".to_string())
+			})?
+			.to_string();
+
+		let chunk_data_b64 = args
+			.get("chunk_data")
+			.and_then(|v| v.as_str())
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("Missing chunk_data parameter".to_string())
+			})?;
+
+		// Decode base64 chunk data
+		let chunk_data = base64::decode(chunk_data_b64).map_err(|e| {
+			shared::error::CkbMcpError::InvalidParameter(format!("Invalid base64 chunk_data: {}", e))
+		})?;
+
+		let metadata = SessionManager::append_data(&session_key, &chunk_data)?;
+
+		Ok(json!({
+			"session_key": metadata.session_key,
+			"bytes_received": metadata.total_bytes,
+			"bytes_remaining": metadata.expected_size - metadata.total_bytes,
+			"status": "receiving"
+		}).to_string())
+	}
+
+	async fn call_status_chunked(&self, args: &Value) -> Result<String> {
+		let session_key = args
+			.get("session_key")
+			.and_then(|v| v.as_str())
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("Missing session_key parameter".to_string())
+			})?
+			.to_string();
+
+		let metadata = SessionManager::read_metadata_unlocked(&session_key)?;
+
+		let mut response = json!({
+			"session_key": metadata.session_key,
+			"state": metadata.state,
+			"expected_size": metadata.expected_size,
+			"total_bytes": metadata.total_bytes
+		});
+
+		// Add error message if in error state
+		if let Some(error_msg) = metadata.error_message {
+			response["error_message"] = json!(error_msg);
+			response["hint"] = json!("Session is in error state. Only cancel operation is allowed.");
+		}
+
+		// Add hashes if finalized
+		if metadata.state == SessionState::Finalized || metadata.state == SessionState::Deployed {
+			if let Some(sha256) = metadata.sha256_hash {
+				response["sha256_hash"] = json!(sha256);
+			}
+			if let Some(blake2b) = metadata.blake2b_hash {
+				response["blake2b_hash"] = json!(blake2b);
+			}
+			if let Some(ckb_hash) = metadata.ckb_hash {
+				response["ckb_hash"] = json!(ckb_hash);
+			}
+		}
+
+		Ok(serde_json::to_string_pretty(&response)?)
+	}
+
+	async fn call_finalize_chunked(&self, args: &Value) -> Result<String> {
+		let session_key = args
+			.get("session_key")
+			.and_then(|v| v.as_str())
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("Missing session_key parameter".to_string())
+			})?
+			.to_string();
+
+		let (mut metadata, _lock) = SessionManager::read_metadata_locked(&session_key)?;
+
+		// Check state
+		if metadata.state != SessionState::Receiving {
+			return Err(shared::error::CkbMcpError::InvalidParameter(format!(
+				"Cannot finalize session in {:?} state. Current state must be receiving.",
+				metadata.state
+			)));
+		}
+
+		// Validate size match
+		if metadata.total_bytes != metadata.expected_size {
+			let error_msg = format!(
+				"Size mismatch: received {} bytes, expected {} bytes",
+				metadata.total_bytes,
+				metadata.expected_size
+			);
+			SessionManager::set_error_state(&session_key, &error_msg)?;
+			return Err(shared::error::CkbMcpError::InvalidParameter(error_msg));
+		}
+
+		// Read data
+		let data = SessionManager::read_data(&session_key)?;
+
+		// Verify data length matches metadata (detects corruption from crashes/partial writes)
+		if data.len() != metadata.total_bytes {
+			let error_msg = format!(
+				"Data corruption detected: file contains {} bytes but metadata claims {} bytes",
+				data.len(),
+				metadata.total_bytes
+			);
+			SessionManager::set_error_state(&session_key, &error_msg)?;
+			return Err(shared::error::CkbMcpError::Internal(error_msg));
+		}
+
+		// Compute SHA-256
+		let mut sha256_hasher = Sha256::new();
+		sha256_hasher.update(&data);
+		let sha256_hash = format!("0x{}", hex::encode(sha256_hasher.finalize()));
+
+		// Compute Blake2b-256 (no personalization) - using blake2 crate directly
+		let mut blake2b_hasher = Blake2b::<U32>::new();
+		blake2b_hasher.update(&data);
+		let blake2b_hash = format!("0x{}", hex::encode(blake2b_hasher.finalize()));
+
+		// Compute CKB hash (Blake2b-256 with "ckb-default-hash" personalization)
+		let ckb_hash_bytes = ckb_hash::blake2b_256(&data);
+		let ckb_hash = format!("0x{}", hex::encode(ckb_hash_bytes));
+
+		// Update metadata
+		metadata.state = SessionState::Finalized;
+		metadata.sha256_hash = Some(sha256_hash.clone());
+		metadata.blake2b_hash = Some(blake2b_hash.clone());
+		metadata.ckb_hash = Some(ckb_hash.clone());
+
+		SessionManager::update_metadata(&session_key, &metadata)?;
+
+		info!("Finalized session {} with {} bytes", session_key, metadata.total_bytes);
+
+		Ok(json!({
+			"session_key": session_key,
+			"state": "finalized",
+			"total_bytes": metadata.total_bytes,
+			"sha256_hash": sha256_hash,
+			"blake2b_hash": blake2b_hash,
+			"ckb_hash": ckb_hash
+		}).to_string())
+	}
+
+	async fn call_deploy_chunked(&self, args: &Value) -> Result<String> {
+		let session_key = args
+			.get("session_key")
+			.and_then(|v| v.as_str())
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("Missing session_key parameter".to_string())
+			})?
+			.to_string();
+
+		let (mut metadata, _lock) = SessionManager::read_metadata_locked(&session_key)?;
+
+		// Check state
+		if metadata.state != SessionState::Finalized {
+			return Err(shared::error::CkbMcpError::InvalidParameter(format!(
+				"Cannot deploy session in {:?} state. Session must be finalized first.",
+				metadata.state
+			)));
+		}
+
+		// Read data
+		let data = SessionManager::read_data(&session_key)?;
+
+		// Attempt deploy
+		match self.tools_provider.deploy_cell_data(data).await {
+			Ok(result) => {
+				// Success - update state to deployed
+				metadata.state = SessionState::Deployed;
+				SessionManager::update_metadata(&session_key, &metadata)?;
+
+				info!("Deployed session {} successfully", session_key);
+
+				// Release lock before deleting session (delete_session acquires its own lock)
+				drop(_lock);
+
+				// Clean up session files (best effort - don't fail deploy if cleanup fails)
+				if let Err(e) = SessionManager::delete_session(&session_key) {
+					error!("Failed to clean up session {} after successful deploy: {}", session_key, e);
+					// Continue anyway - deploy succeeded, cleanup failure is not critical
+				}
+
+				Ok(json!({
+					"transaction_hash": result.tx_hash,
+					"output_index": result.output_index,
+					"data_hash": metadata.ckb_hash,
+					"status": "deployed"
+				}).to_string())
+			}
+			Err(e) => {
+				// Failure - stay in finalized state, return error
+				error!("Deploy failed for session {}: {}", session_key, e);
+				Err(shared::error::CkbMcpError::CkbRpc(format!(
+					"Deploy failed: {}. Session remains in finalized state. \
+					 Fix the issue and retry deploy, or call cancel to delete session.",
+					e
+				)))
+			}
+		}
+	}
+
+	async fn call_cancel_chunked(&self, args: &Value) -> Result<String> {
+		let session_key = args
+			.get("session_key")
+			.and_then(|v| v.as_str())
+			.ok_or_else(|| {
+				shared::error::CkbMcpError::InvalidParameter("Missing session_key parameter".to_string())
+			})?
+			.to_string();
+
+		SessionManager::delete_session(&session_key)?;
+
+		info!("Cancelled and deleted session {}", session_key);
+
+		Ok(json!({
+			"session_key": session_key,
+			"status": "cancelled"
+		}).to_string())
 	}
 }
