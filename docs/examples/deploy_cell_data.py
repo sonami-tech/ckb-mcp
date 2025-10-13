@@ -4,30 +4,30 @@
 
 ## Description
 
-Python utility for deploying cell data to CKB blockchain via MCP server. Reads a file, hex-encodes contents, and submits to DeployCellData endpoint at http://localhost:8003. Handles JSON-RPC formatting, error responses, and returns deployment results (transaction hash, output index, data size). Simplifies file deployment by eliminating manual hex encoding and request construction.
+Python utility for deploying cell data to CKB blockchain via MCP server. Reads a file, hex-encodes contents, and submits to DeployCellData endpoint at specified MCP server URL. Handles JSON-RPC formatting, error responses, and returns deployment results (transaction hash, output index, data size). Simplifies file deployment by eliminating manual hex encoding and request construction.
 
 ## Usage
 
 Deploy a file to CKB blockchain:
 ```bash
-python3 deploy_cell_data.py <file_path>
+python3 deploy_cell_data.py <file_path> <mcp_server_url>
 ```
 
 Example:
 ```bash
-python3 deploy_cell_data.py /path/to/contract.bin
+python3 deploy_cell_data.py /path/to/contract.bin http://localhost:8003
 ```
 
 The script will:
 1. Read the file contents
 2. Hex-encode the data
-3. Send to MCP server's DeployCellData tool
+3. Send to MCP server's DeployCellData tool at specified URL
 4. Display deployment results (tx_hash, output_index, data_size, capacity)
 
 ## Requirements
 
 - Python 3.6+
-- MCP ckb-tools-server running on http://localhost:8003
+- MCP ckb-tools-server accessible at the specified URL
 - Valid CKB testnet/devnet with funded account configured in server
 
 ## Exit Codes
@@ -42,7 +42,7 @@ import requests
 from pathlib import Path
 
 
-def deploy_cell_data(file_path):
+def deploy_cell_data(file_path, mcp_server_url):
 	"""Deploy a file to CKB blockchain via MCP server."""
 
 	# Validate file exists
@@ -81,8 +81,8 @@ def deploy_cell_data(file_path):
 		}
 	}
 
-	# Send request to MCP server
-	mcp_url = "http://localhost:8003/mcp"
+	# Build MCP endpoint URL
+	mcp_url = f"{mcp_server_url.rstrip('/')}/mcp"
 	print(f"Sending request to {mcp_url}...")
 
 	try:
@@ -94,8 +94,8 @@ def deploy_cell_data(file_path):
 		)
 		response.raise_for_status()
 	except requests.exceptions.ConnectionError:
-		print("Error: Cannot connect to MCP server at http://localhost:8003", file=sys.stderr)
-		print("Is the ckb-tools-server running?", file=sys.stderr)
+		print(f"Error: Cannot connect to MCP server at {mcp_server_url}", file=sys.stderr)
+		print("Is the ckb-tools-server running and accessible?", file=sys.stderr)
 		return 1
 	except requests.exceptions.Timeout:
 		print("Error: Request timed out after 120 seconds", file=sys.stderr)
@@ -153,14 +153,15 @@ def deploy_cell_data(file_path):
 
 def main():
 	"""Main entry point."""
-	if len(sys.argv) != 2:
-		print("Usage: python3 deploy_cell_data.py <file_path>", file=sys.stderr)
+	if len(sys.argv) != 3:
+		print("Usage: python3 deploy_cell_data.py <file_path> <mcp_server_url>", file=sys.stderr)
 		print("\nExample:", file=sys.stderr)
-		print("  python3 deploy_cell_data.py /path/to/contract.bin", file=sys.stderr)
+		print("  python3 deploy_cell_data.py /path/to/contract.bin http://localhost:8003", file=sys.stderr)
 		return 1
 
 	file_path = sys.argv[1]
-	return deploy_cell_data(file_path)
+	mcp_server_url = sys.argv[2]
+	return deploy_cell_data(file_path, mcp_server_url)
 
 
 if __name__ == "__main__":
