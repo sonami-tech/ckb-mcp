@@ -167,13 +167,22 @@ async fn test_get_transactions_pagination_cursor() {
 	assert!(!second_objects.is_empty(), "Second page should contain results");
 
 	// Ensure no overlap between pages
+	// Note: Without group_by_transaction, each entry is uniquely identified by tx_hash + io_type + io_index
 	for first_tx in first_objects.iter() {
-		let first_tx_hash = &first_tx["tx_hash"];
+		let first_entry = json!({
+			"tx_hash": first_tx["tx_hash"],
+			"io_type": first_tx["io_type"],
+			"io_index": first_tx["io_index"]
+		});
 		for second_tx in second_objects.iter() {
-			let second_tx_hash = &second_tx["tx_hash"];
+			let second_entry = json!({
+				"tx_hash": second_tx["tx_hash"],
+				"io_type": second_tx["io_type"],
+				"io_index": second_tx["io_index"]
+			});
 			assert_ne!(
-				first_tx_hash, second_tx_hash,
-				"Pages should not have overlapping transactions"
+				first_entry, second_entry,
+				"Pages should not have overlapping transaction entries"
 			);
 		}
 	}
@@ -253,13 +262,22 @@ async fn test_get_transactions_pagination_order_desc() {
 	assert!(!second_objects.is_empty(), "Second page should contain results");
 
 	// Ensure no overlap between pages
+	// Note: Without group_by_transaction, each entry is uniquely identified by tx_hash + io_type + io_index
 	for first_tx in first_objects.iter() {
-		let first_tx_hash = &first_tx["tx_hash"];
+		let first_entry = json!({
+			"tx_hash": first_tx["tx_hash"],
+			"io_type": first_tx["io_type"],
+			"io_index": first_tx["io_index"]
+		});
 		for second_tx in second_objects.iter() {
-			let second_tx_hash = &second_tx["tx_hash"];
+			let second_entry = json!({
+				"tx_hash": second_tx["tx_hash"],
+				"io_type": second_tx["io_type"],
+				"io_index": second_tx["io_index"]
+			});
 			assert_ne!(
-				first_tx_hash, second_tx_hash,
-				"Pages should not have overlapping transactions"
+				first_entry, second_entry,
+				"Pages should not have overlapping transaction entries"
 			);
 		}
 	}
