@@ -6,7 +6,7 @@ use std::str::FromStr;
 use tracing::{debug, info};
 use serde::{Deserialize, Serialize};
 use ckb_sdk::{
-	rpc::ckb_indexer::{ScriptType, SearchKey},
+	rpc::ckb_indexer::{ScriptType, SearchKey, SearchKeyFilter},
 	transaction::{
 		builder::{CkbTransactionBuilder, SimpleTransactionBuilder},
 		input::InputIterator,
@@ -48,6 +48,10 @@ pub struct BalanceInfo {
 	pub address: String,
 	pub capacity_shannons: u64,
 	pub capacity_ckb: String,
+	pub free_capacity_shannons: u64,
+	pub free_capacity_ckb: String,
+	pub occupied_capacity_shannons: u64,
+	pub occupied_capacity_ckb: String,
 	pub block_number: u64,
 }
 
@@ -72,6 +76,10 @@ pub struct DefaultAccountInfo {
 	pub address_mainnet: String,
 	pub capacity_shannons: u64,
 	pub capacity_ckb: String,
+	pub free_capacity_shannons: u64,
+	pub free_capacity_ckb: String,
+	pub occupied_capacity_shannons: u64,
+	pub occupied_capacity_ckb: String,
 	pub block_number: u64,
 }
 
@@ -227,8 +235,10 @@ impl ToolsProvider {
 
 		// Build search key for the address's lock script
 		let lock_script: Script = Script::from(&addr);
-		let search_key = SearchKey {
-			script: lock_script.into(),
+
+		// Query total capacity (all cells)
+		let search_key_total = SearchKey {
+			script: lock_script.clone().into(),
 			script_type: ScriptType::Lock,
 			script_search_mode: None,
 			filter: None,
@@ -236,19 +246,52 @@ impl ToolsProvider {
 			group_by_transaction: None,
 		};
 
+		// Query free capacity (empty cells with no data, no type script)
+		let search_key_free = SearchKey {
+			script: lock_script.into(),
+			script_type: ScriptType::Lock,
+			script_search_mode: None,
+			filter: Some(SearchKeyFilter {
+				script: None,
+				script_len_range: Some([0u64.into(), 1u64.into()]), // No type script
+				output_data: None,
+				output_data_filter_mode: None,
+				output_data_len_range: Some([0u64.into(), 1u64.into()]), // No data
+				output_capacity_range: None,
+				block_range: None,
+			}),
+			with_data: None,
+			group_by_transaction: None,
+		};
+
 		// Query capacity using indexer RPC
 		let ckb_client = SdkCkbRpcClient::new(&self.ckb_rpc_url);
 
-		let cells_capacity_opt = ckb_client
-			.get_cells_capacity(search_key)
-			.map_err(|e| CkbMcpError::Internal(format!("Failed to query cells capacity: {}", e)))?;
+		// Get total capacity
+		let cells_capacity_total = ckb_client
+			.get_cells_capacity(search_key_total)
+			.map_err(|e| CkbMcpError::Internal(format!("Failed to query total cells capacity: {}", e)))?;
 
-		let (capacity_shannons, capacity_ckb, block_number) = match cells_capacity_opt {
-			Some(cells_capacity) => {
-				let capacity_shannons = cells_capacity.capacity.value();
-				let capacity_ckb = HumanCapacity::from(capacity_shannons).to_string();
-				let block_number = cells_capacity.block_number.value();
-				(capacity_shannons, capacity_ckb, block_number)
+		// Get free capacity
+		let cells_capacity_free = ckb_client
+			.get_cells_capacity(search_key_free)
+			.map_err(|e| CkbMcpError::Internal(format!("Failed to query free cells capacity: {}", e)))?;
+
+		let (capacity_shannons, capacity_ckb, free_capacity_shannons, free_capacity_ckb, occupied_capacity_shannons, occupied_capacity_ckb, block_number) = match cells_capacity_total {
+			Some(total_capacity) => {
+				let total_shannons = total_capacity.capacity.value();
+				let total_ckb = HumanCapacity::from(total_shannons).to_string();
+				let block_number = total_capacity.block_number.value();
+
+				let free_shannons = cells_capacity_free
+					.map(|fc| fc.capacity.value())
+					.unwrap_or(0);
+				let free_ckb = HumanCapacity::from(free_shannons).to_string();
+
+				let occupied_shannons = total_shannons.saturating_sub(free_shannons);
+				let occupied_ckb = HumanCapacity::from(occupied_shannons).to_string();
+
+				(total_shannons, total_ckb, free_shannons, free_ckb, occupied_shannons, occupied_ckb, block_number)
 			}
 			None => {
 				// No cells found - return zero balance with current tip block number
@@ -256,19 +299,24 @@ impl ToolsProvider {
 					.get_tip_header()
 					.map_err(|e| CkbMcpError::Internal(format!("Failed to get tip header: {}", e)))?;
 				let block_number = tip_header.inner.number.value();
-				(0, HumanCapacity::from(0).to_string(), block_number)
+				let zero_ckb = HumanCapacity::from(0).to_string();
+				(0, zero_ckb.clone(), 0, zero_ckb.clone(), 0, zero_ckb, block_number)
 			}
 		};
 
 		info!(
-			"Address {} has {} CKB ({} shannons) at block {}",
-			addr, capacity_ckb, capacity_shannons, block_number
+			"Address {} has {} CKB total ({} shannons), {} CKB free ({} shannons), {} CKB occupied ({} shannons) at block {}",
+			addr, capacity_ckb, capacity_shannons, free_capacity_ckb, free_capacity_shannons, occupied_capacity_ckb, occupied_capacity_shannons, block_number
 		);
 
 		Ok(BalanceInfo {
 			address: addr.to_string(),
 			capacity_shannons,
 			capacity_ckb,
+			free_capacity_shannons,
+			free_capacity_ckb,
+			occupied_capacity_shannons,
+			occupied_capacity_ckb,
 			block_number,
 		})
 	}
@@ -435,6 +483,10 @@ impl ToolsProvider {
 			address_mainnet: lock_info.address_mainnet,
 			capacity_shannons: balance_info.capacity_shannons,
 			capacity_ckb: balance_info.capacity_ckb,
+			free_capacity_shannons: balance_info.free_capacity_shannons,
+			free_capacity_ckb: balance_info.free_capacity_ckb,
+			occupied_capacity_shannons: balance_info.occupied_capacity_shannons,
+			occupied_capacity_ckb: balance_info.occupied_capacity_ckb,
 			block_number: balance_info.block_number,
 		})
 	}

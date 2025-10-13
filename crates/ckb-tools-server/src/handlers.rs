@@ -139,7 +139,7 @@ impl McpHandler {
 			},
 			ToolDefinition {
 				name: "GetDefaultAccountInfo".to_string(),
-				description: "Get information about the default account configured in the server (derived from the private key). Returns address, lock script details, and current balance. Private key is never exposed.".to_string(),
+				description: "Get information about the default account configured in the server (derived from the private key). Returns address, lock script details, and capacity breakdown: capacity_shannons/capacity_ckb (total capacity in all cells), free_capacity_shannons/free_capacity_ckb (immediately spendable capacity in empty cells with no data or type scripts), occupied_capacity_shannons/occupied_capacity_ckb (capacity locked in cells containing data, tokens, or NFTs). Private key is never exposed.".to_string(),
 				input_schema: json!({
 					"type": "object",
 					"properties": {}

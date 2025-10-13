@@ -100,3 +100,31 @@ async fn test_get_address_balance_zero_balance() {
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
 }
+
+#[tokio::test]
+async fn test_get_address_balance_has_capacity_breakdown() {
+	let ctx = TestContext::new(TOOLS_SERVER_PORT);
+
+	let result = ctx
+		.mcp_call("tools/call", json!({"name": "GetAddressBalance", "arguments": {}}))
+		.await
+		.expect("GetAddressBalance should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+
+	// Verify all capacity fields are present
+	assert!(content.contains("capacity_shannons"), "Should contain total capacity_shannons");
+	assert!(content.contains("capacity_ckb"), "Should contain total capacity_ckb");
+	assert!(content.contains("free_capacity_shannons"), "Should contain free_capacity_shannons");
+	assert!(content.contains("free_capacity_ckb"), "Should contain free_capacity_ckb");
+	assert!(content.contains("occupied_capacity_shannons"), "Should contain occupied_capacity_shannons");
+	assert!(content.contains("occupied_capacity_ckb"), "Should contain occupied_capacity_ckb");
+
+	// Parse JSON and verify math: total = free + occupied
+	let balance_info: serde_json::Value = serde_json::from_str(content).expect("Should parse as JSON");
+	let total = balance_info["capacity_shannons"].as_u64().expect("total should be u64");
+	let free = balance_info["free_capacity_shannons"].as_u64().expect("free should be u64");
+	let occupied = balance_info["occupied_capacity_shannons"].as_u64().expect("occupied should be u64");
+
+	assert_eq!(total, free + occupied, "Total capacity should equal free + occupied");
+}
