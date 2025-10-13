@@ -134,11 +134,6 @@ impl SessionManager {
 	/// Create new session with expected size.
 	pub fn create_session(expected_size: usize) -> Result<SessionMetadata> {
 		// Validate expected size.
-		if expected_size == 0 {
-			return Err(CkbMcpError::InvalidParameter(
-				"Expected size must be greater than 0".to_string(),
-			));
-		}
 		if expected_size > MAX_FILE_SIZE {
 			return Err(CkbMcpError::InvalidParameter(format!(
 				"Expected size {} exceeds maximum file size {} (350KB)",

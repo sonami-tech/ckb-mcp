@@ -6,24 +6,31 @@ use serde_json::json;
 
 const TOOLS_SERVER_PORT: u16 = 8003;
 
-/// Extract tx_hash from deployment result and wait for confirmation and indexer sync
-async fn wait_for_deployment_confirmation(content: &str) {
-	if let Some(start) = content.find("\"tx_hash\": \"") {
-		let hash_start = start + 12;
-		if let Some(end) = content[hash_start..].find('"') {
-			let tx_hash = &content[hash_start..hash_start + end];
+/// Extract tx_hash from deployment result JSON and wait for confirmation and indexer sync.
+/// Fails if tx_hash is missing or invalid format (must be 0x + 64 hex chars).
+async fn wait_for_deployment_confirmation(result: &serde_json::Value) {
+	// Extract tx_hash.
+	let tx_hash = result
+		.get("tx_hash")
+		.and_then(|v| v.as_str())
+		.expect("Deploy result must contain tx_hash field.");
 
-			// Wait for transaction to be confirmed and get the block number
-			let block_number = TestContext::wait_for_tx_confirmation(tx_hash)
-				.await
-				.expect("Transaction should confirm");
+	// Validate format: "0x" + 64 hex characters = 66 chars total.
+	assert!(
+		tx_hash.starts_with("0x") && tx_hash.len() == 66 && tx_hash[2..].chars().all(|c| c.is_ascii_hexdigit()),
+		"tx_hash must be valid format (0x + 64 hex chars), got: {}",
+		tx_hash
+	);
 
-			// Wait for indexer to sync past the confirmation block
-			TestContext::wait_for_indexer_sync(block_number)
-				.await
-				.expect("Indexer should sync");
-		}
-	}
+	// Wait for transaction to be confirmed and get the block number.
+	let block_number = TestContext::wait_for_tx_confirmation(tx_hash)
+		.await
+		.expect("Transaction should confirm.");
+
+	// Wait for indexer to sync past the confirmation block.
+	TestContext::wait_for_indexer_sync(block_number)
+		.await
+		.expect("Indexer should sync.");
 }
 
 // Cell Deployment - DeployCellData Tests
@@ -57,7 +64,7 @@ async fn test_deploy_cell_data_empty_data() {
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": ""}}))
 		.await
-		.expect("Empty data should be accepted (decodes to zero bytes)");
+		.expect("Empty data should be accepted (decodes to zero bytes).");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 
@@ -66,18 +73,20 @@ async fn test_deploy_cell_data_empty_data() {
 
 	// Parse and validate response structure
 	let response: serde_json::Value = serde_json::from_str(content)
-		.expect("Response should be valid JSON");
+		.expect("Response should be valid JSON.");
 
 	let tx_hash = response["tx_hash"].as_str()
-		.expect("tx_hash should be present");
+		.expect("tx_hash should be present.");
 	assert!(tx_hash.starts_with("0x"), "tx_hash should be hex format");
 	assert_eq!(tx_hash.len(), 66, "tx_hash should be 66 chars (0x + 64 hex digits)");
 
 	// Verify capacity is present (cells with empty data still need capacity)
 	assert!(response.get("capacity").is_some(), "Should include capacity information");
 
-	// Wait for confirmation
-	wait_for_deployment_confirmation(content).await;
+	// Wait for confirmation.
+	let deploy_json: serde_json::Value = serde_json::from_str(content)
+		.expect("Deploy response should be valid JSON.");
+	wait_for_deployment_confirmation(&deploy_json).await;
 }
 
 #[tokio::test]
@@ -100,12 +109,14 @@ async fn test_deploy_cell_data_valid_hex() {
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": unique_data}}))
 		.await
-		.expect("DeployCellData should succeed with valid hex");
+		.expect("DeployCellData should succeed with valid hex.");
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
 	assert!(content.contains("tx_hash"));
 
-	wait_for_deployment_confirmation(content).await;
+	let deploy_json: serde_json::Value = serde_json::from_str(content)
+		.expect("Deploy response should be valid JSON.");
+	wait_for_deployment_confirmation(&deploy_json).await;
 }
 
 #[tokio::test]
@@ -116,11 +127,13 @@ async fn test_deploy_cell_data_with_0x_prefix() {
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": unique_data}}))
 		.await
-		.expect("DeployCellData should succeed with 0x prefix");
+		.expect("DeployCellData should succeed with 0x prefix.");
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
 
-	wait_for_deployment_confirmation(content).await;
+	let deploy_json: serde_json::Value = serde_json::from_str(content)
+		.expect("Deploy response should be valid JSON.");
+	wait_for_deployment_confirmation(&deploy_json).await;
 }
 
 #[tokio::test]
@@ -131,11 +144,13 @@ async fn test_deploy_cell_data_without_0x_prefix() {
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": unique_data}}))
 		.await
-		.expect("DeployCellData should succeed without 0x prefix");
+		.expect("DeployCellData should succeed without 0x prefix.");
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
 
-	wait_for_deployment_confirmation(content).await;
+	let deploy_json: serde_json::Value = serde_json::from_str(content)
+		.expect("Deploy response should be valid JSON.");
+	wait_for_deployment_confirmation(&deploy_json).await;
 }
 
 #[tokio::test]
@@ -149,11 +164,13 @@ async fn test_deploy_cell_data_large_payload() {
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": large_data}}))
 		.await
-		.expect("DeployCellData should succeed with large payload");
+		.expect("DeployCellData should succeed with large payload.");
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(!content.is_empty());
 
-	wait_for_deployment_confirmation(content).await;
+	let deploy_json: serde_json::Value = serde_json::from_str(content)
+		.expect("Deploy response should be valid JSON.");
+	wait_for_deployment_confirmation(&deploy_json).await;
 }
 
 #[tokio::test]
@@ -164,12 +181,14 @@ async fn test_deploy_cell_data_returns_tx_hash() {
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": unique_data}}))
 		.await
-		.expect("DeployCellData should succeed");
+		.expect("DeployCellData should succeed.");
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(content.contains("tx_hash"), "Should return transaction hash");
 	assert!(content.contains("0x"), "Transaction hash should be in hex format");
 
-	wait_for_deployment_confirmation(content).await;
+	let deploy_json: serde_json::Value = serde_json::from_str(content)
+		.expect("Deploy response should be valid JSON.");
+	wait_for_deployment_confirmation(&deploy_json).await;
 }
 
 #[tokio::test]
@@ -180,11 +199,13 @@ async fn test_deploy_cell_data_returns_capacity() {
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": unique_data}}))
 		.await
-		.expect("DeployCellData should succeed");
+		.expect("DeployCellData should succeed.");
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(content.contains("capacity"), "Should return capacity information");
 
-	wait_for_deployment_confirmation(content).await;
+	let deploy_json: serde_json::Value = serde_json::from_str(content)
+		.expect("Deploy response should be valid JSON.");
+	wait_for_deployment_confirmation(&deploy_json).await;
 }
 
 // Size Limit Tests
@@ -200,12 +221,14 @@ async fn test_deploy_cell_data_at_20kb_limit() {
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": data_at_limit}}))
 		.await
-		.expect("DeployCellData should succeed at exactly 20KB limit");
+		.expect("DeployCellData should succeed at exactly 20KB limit.");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(content.contains("tx_hash"), "Should return transaction hash");
 
-	wait_for_deployment_confirmation(content).await;
+	let deploy_json: serde_json::Value = serde_json::from_str(content)
+		.expect("Deploy response should be valid JSON.");
+	wait_for_deployment_confirmation(&deploy_json).await;
 }
 
 #[tokio::test]
@@ -220,12 +243,14 @@ async fn test_deploy_cell_data_just_under_limit() {
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": data_under_limit}}))
 		.await
-		.expect("DeployCellData should succeed just under 20KB limit");
+		.expect("DeployCellData should succeed just under 20KB limit.");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(content.contains("tx_hash"), "Should return transaction hash");
 
-	wait_for_deployment_confirmation(content).await;
+	let deploy_json: serde_json::Value = serde_json::from_str(content)
+		.expect("Deploy response should be valid JSON.");
+	wait_for_deployment_confirmation(&deploy_json).await;
 }
 
 #[tokio::test]
@@ -301,12 +326,14 @@ async fn test_deploy_cell_data_10kb_well_under_limit() {
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": data_10kb}}))
 		.await
-		.expect("DeployCellData should succeed with 10KB data");
+		.expect("DeployCellData should succeed with 10KB data.");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(content.contains("tx_hash"), "Should return transaction hash");
 
-	wait_for_deployment_confirmation(content).await;
+	let deploy_json: serde_json::Value = serde_json::from_str(content)
+		.expect("Deploy response should be valid JSON.");
+	wait_for_deployment_confirmation(&deploy_json).await;
 }
 
 #[tokio::test]
@@ -321,11 +348,13 @@ async fn test_deploy_cell_data_19kb_under_limit() {
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": data_19kb}}))
 		.await
-		.expect("DeployCellData should succeed with 19KB data");
+		.expect("DeployCellData should succeed with 19KB data.");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(content.contains("tx_hash"), "Should return transaction hash");
 
-	wait_for_deployment_confirmation(content).await;
+	let deploy_json: serde_json::Value = serde_json::from_str(content)
+		.expect("Deploy response should be valid JSON.");
+	wait_for_deployment_confirmation(&deploy_json).await;
 }
 

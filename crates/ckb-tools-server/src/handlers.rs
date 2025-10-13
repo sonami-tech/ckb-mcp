@@ -633,7 +633,7 @@ impl McpHandler {
 				}
 
 				Ok(json!({
-					"transaction_hash": result.tx_hash,
+					"tx_hash": result.tx_hash,
 					"output_index": result.output_index,
 					"data_hash": metadata.ckb_hash,
 					"status": "deployed"

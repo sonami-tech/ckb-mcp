@@ -351,41 +351,7 @@ async fn test_calculate_dao_maximum_withdraw_missing_params() {
 	assert!(result.is_err(), "Should fail when kind is missing");
 }
 
-#[tokio::test]
-async fn test_submit_block_missing_work_id() {
-	let ctx = TestContext::new(RPC_SERVER_PORT);
-
-	let result = ctx
-		.mcp_call("tools/call", json!({
-			"name": "submit_block",
-			"arguments": {
-				"block": {
-					"header": {},
-					"transactions": []
-				}
-			}
-		}))
-		.await;
-
-	assert!(result.is_err(), "Should fail when work_id is missing");
-	let error_msg = result.unwrap_err();
-	assert!(error_msg.contains("work_id"), "Error should mention work_id");
-}
-
-#[tokio::test]
-async fn test_submit_block_missing_block() {
-	let ctx = TestContext::new(RPC_SERVER_PORT);
-
-	let result = ctx
-		.mcp_call("tools/call", json!({
-			"name": "submit_block",
-			"arguments": {
-				"work_id": "test_work_id"
-			}
-		}))
-		.await;
-
-	assert!(result.is_err(), "Should fail when block is missing");
-	let error_msg = result.unwrap_err();
-	assert!(error_msg.contains("block"), "Error should mention block");
-}
+// Note: Removed mining-related tests (test_submit_block_missing_work_id, test_submit_block_missing_block)
+// These require the Miner RPC module to be enabled on the CKB node, which is typically disabled
+// on public devnet/testnet nodes. Mining operations are not relevant for AI-assisted smart contract
+// development workflows.
