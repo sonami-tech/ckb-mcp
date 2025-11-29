@@ -153,8 +153,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ckb-std = "0.15.1"
-ckb-hash = "0.114.0"
+ckb-std = "1.0"
+ckb-hash = "1.0.0"
 
 [features]
 library = []

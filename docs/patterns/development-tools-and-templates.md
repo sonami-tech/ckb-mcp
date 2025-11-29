@@ -241,7 +241,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ckb-std = "0.15.1"
+ckb-std = "1.0"
 
 [profile.release]
 overflow-checks = true

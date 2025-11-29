@@ -440,13 +440,13 @@ fn verify_bls_aggregate_signature(
 ### 1. Setup and Configuration
 
 - [ ] **Create Rust project structure** with proper `Cargo.toml`
-- [ ] **Add ckb-std dependency** version 0.15.1 or later
+- [ ] **Add ckb-std dependency** version 1.0 or later
 - [ ] **Configure build target** for `riscv64imac-unknown-none-elf`
 - [ ] **Setup no_std environment** with proper heap allocation
 
 ```toml
 [dependencies]
-ckb-std = "0.15.1"
+ckb-std = "1.0"
 
 [profile.release]
 overflow-checks = true

@@ -454,7 +454,7 @@ pub fn validate_with_external_library(data: &[u8]) -> Result<Vec<u8>, Error> {
 ```makefile
 # Cargo.toml
 [dependencies]
-ckb-std = "0.15.1"
+ckb-std = "1.0"
 
 [profile.release]
 overflow-checks = true
