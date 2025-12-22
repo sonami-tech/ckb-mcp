@@ -2,7 +2,7 @@
 
 ## Description
 
-Script hashes, code hashes, transaction hashes, and cell dependency hashes for CKB mainnet and testnet. System scripts, Omnilock, xUDT, SUDT, Spore, CoTA, iCKB, JoyID, CKBFS deployment transactions and cell dependencies.
+Script hashes, code hashes, transaction hashes, and cell dependency hashes for CKB mainnet and testnet. System scripts, Omnilock, xUDT, SUDT, Spore, CoTA, iCKB, JoyID, CKBFS, RGB++, Nostr Lock deployment transactions and cell dependencies.
 
 
 ## Script Structure Overview
@@ -29,7 +29,7 @@ Scripts cannot execute without their corresponding cell dependencies being inclu
 
 ### SECP256K1_BLAKE160 (Fallback Lock Script)
 
-*Note: Sometimes called the default lock script*
+*Note: Sometimes called the default lock script.*
 
 **Mainnet**
 - **Code Hash**: `0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8`
@@ -506,6 +506,109 @@ JoyID is a passwordless authentication solution using WebAuthn and passkeys for 
 - **Index**: `0x0`
 - **Dep Type**: `dep_group`
 
+### Nostr Lock Script
+
+Nostr Lock enables CKB interoperability with the Nostr protocol, supporting schnorr signature verification and optional proof-of-work mechanics.
+
+**Official Documentation**:
+- [Nostr Lock Script Specification](https://github.com/cryptape/nostr-binding/blob/main/docs/nostr-lock-script.md)
+
+**Mainnet**
+- **Code Hash**: `0x641a89ad2f77721b803cd50d01351c1f308444072d5fa20088567196c0574c68`
+- **Hash Type**: `type`
+- **Args**: 1-byte PoW difficulty + 20-byte schnorr pubkey hash (blake160 of 32-byte pubkey).
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0x1911208b136957d5f7c1708a8835edfe8ae1d02700d5cb2c3a6aacf4d5906306`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+**Testnet**
+- **Code Hash**: `0x6ae5ee0cb887b2df5a9a18137315b9bdc55be8d52637b2de0624092d5f0c91d5`
+- **Hash Type**: `type`
+- **Args**: 1-byte PoW difficulty + 20-byte schnorr pubkey hash (blake160 of 32-byte pubkey).
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0xa2a434dcdbe280b9ed75bb7d6c7d68186a842456aba0fc506657dc5ed7c01d68`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+## Bitcoin Interoperability
+
+### RGB++ Lock Script
+
+RGB++ enables isomorphic binding between Bitcoin UTXOs and CKB cells, allowing Bitcoin assets to leverage CKB's smart contract capabilities.
+
+**Official Documentation**:
+- [RGB++ SDK Constants](https://github.com/RGBPlusPlus/rgbpp-sdk/blob/main/packages/ckb/src/constants/index.ts)
+
+**Mainnet**
+- **Code Hash**: `0xbc6c568a1a0d0a09f6844dc9d74ddb4343c32143ff25f727c59edf4fb72d6936`
+- **Hash Type**: `type`
+- **Args**: Contains Bitcoin UTXO binding information.
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0xcb4d9f9726e66306bfda6359d39d3bea8b4e5345d0f95f26a3e51626ebe82a63`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+**RGB++ Config Cell Dependency (Mainnet)**
+- **TX Hash**: `0xcb4d9f9726e66306bfda6359d39d3bea8b4e5345d0f95f26a3e51626ebe82a63`
+- **Index**: `0x1`
+- **Dep Type**: `code`
+
+**Testnet**
+- **Code Hash**: `0x61ca7a4796a4eb19ca4f0d065cb9b10ddcf002f10f7cbb810c706cb6bb5c3248`
+- **Hash Type**: `type`
+- **Args**: Contains Bitcoin UTXO binding information.
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0x0d1567da0979f78b297d5311442669fbd1bd853c8be324c5ab6da41e7a1ed6e5`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+**RGB++ Config Cell Dependency (Testnet)**
+- **TX Hash**: `0x0d1567da0979f78b297d5311442669fbd1bd853c8be324c5ab6da41e7a1ed6e5`
+- **Index**: `0x1`
+- **Dep Type**: `code`
+
+### BTC Time Lock Script
+
+BTC Time Lock enforces a block confirmation waiting period when assets transfer from Bitcoin to CKB, providing security for cross-layer transactions.
+
+**Official Documentation**:
+- [RGB++ SDK Constants](https://github.com/RGBPlusPlus/rgbpp-sdk/blob/main/packages/ckb/src/constants/index.ts)
+
+**Mainnet**
+- **Code Hash**: `0x70d64497a075bd651e98ac030455ea200637ee325a12ad08aff03f1a117e5a62`
+- **Hash Type**: `type`
+- **Args**: Contains time lock parameters and Bitcoin transaction reference.
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0x3d1c26b966504b09253ad84173bf3baa7b8135c5ff520c32cf70b631c1d08b9b`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+**BTC Time Lock Config Cell Dependency (Mainnet)**
+- **TX Hash**: `0x3d1c26b966504b09253ad84173bf3baa7b8135c5ff520c32cf70b631c1d08b9b`
+- **Index**: `0x1`
+- **Dep Type**: `code`
+
+**Testnet**
+- **Code Hash**: `0x00cdf8fab0f8ac638758ebf5ea5e4052b1d71e8a77b9f43139718621f6849326`
+- **Hash Type**: `type`
+- **Args**: Contains time lock parameters and Bitcoin transaction reference.
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0x8fb747ff0416a43e135c583b028f98c7b81d3770551b196eb7ba1062dd9acc94`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+**BTC Time Lock Config Cell Dependency (Testnet)**
+- **TX Hash**: `0x8fb747ff0416a43e135c583b028f98c7b81d3770551b196eb7ba1062dd9acc94`
+- **Index**: `0x1`
+- **Dep Type**: `code`
+
 ## Special Purpose Scripts
 
 ### Type ID Script
@@ -556,6 +659,74 @@ Always Success is a simple lock script that always returns success (exit code 0)
 - **Args**: `0x`
 - **Note**: This lock always fails because no cell can have an all-zero data hash, making it impossible to unlock.
 
+### SECP256K1_BLAKE160_MULTISIG V2 (Testnet Only)
+
+Updated version of the multi-signature lock script using CKB VM v1.
+
+**Source**:
+- [CCC Testnet Config](https://github.com/ckb-ecofund/ccc/blob/master/packages/core/src/client/clientPublicTestnet.advanced.ts)
+
+**Testnet**
+- **Code Hash**: `0x36c971b8d41fbd94aabca77dc75e826729ac98447b46f91e00796155dddb0d29`
+- **Hash Type**: `data1`
+- **Args**: Contains multisig configuration and public key hashes.
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0x2eefdeb21f3a3edf697c28a52601b4419806ed60bb427420455cc29a090b26d5`
+- **Index**: `0x0`
+- **Dep Type**: `dep_group`
+
+### Unique Type Script (Testnet Only)
+
+Ensures a cell with this type script is unique on-chain, useful for singleton patterns.
+
+**Source**:
+- [CCC Testnet Config](https://github.com/ckb-ecofund/ccc/blob/master/packages/core/src/client/clientPublicTestnet.advanced.ts)
+
+**Testnet**
+- **Code Hash**: `0x8e341bcfec6393dcd41e635733ff2dca00a6af546949f70c57a706c0f344df8b`
+- **Hash Type**: `type`
+- **Args**: Type script args for uniqueness verification.
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0xff91b063c78ed06f10a1ed436122bd7d671f9a72ef5f5fa28d05252c17cf4cef`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+### Single Use Lock (Testnet Only)
+
+A lock script that can only be unlocked once, useful for one-time authorization patterns.
+
+**Source**:
+- [CCC Testnet Config](https://github.com/ckb-ecofund/ccc/blob/master/packages/core/src/client/clientPublicTestnet.advanced.ts)
+
+**Testnet**
+- **Code Hash**: `0x8290467a512e5b9a6b816469b0edabba1f4ac474e28ffdd604c2a7c76446bbaf`
+- **Hash Type**: `data1`
+- **Args**: `0x`
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0xb4f171c9c9caf7401f54a8e56225ae21d95032150a87a4678eac3f66a3137b93`
+- **Index**: `0x4`
+- **Dep Type**: `code`
+
+### Time Lock (Testnet Only)
+
+A lock script that enforces time-based unlock conditions.
+
+**Source**:
+- [CCC Testnet Config](https://github.com/ckb-ecofund/ccc/blob/master/packages/core/src/client/clientPublicTestnet.advanced.ts)
+
+**Testnet**
+- **Code Hash**: `0x6fac4b2e89360a1e692efcddcb3a28656d8446549fb83da6d896db8b714f4451`
+- **Hash Type**: `data1`
+- **Args**: Contains time lock parameters.
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0x1b4ffcad55ecd36ffb2715b6816b83da73851f1a24fe594f263c4f34dad90792`
+- **Index**: `0x1`
+- **Dep Type**: `code`
+
 ## Common Cell Dependencies
 
 ### Standard Dependencies
@@ -600,15 +771,18 @@ Always Success is a simple lock script that always returns success (exit code 0)
 
 - [iCKB Whitepaper](https://github.com/ickb/whitepaper) - iCKB liquid staking protocol and deployment hashes
 - [Spore Contracts](https://docs.spore.pro/resources/contracts) - Spore and Cluster mainnet
-- [Spore SDK](https://github.com/sporeprotocol/spore-sdk) - Spore testnet configurations
-- [CoTA SDK](https://github.com/nervina-labs/cota-sdk-js) - CoTA NFT protocol
-- [JoyID SDK](https://github.com/nervina-labs/joyid-sdk-js) - JoyID authentication
+- [Spore SDK Predefined Config](https://github.com/sporeprotocol/spore-sdk/blob/main/packages/core/src/config/predefined.ts) - Spore testnet configurations
+- [CoTA SDK Constants](https://github.com/nervina-labs/cota-sdk-js/blob/develop/src/constants/index.ts) - CoTA NFT protocol
 - [JoyID Smart Contract Docs](https://docs.joyid.dev/guide/ckb/smart-contract) - JoyID deployment details
 - [CKBFS Repository](https://github.com/nervape/ckbfs) - CKB File System protocol
+- [RGB++ SDK Constants](https://github.com/RGBPlusPlus/rgbpp-sdk/blob/main/packages/ckb/src/constants/index.ts) - RGB++ and BTC Time Lock
+- [Nostr Lock Script Specification](https://github.com/cryptape/nostr-binding/blob/main/docs/nostr-lock-script.md) - Nostr/CKB interoperability
 
 ### SDK References
 
-- [Lumos Config Manager](https://github.com/ckb-js/lumos/blob/develop/packages/config-manager/src/predefined.ts) - Ecosystem standard configurations
+- [CCC Mainnet Config](https://github.com/ckb-ecofund/ccc/blob/master/packages/core/src/client/clientPublicMainnet.advanced.ts) - Primary SDK mainnet configurations
+- [CCC Testnet Config](https://github.com/ckb-ecofund/ccc/blob/master/packages/core/src/client/clientPublicTestnet.advanced.ts) - Primary SDK testnet configurations
+- [Lumos Config Manager](https://github.com/ckb-js/lumos/blob/develop/packages/config-manager/src/predefined.ts) - Legacy SDK configurations (deprecated)
 - [pw-core Constants](https://github.com/jordanmack/pw-core/blob/dev/src/constants.ts) - PW Lock and historical reference
 
 ### Verification
