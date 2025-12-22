@@ -356,7 +356,7 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 CKBFS is a witnesses-based file storage protocol for CKB. Scripts can be referenced by code hash (hash_type `data1`) or by type ID (hash_type `type`).
 
 **Official Documentation**:
-- [CKBFS Repository](https://github.com/code-monad/ckbfs)
+- [CKBFS Repository](https://github.com/nervape/ckbfs)
 
 #### CKBFS Script (Version 20241025)
 
@@ -399,8 +399,7 @@ CKBFS is a witnesses-based file storage protocol for CKB. Scripts can be referen
 iCKB is a liquid staking protocol that tokenizes NervosDAO deposits into transferable iCKB tokens. All scripts are deployed non-upgradably with a zero lock.
 
 **Official Documentation**:
-- [iCKB Proposal](https://github.com/ickb/proposal)
-- [iCKB Contracts](https://github.com/ickb/contracts)
+- [iCKB Whitepaper](https://github.com/ickb/whitepaper) - Deployment hashes and protocol specification
 
 #### iCKB Logic Script
 
@@ -455,6 +454,27 @@ Used for ownership verification in iCKB operations.
 - **TX Hash**: `0xf7ece4fb33d8378344cab11fcd6a4c6f382fd4207ac921cf5821f30712dcd311`
 - **Index**: `0x0`
 - **Dep Type**: `dep_group`
+
+#### iCKB xUDT Type Script
+
+The iCKB token itself, implemented as an xUDT with specific args encoding the iCKB Logic script hash.
+
+**Mainnet & Testnet** (same values)
+- **Code Hash**: `0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95`
+- **Hash Type**: `data1`
+- **Args**: `0xb73b6ab39d79390c6de90a09c96b290c331baf1798ed6f97aed02590929734e800000080`
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0x621a6f38de3b9f453016780edac3b26bfcbfa3e2ecb47c2da275471a5d3ed165`
+- **Index**: `0x0`
+- **Dep Type**: `dep_group`
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0xf7ece4fb33d8378344cab11fcd6a4c6f382fd4207ac921cf5821f30712dcd311`
+- **Index**: `0x0`
+- **Dep Type**: `dep_group`
+
+*Note: The args encode the iCKB Logic script hash plus extension flags. This xUDT references the standard xUDT code hash with data1 hash type.*
 
 ## Authentication and Identity
 
@@ -578,13 +598,13 @@ Always Success is a simple lock script that always returns success (exit code 0)
 
 ### Protocol Documentation
 
-- [iCKB Proposal](https://github.com/ickb/proposal) - iCKB liquid staking scripts
+- [iCKB Whitepaper](https://github.com/ickb/whitepaper) - iCKB liquid staking protocol and deployment hashes
 - [Spore Contracts](https://docs.spore.pro/resources/contracts) - Spore and Cluster mainnet
 - [Spore SDK](https://github.com/sporeprotocol/spore-sdk) - Spore testnet configurations
 - [CoTA SDK](https://github.com/nervina-labs/cota-sdk-js) - CoTA NFT protocol
 - [JoyID SDK](https://github.com/nervina-labs/joyid-sdk-js) - JoyID authentication
 - [JoyID Smart Contract Docs](https://docs.joyid.dev/guide/ckb/smart-contract) - JoyID deployment details
-- [CKBFS Repository](https://github.com/code-monad/ckbfs) - CKB File System protocol
+- [CKBFS Repository](https://github.com/nervape/ckbfs) - CKB File System protocol
 
 ### SDK References
 
