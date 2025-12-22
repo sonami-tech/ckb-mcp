@@ -1,6 +1,8 @@
+# Well-Known Script Hashes
+
 ## Description
 
-Comprehensive reference of well-known script hashes, code hashes, transaction hashes, and dependency hashes for both CKB mainnet and testnet networks. Includes system scripts, popular protocols (Omnilock, xUDT, SUDT), deployment transactions, and cell dependencies with complete hash values for development and integration.
+Script hashes, code hashes, transaction hashes, and cell dependency hashes for CKB mainnet and testnet. System scripts, Omnilock, xUDT, SUDT, Spore, CoTA, iCKB, JoyID, CKBFS deployment transactions and cell dependencies.
 
 
 ## Script Structure Overview
@@ -134,6 +136,9 @@ Scripts cannot execute without their corresponding cell dependencies being inclu
 
 ### xUDT (Extensible User Defined Token)
 
+**Official Documentation**:
+- [RFC 0052: Extensible UDT](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0052-extensible-udt/0052-extensible-udt.md)
+
 **Mainnet**
 - **Code Hash**: `0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95`
 - **Hash Type**: `data1`
@@ -144,15 +149,27 @@ Scripts cannot execute without their corresponding cell dependencies being inclu
 - **Index**: `0x0`
 - **Dep Type**: `code`
 
-**Testnet**
+**Testnet (Version 1 - data1)**
 - **Code Hash**: `0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95`
 - **Hash Type**: `data1`
 - **Args**: Contains the owner's lock script hash (32 bytes).
 
-**Cell Dependency (Testnet)**
+**Cell Dependency (Testnet V1)**
 - **TX Hash**: `0xbf6fb538763efec2a70a6a3dcb7242787087e1030c4e7d86585bc63a9d337f5f`
 - **Index**: `0x0`
 - **Dep Type**: `code`
+
+**Testnet (Version 2 - type, used by Lumos)**
+- **Code Hash**: `0x25c29dc317811a6f6f3985a7a9ebc4838bd388d19d0feeecf0bcd60f6c0975bb`
+- **Hash Type**: `type`
+- **Args**: Contains the owner's lock script hash (32 bytes).
+
+**Cell Dependency (Testnet V2)**
+- **TX Hash**: `0xbf6fb538763efec2a70a6a3dcb7242787087e1030c4e7d86585bc63a9d337f5f`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+*Note: Testnet has two xUDT versions. Version 1 uses `data1` hash type (immutable). Version 2 uses `type` hash type (upgradable via Type ID) and is the default in Lumos.*
 
 ## Universal Lock Scripts
 
@@ -179,14 +196,23 @@ Omnilock is a universal lock script supporting multiple authentication methods i
 - **Hash Type**: `type`
 - **Args**: 21-byte auth content followed by Omnilock args for mode flags.
 
-**Cell Dependency (Testnet)**
+**Cell Dependency (Testnet - RFC 0042)**
 - **TX Hash**: `0x3d4296df1bd2cc2bd3f483f61ab7ebeac462a2f336f2b944168fe6ba5d81c014`
 - **Index**: `0x0`
 - **Dep Type**: `code`
 
+**Cell Dependency (Testnet - Lumos)**
+- **TX Hash**: `0xec18bf0d857c981c3d1f4e17999b9b90c484b303378e94de1a57b0872f5d4602`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+*Note: Multiple Omnilock deployments exist on testnet. The RFC 0042 deployment and Lumos deployment use different transaction hashes. Both reference the same code hash.*
+
 ### PW Lock Script
 
-**Official Documentation**:
+PW Lock is a lock script for PW-SDK compatibility, enabling Ethereum-style authentication on CKB.
+
+**Source**:
 - [PW Core Constants](https://github.com/jordanmack/pw-core/blob/dev/src/constants.ts)
 
 **Mainnet**
@@ -194,10 +220,20 @@ Omnilock is a universal lock script supporting multiple authentication methods i
 - **Hash Type**: `type`
 - **Args**: Contains authentication data for PW-SDK compatibility.
 
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0x1d60cb8f4666e039f418ea94730b1a8c5aa0bf2f7781474406387462924d15d4`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
 **Testnet**
 - **Code Hash**: `0x58c5f491aba6d61678b7cf7edf4910b1f5e00ec0cde2f42e0abb4fd9aff25a63`
 - **Hash Type**: `type`
 - **Args**: Contains authentication data for PW-SDK compatibility.
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0x57a62003daeab9d54aa29b944fc3b451213a5ebdf2e232216a3cfed0dde61b38`
+- **Index**: `0x0`
+- **Dep Type**: `code`
 
 ### ACP (Anyone Can Pay) Lock Script
 
@@ -287,7 +323,7 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0xabaa25237554f0d6c586dc010e7e85e6870bcfd9fb8773257ecacfbe1fd738a0`
 - **Index**: `0x0`
-- **Dep Type**: `depGroup`
+- **Dep Type**: `dep_group`
 
 **Testnet**
 - **Code Hash**: `0x89cd8003a0eaf8e65e0c31525b7d1d5c1becefd2ea75bb4cff87810ae37764d8`
@@ -297,7 +333,7 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0x636a786001f87cb615acfcf408be0f9a1f077001f0bbc75ca54eadfe7e221713`
 - **Index**: `0x0`
-- **Dep Type**: `depGroup`
+- **Dep Type**: `dep_group`
 
 ### CoTA Registry
 
@@ -454,14 +490,25 @@ JoyID is a passwordless authentication solution using WebAuthn and passkeys for 
 
 ### Type ID Script
 
-**Pattern**: Used for unique type script identification.
-- **Code Hash**: Generated from first input outpoint + output index.
+Type ID is a built-in system script that enables upgradable smart contracts by providing a unique, persistent identifier for cells regardless of their data content.
+
+**Official Documentation**:
+- [RFC 0024: CKB Genesis Script List](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0024-ckb-genesis-script-list/0024-ckb-genesis-script-list.md)
+
+**Mainnet & Testnet** (same on both networks)
+- **Code Hash**: `0x00000000000000000000000000000000000000000000000000545950455f4944`
 - **Hash Type**: `type`
-- **Args**: 32-byte calculated type ID.
+- **Args**: 32-byte type ID, calculated from first input outpoint + output index.
+
+*Note: The code hash is a fixed value (ASCII hex for "TYPE_ID" padded with zeros). The args field contains the calculated type ID that uniquely identifies a cell across upgrades.*
 
 ### Always Success Lock Script
 
-**Mainnet**
+Always Success is a simple lock script that always returns success (exit code 0). Used for testing and development purposes.
+
+*Note: These are community deployments without official documentation. Verify on-chain before production use.*
+
+**Mainnet (Unverified Community Deployment)**
 - **Code Hash**: `0xd483925160e4232b2cb29f012e8380b7b612d71cf4e79991476b6bcf610735f6`
 - **Hash Type**: `data`
 - **Args**: `0x`
@@ -471,10 +518,15 @@ JoyID is a passwordless authentication solution using WebAuthn and passkeys for 
 - **Index**: `0x0`
 - **Dep Type**: `code`
 
-**Testnet**
+**Testnet (Unverified Community Deployment)**
 - **Code Hash**: `0x1157470ca9de091c21c262bf0754b777f3529e10d2728db8f6b4e04cfc2fbb5f`
 - **Hash Type**: `data`
 - **Args**: `0x`
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0x81e22f4bb39080b112e5efb18e3fad65ebea735eac2f9c495b7f4d3b4faa377d`
+- **Index**: `0x0`
+- **Dep Type**: `code`
 
 ### Zero Lock (Always Fail)
 
@@ -522,6 +574,7 @@ JoyID is a passwordless authentication solution using WebAuthn and passkeys for 
 - [RFC 0025: Simple UDT](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0025-simple-udt/0025-simple-udt.md) - SUDT deployment
 - [RFC 0026: Anyone-Can-Pay](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0026-anyone-can-pay/0026-anyone-can-pay.md) - ACP lock script
 - [RFC 0042: Omnilock](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0042-omnilock/0042-omnilock.md) - Omnilock universal lock
+- [RFC 0052: Extensible UDT](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0052-extensible-udt/0052-extensible-udt.md) - xUDT deployment
 
 ### Protocol Documentation
 
@@ -530,6 +583,8 @@ JoyID is a passwordless authentication solution using WebAuthn and passkeys for 
 - [Spore SDK](https://github.com/sporeprotocol/spore-sdk) - Spore testnet configurations
 - [CoTA SDK](https://github.com/nervina-labs/cota-sdk-js) - CoTA NFT protocol
 - [JoyID SDK](https://github.com/nervina-labs/joyid-sdk-js) - JoyID authentication
+- [JoyID Smart Contract Docs](https://docs.joyid.dev/guide/ckb/smart-contract) - JoyID deployment details
+- [CKBFS Repository](https://github.com/code-monad/ckbfs) - CKB File System protocol
 
 ### SDK References
 
