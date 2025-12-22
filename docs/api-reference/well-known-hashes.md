@@ -233,7 +233,7 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 
 **Mainnet**
 - **Code Hash**: `0x4a4dce1df3dffff7f8b2cd7dff7303df3b6150c9788cb75dcf6747247132b9f5`
-- **Hash Type**: `type`
+- **Hash Type**: `data1`
 - **Args**: Type ID or empty for standard Spore NFT deployment.
 
 **Cell Dependency (Mainnet)**
@@ -255,7 +255,7 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 
 **Mainnet**
 - **Code Hash**: `0x7366a61534fa7c7e6225ecc0d828ea3b5366adec2b58206f2ee84995fe030075`
-- **Hash Type**: `type`
+- **Hash Type**: `data1`
 - **Args**: Type ID or empty for standard Cluster deployment.
 
 **Cell Dependency (Mainnet)**
@@ -317,12 +317,44 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 
 ### CKBFS (CKB File System)
 
-**Mainnet Deployments**
-- **CKBFS Contract**: `0x31e6376287d223b8c0410d562fb422f04d1d617b2947596a14c3d2efb7218d3a`
-- **Adler32 Contract**: `0x2138683f76944437c0c643664120d620bdb5858dd6c9d1d156805e279c2c536f`
+CKBFS is a witnesses-based file storage protocol for CKB. Scripts can be referenced by code hash (hash_type `data1`) or by type ID (hash_type `type`).
 
-**Type ID Example**
-- **Type ID**: `0xbce89252cece632ef819943bed9cd0e2576f8ce26f9f02075b621b1c9a28056a`
+**Official Documentation**:
+- [CKBFS Repository](https://github.com/code-monad/ckbfs)
+
+#### CKBFS Script (Version 20241025)
+
+**Mainnet**
+- **Code Hash**: `0x31e6376287d223b8c0410d562fb422f04d1d617b2947596a14c3d2efb7218d3a`
+- **Hash Type**: `data1`
+- **Type ID**: `0xfd2058c9a0c0183354cf637e25d2707ffa9bb6fa2ba9b29f4ebc6be3e54ad7eb` (use with hash_type `type`)
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0xfab07962ed7178ed88d450774e2a6ecd50bae856bdb9b692980be8c5147d1bfa`
+- **Index**: `0x0`
+- **Dep Type**: `dep_group`
+
+**Testnet**
+- **Code Hash**: `0x31e6376287d223b8c0410d562fb422f04d1d617b2947596a14c3d2efb7218d3a`
+- **Hash Type**: `data1`
+- **Type ID**: `0x7c6dcab8268201f064dc8676b5eafa60ca2569e5c6209dcbab0eb64a9cb3aaa3` (use with hash_type `type`)
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0x469af0d961dcaaedd872968a9388b546717a6ccfa47b3165b3f9c981e9d66aaa`
+- **Index**: `0x0`
+- **Dep Type**: `dep_group`
+
+#### Adler32 Hasher Script (Version 20241025)
+
+**Mainnet**
+- **Code Hash**: `0x2138683f76944437c0c643664120d620bdb5858dd6c9d1d156805e279c2c536f`
+- **Hash Type**: `data1`
+- **Type ID**: `0x641c01d590833a3f5471bd441651d9f2a8a200141949cdfeef2d68d8094c5876` (use with hash_type `type`)
+
+**Testnet**
+- **Code Hash**: `0x2138683f76944437c0c643664120d620bdb5858dd6c9d1d156805e279c2c536f`
+- **Hash Type**: `data1`
+- **Type ID**: `0x5f73f128be76e397f5a3b56c94ca16883a8ee91b498bc0ee80473818318c05ac` (use with hash_type `type`)
 
 ## Liquid Staking
 
