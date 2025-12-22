@@ -158,35 +158,31 @@ Scripts cannot execute without their corresponding cell dependencies being inclu
 
 ### Omnilock
 
-**Mainnet**
-- **Code Hash**: `0x79f90bb5e892d80dd213439eeab551120eb417678824f453d0c94b0c15dc3c8c`
-- **Hash Type**: `type`
-- **Args**: Flexible args supporting various authentication methods (Ethereum, Bitcoin, etc).
-
-**Cell Dependency (Mainnet)**
-- **TX Hash**: `0x71a7ba8fc96349fea0ed3a5c47992e3b4084b031a42264a018e0072e8172e46c`
-- **Index**: `0x0`
-- **Dep Type**: `dep_group`
+Omnilock is a universal lock script supporting multiple authentication methods including secp256k1, Ethereum, Bitcoin, Dogecoin, and more. It also includes an anyone-can-pay mode.
 
 **Official Documentation**:
 - [Omnilock RFC](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0042-omnilock/0042-omnilock.md)
-- [Omnilock Script Documentation](https://docs-new.nervos.org/docs/common-scripts/omnilock)
 - [Omnilock GitHub Repository](https://github.com/cryptape/omnilock)
 
-**Testnet**
-- **Code Hash**: `0x79f90bb5e892d80dd213439eeab551120eb417678824f453d0c94b0c15dc3c8c`
+**Mainnet (Mirana)**
+- **Code Hash**: `0x9b819793a64463aed77c615d6cb226eea5487ccfc0783043a587254cda2b6f26`
 - **Hash Type**: `type`
-- **Args**: Flexible args supporting various authentication methods (Ethereum, Bitcoin, etc).
+- **Args**: 21-byte auth content followed by Omnilock args for mode flags.
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0xc76edf469816aa22f416503c38d0b533d2a018e253e379f134c3985b3472c842`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+**Testnet (Pudge)**
+- **Code Hash**: `0xf329effd1c475a2978453c8600e1eaf0bc2087ee093c3ee64cc96ec6847752cb`
+- **Hash Type**: `type`
+- **Args**: 21-byte auth content followed by Omnilock args for mode flags.
 
 **Cell Dependency (Testnet)**
-- **TX Hash**: `0x57a62003daeab9d54aa29b944fc3b451213a5ebdf2e232216a3cfed0dde61b38`
+- **TX Hash**: `0x3d4296df1bd2cc2bd3f483f61ab7ebeac462a2f336f2b944168fe6ba5d81c014`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
-
-**Mainnet - Deprecated**
-- **Code Hash**: `0x00000000000000000000000000000000000000000000000000545950455f4944`
-- **Hash Type**: `type`
-- **Note**: Earlier Omnilock deployments using Type ID, use current version above
+- **Dep Type**: `code`
 
 ### PW Lock Script
 
@@ -205,30 +201,31 @@ Scripts cannot execute without their corresponding cell dependencies being inclu
 
 ### ACP (Anyone Can Pay) Lock Script
 
-**Mainnet**
-- **Code Hash**: `0x9b819793a64463aed77c615d6cb226eea5487ccfc0783043a587254cda2b6f26`
-- **Hash Type**: `type`
-- **Args**: Optional args for additional restrictions on payment conditions.
+ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell. The receiver can accept payments without signing. Note: Omnilock also supports an anyone-can-pay mode via its mode flags.
 
-**Cell Dependency (Mainnet)**
-- **TX Hash**: `0xc76edf469816aa22f416503c38d0b533d2a018e253e379f134c3985b3472c842`
-- **Index**: `0x0`
-- **Dep Type**: `code`
+**Official Documentation**:
+- [Anyone-Can-Pay RFC](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0026-anyone-can-pay/0026-anyone-can-pay.md)
+- [Anyone-Can-Pay Repository](https://github.com/cryptape/anyone-can-pay)
 
-**Testnet**
-- **Code Hash**: `0xf329effd1c475a2978453c8600e1eaf0bc2087ee093c3ee64cc96ec6847752cb`
-- **Hash Type**: `type`
-- **Args**: Optional args for additional restrictions on payment conditions.
-
-**Cell Dependency (Testnet)**
-- **TX Hash**: `0x3d4296df1bd2cc2bd3f483f61ab7ebeac462a2f336f2b944168fe6ba5d81c014`
-- **Index**: `0x0`
-- **Dep Type**: `code`
-
-**Mainnet - Deprecated**
+**Mainnet (Lina)**
 - **Code Hash**: `0xd369597ff47f29fbc0d47d2e3775370d1250b85140c670e4718af712983a2354`
 - **Hash Type**: `type`
-- **Note**: Earlier deployment, use current version above.
+- **Args**: 20-byte public key hash, optional minimum CKB/UDT amount.
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0x4153a2014952d7cac45f285ce9a7c5c0c0e1b21f2d378b82ac1433cb11c25c4d`
+- **Index**: `0x0`
+- **Dep Type**: `dep_group`
+
+**Testnet (Aggron)**
+- **Code Hash**: `0x3419a1c09eb2567f6552ee7a8ecffd64155cffe0f1796e6e61ec088d740c1356`
+- **Hash Type**: `type`
+- **Args**: 20-byte public key hash, optional minimum CKB/UDT amount.
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0xec26b0f85ed839ece5f11c4c4e837ec359f5adc4420410f6453b1f6b60fb96a6`
+- **Index**: `0x0`
+- **Dep Type**: `dep_group`
 
 ## NFT and Digital Objects
 
@@ -331,17 +328,75 @@ Scripts cannot execute without their corresponding cell dependencies being inclu
 
 ### iCKB Protocol
 
-**Mainnet**
-- **Transaction**: `0xd7309191381f5a8a2904b8a79958a9be2752dbba6871fa193dab6aeb29dc8f44`
-- **Status**: Non-upgradable (zero lock)
+iCKB is a liquid staking protocol that tokenizes NervosDAO deposits into transferable iCKB tokens. All scripts are deployed non-upgradably with a zero lock.
 
-**Testnet**
-- **Transaction**: `0x9ac989b3355764f76cdce02c69dedb819fdfbcbda49a7db1a2c9facdfdb9a7fe`
-- **Purpose**: Development and testing
+**Official Documentation**:
+- [iCKB Proposal](https://github.com/ickb/proposal)
+- [iCKB Contracts](https://github.com/ickb/contracts)
+
+#### iCKB Logic Script
+
+Used for iCKB token minting and burning logic.
+
+**Mainnet & Testnet** (same code hash)
+- **Code Hash**: `0x2a8100ab5990fa055ab1b50891702e1e895c7bd1df6322cd725c1a6115873bd3`
+- **Hash Type**: `data1`
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0x621a6f38de3b9f453016780edac3b26bfcbfa3e2ecb47c2da275471a5d3ed165`
+- **Index**: `0x0`
+- **Dep Type**: `dep_group`
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0xf7ece4fb33d8378344cab11fcd6a4c6f382fd4207ac921cf5821f30712dcd311`
+- **Index**: `0x0`
+- **Dep Type**: `dep_group`
+
+#### Limit Order Script
+
+Used for iCKB limit order matching.
+
+**Mainnet & Testnet** (same code hash)
+- **Code Hash**: `0x49dfb6afee5cc8ac4225aeea8cb8928b150caf3cd92fea33750683c74b13254a`
+- **Hash Type**: `data1`
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0x621a6f38de3b9f453016780edac3b26bfcbfa3e2ecb47c2da275471a5d3ed165`
+- **Index**: `0x0`
+- **Dep Type**: `dep_group`
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0xf7ece4fb33d8378344cab11fcd6a4c6f382fd4207ac921cf5821f30712dcd311`
+- **Index**: `0x0`
+- **Dep Type**: `dep_group`
+
+#### Owned-Owner Script
+
+Used for ownership verification in iCKB operations.
+
+**Mainnet & Testnet** (same code hash)
+- **Code Hash**: `0xacc79e07d107831feef4c70c9e683dac5644d5993b9cb106dca6e74baa381bd0`
+- **Hash Type**: `data1`
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0x621a6f38de3b9f453016780edac3b26bfcbfa3e2ecb47c2da275471a5d3ed165`
+- **Index**: `0x0`
+- **Dep Type**: `dep_group`
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0xf7ece4fb33d8378344cab11fcd6a4c6f382fd4207ac921cf5821f30712dcd311`
+- **Index**: `0x0`
+- **Dep Type**: `dep_group`
 
 ## Authentication and Identity
 
 ### JoyID Lock Script
+
+JoyID is a passwordless authentication solution using WebAuthn and passkeys for CKB.
+
+**Official Documentation**:
+- [JoyID SDK](https://github.com/nervina-labs/joyid-sdk-js)
+- [JoyID Mainnet Contract Upgrade](https://nervina.notion.site/JoyID-Mainnet-Contract-Upgrade-253c046a93fd801cac98fb793c1b3613)
 
 **Mainnet**
 - **Code Hash**: `0xd00c84f0ec8fd441c38bc3f87a371f547190f2fcff88e642bc5bf54b9e318323`
@@ -354,16 +409,14 @@ Scripts cannot execute without their corresponding cell dependencies being inclu
 - **Dep Type**: `dep_group`
 
 **Testnet**
-- **Code Hash**: `0xd00c84f0ec8fd441c38bc3f87a371f547190f2fcff88e642bc5bf54b9e318323`
+- **Code Hash**: `0xd23761b364210735c19c60561d213fb3beae2fd6172743719eff6920e020baac`
 - **Hash Type**: `type`
 - **Args**: Contains JoyID-specific authentication parameters.
 
 **Cell Dependency (Testnet)**
-- **TX Hash**: `0x759f281588c96979764cb21c196478cf8e13ea81fede7f4ba26d1ff29dbc6a81`
+- **TX Hash**: `0x4dcf3f3b09efac8995d6cbee87c5345e812d310094651e0c3d9a730f32dc9263`
 - **Index**: `0x0`
 - **Dep Type**: `dep_group`
-
-**Official Documentation**: [JoyID Mainnet Contract Upgrade](https://nervina.notion.site/JoyID-Mainnet-Contract-Upgrade-253c046a93fd801cac98fb793c1b3613)
 
 ## Special Purpose Scripts
 
@@ -431,7 +484,26 @@ Scripts cannot execute without their corresponding cell dependencies being inclu
 
 ## References
 
-- **Source**: [CKB MCP Documentation](ckb-dev-context://api-reference/well-known-hashes)
-- **Historical Reference**: [pw-core constants.ts](https://raw.githubusercontent.com/jordanmack/pw-core/refs/heads/dev/src/constants.ts) (jordanmack/pw-core)
-- **JoyID Documentation**: [JoyID Mainnet Contract Upgrade](https://nervina.notion.site/JoyID-Mainnet-Contract-Upgrade-253c046a93fd801cac98fb793c1b3613)
-- **Network Status**: Check current CKB explorer for deployment verification
+### Official RFCs (Authoritative Sources)
+
+- [RFC 0024: CKB Genesis Script List](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0024-ckb-genesis-script-list/0024-ckb-genesis-script-list.md) - SECP256K1, Multisig, DAO, Type ID
+- [RFC 0025: Simple UDT](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0025-simple-udt/0025-simple-udt.md) - SUDT deployment
+- [RFC 0026: Anyone-Can-Pay](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0026-anyone-can-pay/0026-anyone-can-pay.md) - ACP lock script
+- [RFC 0042: Omnilock](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0042-omnilock/0042-omnilock.md) - Omnilock universal lock
+
+### Protocol Documentation
+
+- [iCKB Proposal](https://github.com/ickb/proposal) - iCKB liquid staking scripts
+- [Spore Contracts](https://docs.spore.pro/resources/contracts) - Spore and Cluster mainnet
+- [Spore SDK](https://github.com/sporeprotocol/spore-sdk) - Spore testnet configurations
+- [CoTA SDK](https://github.com/nervina-labs/cota-sdk-js) - CoTA NFT protocol
+- [JoyID SDK](https://github.com/nervina-labs/joyid-sdk-js) - JoyID authentication
+
+### SDK References
+
+- [Lumos Config Manager](https://github.com/ckb-js/lumos/blob/develop/packages/config-manager/src/predefined.ts) - Ecosystem standard configurations
+- [pw-core Constants](https://github.com/jordanmack/pw-core/blob/dev/src/constants.ts) - PW Lock and historical reference
+
+### Verification
+
+Always verify hash values against the CKB explorer or by querying the chain directly before production use.
