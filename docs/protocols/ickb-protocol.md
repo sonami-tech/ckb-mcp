@@ -154,16 +154,15 @@ export class iCKBBot {
 ### Development Resources
 
 **Core Repositories:**
-- [Proposal and Whitepaper](https://github.com/ickb/proposal)
-- [Core Protocol Implementation](https://github.com/ickb/v1-core)
-- [Smart Contracts](https://github.com/ickb/v1-core/tree/master/scripts)
-- [Frontend Interface](https://github.com/ickb/v1-interface)
-- [Fulfillment Bot](https://github.com/ickb/v1-bot)
-- [Lumos Utilities](https://github.com/ickb/lumos-utils)
+- [Whitepaper](https://github.com/ickb/whitepaper)
+- [L1 Contracts](https://github.com/ickb/contracts)
+- [Frontend Interface](https://github.com/ickb/interface)
+- [Fulfillment Bot](https://github.com/ickb/bot)
+- [CCC Template](https://github.com/ickb/template)
 
 **Documentation:**
 - [Security Audit Report](http://scalebit.xyz/reports/20240911-ICKB-Final-Audit-Report.pdf)
-- Technical specifications in proposal repository
+- Technical specifications in whitepaper repository
 - Integration guides for developers
 
 ### Community and Adoption

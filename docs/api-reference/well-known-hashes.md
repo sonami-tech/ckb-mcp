@@ -382,11 +382,11 @@ CKBFS is a witnesses-based file storage protocol for CKB. Scripts can be referen
 
 **Source**: [CKBFS Repository](https://github.com/nervape/ckbfs)
 
-## Liquid Staking
+## NervosDAO Liquidity
 
 ### iCKB Protocol
 
-iCKB is a liquid staking protocol that tokenizes NervosDAO deposits into transferable iCKB tokens. All scripts are deployed non-upgradably with a zero lock.
+iCKB is a NervosDAO liquidity protocol that tokenizes DAO deposits into transferable iCKB tokens. All scripts are deployed non-upgradably with a zero lock.
 
 #### iCKB Logic Script
 
