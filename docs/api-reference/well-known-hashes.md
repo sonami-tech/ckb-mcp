@@ -276,7 +276,7 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 - **Index**: `0x0`
 - **Dep Type**: `code`
 
-**Source**: [Spore Docs - Contracts](https://docs.spore.pro/resources/contracts) (mainnet), [spore-sdk predefined.ts](https://github.com/sporeprotocol/spore-sdk/blob/main/packages/core/src/config/predefined.ts) (testnet)
+**Source**: [spore-contract VERSIONS.md](https://github.com/sporeprotocol/spore-contract/blob/master/docs/VERSIONS.md)
 
 ### Cluster Protocol
 
@@ -300,7 +300,7 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 - **Index**: `0x0`
 - **Dep Type**: `code`
 
-**Source**: [Spore Docs - Contracts](https://docs.spore.pro/resources/contracts) (mainnet), [spore-sdk predefined.ts](https://github.com/sporeprotocol/spore-sdk/blob/main/packages/core/src/config/predefined.ts) (testnet)
+**Source**: [spore-contract VERSIONS.md](https://github.com/sporeprotocol/spore-contract/blob/master/docs/VERSIONS.md)
 
 ### CoTA (Compact Token Aggregator)
 
@@ -380,7 +380,7 @@ CKBFS is a witnesses-based file storage protocol for CKB. Scripts can be referen
 - **Hash Type**: `data1`
 - **Type ID**: `0x5f73f128be76e397f5a3b56c94ca16883a8ee91b498bc0ee80473818318c05ac` (use with hash_type `type`)
 
-**Source**: [CKBFS Repository](https://github.com/nervape/ckbfs)
+**Source**: [CKBFS README.md](https://github.com/nervape/ckbfs/blob/master/README.md)
 
 ## NervosDAO Liquidity
 
@@ -463,7 +463,7 @@ The iCKB token itself, implemented as an xUDT with specific args encoding the iC
 
 *Note: The args encode the iCKB Logic script hash plus extension flags. This xUDT references the standard xUDT code hash with data1 hash type.*
 
-**Source**: [iCKB Whitepaper](https://github.com/ickb/whitepaper)
+**Source**: [iCKB Whitepaper - Deployment](https://github.com/ickb/whitepaper#mainnet-deployment)
 
 ## Authentication and Identity
 
