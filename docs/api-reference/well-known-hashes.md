@@ -55,6 +55,8 @@ Scripts cannot execute without their corresponding cell dependencies being inclu
 
 ### SECP256K1_BLAKE160_MULTISIG (Multi-Signature Lock Script)
 
+*Note: This is the multi-signature variant of the SECP256K1/blake160 lock script, using the same cryptographic foundation (secp256k1 elliptic curve + blake160 hashing) but enabling M-of-N threshold signing instead of single-key authorization.*
+
 **Mainnet**
 - **Code Hash**: `0x5c5069eb0857efc65e1bca0c07df34c31663b3622fd3876c876320fc9634e2a8`
 - **Hash Type**: `type`
@@ -169,7 +171,24 @@ Scripts cannot execute without their corresponding cell dependencies being inclu
 
 ### Omnilock
 
-Omnilock is a universal lock script supporting multiple authentication methods including secp256k1, Ethereum, Bitcoin, Dogecoin, and more. It also includes an anyone-can-pay mode.
+Omnilock is a universal lock script designed for cross-chain interoperability.
+
+**Authentication Methods:**
+- SECP256K1 (0x00): Standard CKB signature verification with blake160 hashing.
+- Ethereum (0x01): Ethereum wallet compatibility with message hash conversion.
+- Tron (0x03): Tron wallet compatibility.
+- Bitcoin (0x04): Supports P2WPKH (Native SegWit), P2SH-P2WPKH (Nested SegWit), and P2PKH (Legacy) addresses.
+- Dogecoin (0x05): Dogecoin wallet compatibility.
+- CKB Multisig (0x06): Adapted from native CKB multisig.
+- Script Hash (0xFC): P2SH-like delegation to another lock script.
+- Exec (0xFD): Dynamic execution delegation for alternative cryptographic schemes.
+- Dynamic Linking (0xFE): Swappable Signature Verification Protocol support.
+
+**Operating Modes (combinable via flags):**
+- Administrator (0x01): Governance with whitelist/blacklist for regulatory compliance.
+- Anyone-Can-Pay (0x02): Flexible payment acceptance with minimum CKB/UDT thresholds.
+- Time-Lock (0x04): Time-based asset freezing using check_since mechanism.
+- Supply (0x08): Token issuance control with max supply enforcement.
 
 **Mainnet (Mirana)**
 - **Code Hash**: `0x9b819793a64463aed77c615d6cb226eea5487ccfc0783043a587254cda2b6f26`
@@ -228,7 +247,12 @@ PW Lock is a lock script for PW-SDK compatibility, enabling Ethereum-style authe
 
 ### ACP (Anyone Can Pay) Lock Script
 
-ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell. The receiver can accept payments without signing. Note: Omnilock also supports an anyone-can-pay mode via its mode flags.
+ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell. The receiver can accept payments without signing. Optional minimum transfer amounts protect against DDoS attacks.
+
+*Note: The anyone-can-pay pattern is also available in other locks:*
+- *Omnilock: Built-in ACP mode via flag 0x02 in the args.*
+- *PW Lock (deprecated): Has ACP logic built in.*
+- *ACP Proxy: Extends ACP mechanics to JoyID and Multisig locks.*
 
 **Mainnet (Lina)**
 - **Code Hash**: `0xd369597ff47f29fbc0d47d2e3775370d1250b85140c670e4718af712983a2354`
@@ -291,7 +315,7 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 - **Dep Type**: `code`
 
 **Testnet**
-- **Code Hash**: `0x598d793defef36e2eeba54a9b45130e4ca92822e1d193671f490950c3b856080`
+- **Code Hash**: `0x0bbe768b519d8ea7b96d58f1182eb7e6ef96c541fbd9526975077ee09f049058`
 - **Hash Type**: `data1`
 - **Args**: Type ID or empty for standard Cluster deployment.
 
@@ -612,9 +636,11 @@ Type ID is a built-in system script that enables upgradable smart contracts by p
 
 Always Success is a simple lock script that always returns success (exit code 0). Used for testing and development purposes.
 
-*Note: These are community deployments without official documentation. Verify on-chain before production use.*
+*Note: Multiple community deployments exist. Choose based on your VM version requirements.*
 
-**Mainnet (Unverified Community Deployment)**
+#### CoTA SDK Deployment (CKB VM v0)
+
+**Mainnet**
 - **Code Hash**: `0xd483925160e4232b2cb29f012e8380b7b612d71cf4e79991476b6bcf610735f6`
 - **Hash Type**: `data`
 - **Args**: `0x`
@@ -624,7 +650,7 @@ Always Success is a simple lock script that always returns success (exit code 0)
 - **Index**: `0x0`
 - **Dep Type**: `code`
 
-**Testnet (Unverified Community Deployment)**
+**Testnet**
 - **Code Hash**: `0x1157470ca9de091c21c262bf0754b777f3529e10d2728db8f6b4e04cfc2fbb5f`
 - **Hash Type**: `data`
 - **Args**: `0x`
@@ -633,6 +659,27 @@ Always Success is a simple lock script that always returns success (exit code 0)
 - **TX Hash**: `0x81e22f4bb39080b112e5efb18e3fad65ebea735eac2f9c495b7f4d3b4faa377d`
 - **Index**: `0x0`
 - **Dep Type**: `code`
+
+**Source**: [CoTA SDK Constants](https://github.com/nervina-labs/cota-sdk-js/blob/develop/src/constants/index.ts)
+
+#### CCC SDK Deployment (CKB VM v1, Recommended)
+
+**Mainnet & Testnet** (same code hash)
+- **Code Hash**: `0x3b521cc4b552f109d092d8cc468a8048acb53c5952dbe769d2b2f9cf6e47f7f1`
+- **Hash Type**: `data1`
+- **Args**: `0x`
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0x10d63a996157d32c01078058000052674ca58d15f921bec7f1dcdac2160eb66b`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0xb4f171c9c9caf7401f54a8e56225ae21d95032150a87a4678eac3f66a3137b93`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+**Source**: [CCC SDK Mainnet Config](https://github.com/ckb-ecofund/ccc/blob/master/packages/core/src/client/clientPublicMainnet.advanced.ts)
 
 ### Zero Lock (Always Fail)
 
