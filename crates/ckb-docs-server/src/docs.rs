@@ -186,7 +186,6 @@ impl DocsProvider {
 			("ckb-dev-context://tools/ssri-server", "tools/ssri-server.md"),
 			("ckb-dev-context://api-reference/omnilock-ethereum-example", "api-reference/omnilock-ethereum-example.md"),
 			("ckb-dev-context://api-reference/xudt-minting-example", "api-reference/xudt-minting-example.md"),
-			("ckb-dev-context://examples/deploy_cell_data", "examples/deploy_cell_data.py"),
 			("ckb-dev-context://examples/calculate_file_hashes", "examples/calculate_file_hashes.py"),
 		];
 

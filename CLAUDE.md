@@ -317,6 +317,21 @@ Always provide meaningful error messages and proper HTTP status codes.
 - Never commit secrets to version control.
 - **IMPORTANT**: The ckb-tools-server includes a default test private key for development convenience. This key should **NEVER** be used in production. Always provide a secure `--private-key` parameter when deploying to production environments.
 
+### Deployment Endpoint Security Model
+
+The ckb-tools-server provides two methods for deploying cell data:
+
+1. **MCP Tool (DeployCellData)**: Limited to 1KB inline hex data. Intended for small deployments within AI context limits.
+2. **HTTP Endpoint (POST /deploy/file)**: Multipart form upload for files of any size. Accessed via curl or similar tools.
+
+**Trust Model**: Both endpoints use the same private key configured at server startup. The HTTP endpoint is intentionally unauthenticated for local development simplicity. When deploying to production or shared environments:
+
+- Run the server on localhost only, or behind an authenticated reverse proxy.
+- Never expose the `/deploy/file` endpoint to untrusted networks without authentication.
+- The server logs all deployment transactions for audit purposes.
+
+**Why HTTP Instead of MCP for Large Files**: AI assistants cannot reliably generate or transmit large hex strings. The MCP protocol adds context overhead that compounds this limitation. The HTTP endpoint accepts raw binary data, avoiding hex encoding entirely.
+
 ## Performance Notes
 
 - Use async/await for all I/O operations.

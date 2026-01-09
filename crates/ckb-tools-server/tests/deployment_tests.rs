@@ -208,20 +208,20 @@ async fn test_deploy_cell_data_returns_capacity() {
 	wait_for_deployment_confirmation(&deploy_json).await;
 }
 
-// Size Limit Tests
+// Size Limit Tests (1KB limit for inline data)
 #[tokio::test]
-async fn test_deploy_cell_data_at_20kb_limit() {
+async fn test_deploy_cell_data_at_1kb_limit() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
-	// Create exactly 20,480 bytes (20KB) with unique timestamp prefix
+	// Create exactly 1,024 bytes (1KB) with unique timestamp prefix
 	let timestamp = format!("{:#x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
-	let remaining_bytes = 20480 - ((timestamp.len() - 2) / 2);
+	let remaining_bytes = 1024 - ((timestamp.len() - 2) / 2);
 	let data_at_limit = format!("{}{}", timestamp, "00".repeat(remaining_bytes));
 
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": data_at_limit}}))
 		.await
-		.expect("DeployCellData should succeed at exactly 20KB limit.");
+		.expect("DeployCellData should succeed at exactly 1KB limit.");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(content.contains("tx_hash"), "Should return transaction hash");
@@ -235,15 +235,15 @@ async fn test_deploy_cell_data_at_20kb_limit() {
 async fn test_deploy_cell_data_just_under_limit() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
-	// Create 20,479 bytes (just under 20KB limit) with unique timestamp prefix
+	// Create 1,023 bytes (just under 1KB limit) with unique timestamp prefix
 	let timestamp = format!("{:#x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
-	let remaining_bytes = 20479 - ((timestamp.len() - 2) / 2);
+	let remaining_bytes = 1023 - ((timestamp.len() - 2) / 2);
 	let data_under_limit = format!("{}{}", timestamp, "00".repeat(remaining_bytes));
 
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": data_under_limit}}))
 		.await
-		.expect("DeployCellData should succeed just under 20KB limit.");
+		.expect("DeployCellData should succeed just under 1KB limit.");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	assert!(content.contains("tx_hash"), "Should return transaction hash");
@@ -257,21 +257,21 @@ async fn test_deploy_cell_data_just_under_limit() {
 async fn test_deploy_cell_data_just_over_limit() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
-	// Create 20,481 bytes (just over 20KB limit)
-	let data_over_limit = "00".repeat(20481);
+	// Create 1,025 bytes (just over 1KB limit)
+	let data_over_limit = "00".repeat(1025);
 
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": data_over_limit}}))
 		.await;
 
-	assert!(result.is_err(), "Should fail when data exceeds 20KB limit");
+	assert!(result.is_err(), "Should fail when data exceeds 1KB limit");
 }
 
 #[tokio::test]
 async fn test_deploy_cell_data_significantly_over_limit() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
-	// Create 50KB (significantly over 20KB limit)
+	// Create 50KB (significantly over 1KB limit)
 	let data_50kb = "00".repeat(51200);
 
 	let result = ctx
@@ -285,76 +285,69 @@ async fn test_deploy_cell_data_significantly_over_limit() {
 async fn test_deploy_cell_data_error_message_includes_sizes() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
-	// Create 30KB to trigger error
-	let data_30kb = "00".repeat(30720);
+	// Create 2KB to trigger error (over 1KB limit)
+	let data_2kb = "00".repeat(2048);
 
 	let result = ctx
-		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": data_30kb}}))
+		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": data_2kb}}))
 		.await;
 
-	assert!(result.is_err(), "Should fail for 30KB data");
+	assert!(result.is_err(), "Should fail for 2KB data");
 	let error_msg = format!("{:?}", result.unwrap_err());
-	assert!(error_msg.contains("30720"), "Error should include actual size (30720 bytes)");
-	assert!(error_msg.contains("20480"), "Error should include limit (20480 bytes)");
+	assert!(error_msg.contains("2048"), "Error should include actual size (2048 bytes)");
+	assert!(error_msg.contains("1KB"), "Error should mention 1KB limit");
 }
 
 #[tokio::test]
-async fn test_deploy_cell_data_error_message_suggests_chunked() {
+async fn test_deploy_cell_data_error_message_suggests_http_endpoint() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
-	// Create 25KB to trigger error
-	let data_25kb = "00".repeat(25600);
+	// Create 2KB to trigger error (over 1KB limit)
+	let data_2kb = "00".repeat(2048);
 
 	let result = ctx
-		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": data_25kb}}))
+		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": data_2kb}}))
 		.await;
 
-	assert!(result.is_err(), "Should fail for 25KB data");
+	assert!(result.is_err(), "Should fail for 2KB data");
 	let error_msg = format!("{:?}", result.unwrap_err());
-	assert!(error_msg.contains("DeployCellDataChunked"), "Error should suggest DeployCellDataChunked");
+	assert!(error_msg.contains("/deploy/file"), "Error should suggest /deploy/file HTTP endpoint");
+	assert!(error_msg.contains("curl"), "Error should mention curl as the tool to use");
 }
 
 #[tokio::test]
-async fn test_deploy_cell_data_10kb_well_under_limit() {
+async fn test_deploy_cell_data_768_bytes_under_limit() {
 	let ctx = TestContext::new(TOOLS_SERVER_PORT);
 
-	// Create 10KB (well under limit) with unique timestamp prefix
+	// Create 768 bytes (well under 1KB limit) with unique timestamp prefix
 	let timestamp = format!("{:#x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
-	let remaining_bytes = 10240 - ((timestamp.len() - 2) / 2);
-	let data_10kb = format!("{}{}", timestamp, "00".repeat(remaining_bytes));
+	let remaining_bytes = 768 - ((timestamp.len() - 2) / 2);
+	let data_768 = format!("{}{}", timestamp, "00".repeat(remaining_bytes));
+
+	let result = ctx
+		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": data_768}}))
+		.await
+		.expect("DeployCellData should succeed with 768 bytes data.");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	assert!(content.contains("tx_hash"), "Should return transaction hash");
+
+	let deploy_json: serde_json::Value = serde_json::from_str(content)
+		.expect("Deploy response should be valid JSON.");
+	wait_for_deployment_confirmation(&deploy_json).await;
+}
+
+#[tokio::test]
+async fn test_deploy_cell_data_10kb_over_limit() {
+	let ctx = TestContext::new(TOOLS_SERVER_PORT);
+
+	// Create 10KB (over 1KB limit)
+	let data_10kb = "00".repeat(10240);
 
 	let result = ctx
 		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": data_10kb}}))
-		.await
-		.expect("DeployCellData should succeed with 10KB data.");
+		.await;
 
-	let content = result["content"][0]["text"].as_str().unwrap();
-	assert!(content.contains("tx_hash"), "Should return transaction hash");
-
-	let deploy_json: serde_json::Value = serde_json::from_str(content)
-		.expect("Deploy response should be valid JSON.");
-	wait_for_deployment_confirmation(&deploy_json).await;
-}
-
-#[tokio::test]
-async fn test_deploy_cell_data_19kb_under_limit() {
-	let ctx = TestContext::new(TOOLS_SERVER_PORT);
-
-	// Create 19KB (near limit) with unique timestamp prefix
-	let timestamp = format!("{:#x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
-	let remaining_bytes = 19456 - ((timestamp.len() - 2) / 2);
-	let data_19kb = format!("{}{}", timestamp, "00".repeat(remaining_bytes));
-
-	let result = ctx
-		.mcp_call("tools/call", json!({"name": "DeployCellData", "arguments": {"data": data_19kb}}))
-		.await
-		.expect("DeployCellData should succeed with 19KB data.");
-
-	let content = result["content"][0]["text"].as_str().unwrap();
-	assert!(content.contains("tx_hash"), "Should return transaction hash");
-
-	let deploy_json: serde_json::Value = serde_json::from_str(content)
-		.expect("Deploy response should be valid JSON.");
-	wait_for_deployment_confirmation(&deploy_json).await;
+	assert!(result.is_err(), "Should fail when data exceeds 1KB limit (10KB test)");
 }
 
