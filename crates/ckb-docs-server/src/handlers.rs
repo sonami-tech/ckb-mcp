@@ -42,7 +42,7 @@ impl McpHandler {
 			},
 			"serverInfo": {
 				"name": "ckb-docs-server",
-				"version": "0.1.0"
+				"version": env!("CARGO_PKG_VERSION")
 			}
 		});
 

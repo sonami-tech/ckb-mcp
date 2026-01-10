@@ -516,7 +516,11 @@ async fn test_send_transaction_missing_tx() {
 
 	assert!(result.is_err(), "Should fail when tx parameter is missing");
 	let error_msg = result.unwrap_err();
-	assert!(error_msg.contains("Missing tx"), "Error should mention missing tx parameter");
+	assert!(
+		error_msg.contains("Missing") && error_msg.contains("tx"),
+		"Error should mention missing tx parameter, got: {}",
+		error_msg
+	);
 }
 
 #[tokio::test]

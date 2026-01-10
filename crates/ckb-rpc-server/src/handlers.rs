@@ -1,6 +1,7 @@
 use shared::{
 	error::Result,
 	mcp::{create_error_response, create_success_response, McpRequest, McpResponse, ToolDefinition},
+	params::{extract_str, extract_str_opt, extract_u64, extract_u64_opt, extract_bool, extract_object, extract_array},
 };
 use serde_json::{json, Value};
 use tracing::{debug, error, info};
@@ -41,7 +42,7 @@ impl McpHandler {
 			},
 			"serverInfo": {
 				"name": "ckb-rpc-server",
-				"version": "0.1.0"
+				"version": env!("CARGO_PKG_VERSION")
 			}
 		});
 
@@ -690,62 +691,32 @@ impl McpHandler {
 
 	// Chain Method Handlers
 	async fn call_get_block(&self, args: &Value) -> Result<Value> {
-		let block_hash = args
-			.get("block_hash")
-			.and_then(|v| v.as_str())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing block_hash".to_string())
-			})?;
+		let block_hash = extract_str(args, "block_hash")?;
 		self.rpc_client.get_block(block_hash).await
 	}
 
 	async fn call_get_block_by_number(&self, args: &Value) -> Result<Value> {
-		let block_number = args
-			.get("block_number")
-			.and_then(|v| v.as_u64())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing block_number".to_string())
-			})?;
+		let block_number = extract_u64(args, "block_number")?;
 		self.rpc_client.get_block_by_number(block_number).await
 	}
 
 	async fn call_get_header(&self, args: &Value) -> Result<Value> {
-		let block_hash = args
-			.get("block_hash")
-			.and_then(|v| v.as_str())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing block_hash".to_string())
-			})?;
+		let block_hash = extract_str(args, "block_hash")?;
 		self.rpc_client.get_header(block_hash).await
 	}
 
 	async fn call_get_header_by_number(&self, args: &Value) -> Result<Value> {
-		let block_number = args
-			.get("block_number")
-			.and_then(|v| v.as_u64())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing block_number".to_string())
-			})?;
+		let block_number = extract_u64(args, "block_number")?;
 		self.rpc_client.get_header_by_number(block_number).await
 	}
 
 	async fn call_get_transaction(&self, args: &Value) -> Result<Value> {
-		let tx_hash = args
-			.get("tx_hash")
-			.and_then(|v| v.as_str())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing tx_hash".to_string())
-			})?;
+		let tx_hash = extract_str(args, "tx_hash")?;
 		self.rpc_client.get_transaction(tx_hash).await
 	}
 
 	async fn call_get_block_hash(&self, args: &Value) -> Result<Value> {
-		let block_number = args
-			.get("block_number")
-			.and_then(|v| v.as_u64())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing block_number".to_string())
-			})?;
+		let block_number = extract_u64(args, "block_number")?;
 		self.rpc_client.get_block_hash(block_number).await
 	}
 
@@ -754,22 +725,9 @@ impl McpHandler {
 	}
 
 	async fn call_get_live_cell(&self, args: &Value) -> Result<Value> {
-		let tx_hash = args
-			.get("tx_hash")
-			.and_then(|v| v.as_str())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing tx_hash".to_string())
-			})?;
-
-		let index = args
-			.get("index")
-			.and_then(|v| v.as_u64())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing or invalid index".to_string())
-			})? as u32;
-
-		let with_data = args.get("with_data").and_then(|v| v.as_bool()).unwrap_or(false);
-
+		let tx_hash = extract_str(args, "tx_hash")?;
+		let index = extract_u64(args, "index")? as u32;
+		let with_data = extract_bool(args, "with_data", false);
 		self.rpc_client.get_live_cell(tx_hash, index, with_data).await
 	}
 
@@ -782,12 +740,7 @@ impl McpHandler {
 	}
 
 	async fn call_get_epoch_by_number(&self, args: &Value) -> Result<Value> {
-		let epoch_number = args
-			.get("epoch_number")
-			.and_then(|v| v.as_u64())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing epoch_number".to_string())
-			})?;
+		let epoch_number = extract_u64(args, "epoch_number")?;
 		self.rpc_client.get_epoch_by_number(epoch_number).await
 	}
 
@@ -797,40 +750,20 @@ impl McpHandler {
 	}
 
 	async fn call_get_cells(&self, args: &Value) -> Result<Value> {
-		let search_key = args
-			.get("search_key")
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing search_key".to_string())
-			})?
-			.clone();
-
-		let order = args
-			.get("order")
-			.and_then(|v| v.as_str())
-			.unwrap_or("asc");
-
-		let limit = args.get("limit").and_then(|v| v.as_u64()).map(|l| l as u32);
-		let after_cursor = args.get("after_cursor").and_then(|v| v.as_str());
-
+		let search_key = extract_object(args, "search_key")?.clone();
+		let order = extract_str_opt(args, "order").unwrap_or("asc");
+		let limit = extract_u64_opt(args, "limit").map(|l| l as u32);
+		let after_cursor = extract_str_opt(args, "after_cursor");
 		self.rpc_client.get_cells(search_key, order, limit, after_cursor).await
 	}
 
 	async fn call_get_transactions(&self, args: &Value) -> Result<Value> {
-		let mut search_key = args
-			.get("search_key")
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing search_key".to_string())
-			})?
-			.clone();
+		let mut search_key = extract_object(args, "search_key")?.clone();
+		let order = extract_str_opt(args, "order").unwrap_or("asc");
 
-		let order = args
-			.get("order")
-			.and_then(|v| v.as_str())
-			.unwrap_or("asc");
-
-		let limit = args.get("limit").and_then(|v| v.as_u64()).map(|l| l as u32);
-		let after_cursor = args.get("after_cursor").and_then(|v| v.as_str());
-		let group_by_transaction = args.get("group_by_transaction").and_then(|v| v.as_bool()).unwrap_or(false);
+		let limit = extract_u64_opt(args, "limit").map(|l| l as u32);
+		let after_cursor = extract_str_opt(args, "after_cursor");
+		let group_by_transaction = extract_bool(args, "group_by_transaction", false);
 
 		// Add group_by_transaction to search_key if specified
 		if group_by_transaction {
@@ -843,13 +776,7 @@ impl McpHandler {
 	}
 
 	async fn call_get_cells_capacity(&self, args: &Value) -> Result<Value> {
-		let search_key = args
-			.get("search_key")
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing search_key".to_string())
-			})?
-			.clone();
-
+		let search_key = extract_object(args, "search_key")?.clone();
 		self.rpc_client.get_cells_capacity(search_key).await
 	}
 
@@ -860,25 +787,14 @@ impl McpHandler {
 
 	// Chain Method Handlers - Advanced
 	async fn call_estimate_cycles(&self, args: &Value) -> Result<Value> {
-		let tx = args
-			.get("tx")
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing tx".to_string())
-			})?
-			.clone();
+		let tx = extract_object(args, "tx")?.clone();
 		self.rpc_client.estimate_cycles(tx).await
 	}
 
 	// Pool Method Handlers
 	async fn call_send_transaction(&self, args: &Value) -> Result<Value> {
-		let tx = args
-			.get("tx")
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing tx".to_string())
-			})?
-			.clone();
-
-		let outputs_validator = args.get("outputs_validator").and_then(|v| v.as_str());
+		let tx = extract_object(args, "tx")?.clone();
+		let outputs_validator = extract_str_opt(args, "outputs_validator");
 
 		let result = self.rpc_client.send_transaction(tx, outputs_validator).await?;
 
@@ -892,15 +808,8 @@ impl McpHandler {
 	}
 
 	async fn call_test_tx_pool_accept(&self, args: &Value) -> Result<Value> {
-		let tx = args
-			.get("tx")
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing tx".to_string())
-			})?
-			.clone();
-
-		let outputs_validator = args.get("outputs_validator").and_then(|v| v.as_str());
-
+		let tx = extract_object(args, "tx")?.clone();
+		let outputs_validator = extract_str_opt(args, "outputs_validator");
 		self.rpc_client.test_tx_pool_accept(tx, outputs_validator).await
 	}
 
@@ -923,13 +832,7 @@ impl McpHandler {
 	}
 
 	async fn call_get_pool_tx_detail_info(&self, args: &Value) -> Result<Value> {
-		let tx_hash = args
-			.get("tx_hash")
-			.and_then(|v| v.as_str())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing tx_hash".to_string())
-			})?;
-
+		let tx_hash = extract_str(args, "tx_hash")?;
 		self.rpc_client.get_pool_tx_detail_info(tx_hash).await
 	}
 
@@ -953,37 +856,21 @@ impl McpHandler {
 
 	// Experiment Method Handlers
 	async fn call_calculate_dao_maximum_withdraw(&self, args: &Value) -> Result<Value> {
-		let out_point = args
-			.get("out_point")
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing out_point".to_string())
-			})?
+		let out_point = extract_object(args, "out_point")?.clone();
+		let kind = args.get("kind")
+			.ok_or_else(|| shared::error::CkbMcpError::InvalidParameter("Missing required field: kind".to_string()))?
 			.clone();
-
-		let kind = args
-			.get("kind")
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing kind".to_string())
-			})?
-			.clone();
-
 		self.rpc_client.calculate_dao_maximum_withdraw(out_point, kind).await
 	}
 
 	async fn call_estimate_fee_rate(&self, args: &Value) -> Result<Value> {
-		let estimate_mode = args.get("estimate_mode").and_then(|v| v.as_str());
+		let estimate_mode = extract_str_opt(args, "estimate_mode");
 		let enable_fallback = args.get("enable_fallback").and_then(|v| v.as_bool());
-
 		self.rpc_client.estimate_fee_rate(estimate_mode, enable_fallback).await
 	}
 
 	async fn call_get_transaction_proof(&self, args: &Value) -> Result<Value> {
-		let tx_hashes = args
-			.get("tx_hashes")
-			.and_then(|v| v.as_array())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing tx_hashes (must be an array)".to_string())
-			})?
+		let tx_hashes = extract_array(args, "tx_hashes")?
 			.iter()
 			.filter_map(|v| v.as_str().map(|s| s.to_string()))
 			.collect::<Vec<String>>();
@@ -994,65 +881,33 @@ impl McpHandler {
 			));
 		}
 
-		let block_hash = args.get("block_hash").and_then(|v| v.as_str());
-
+		let block_hash = extract_str_opt(args, "block_hash");
 		self.rpc_client.get_transaction_proof(tx_hashes, block_hash).await
 	}
 
 	async fn call_verify_transaction_proof(&self, args: &Value) -> Result<Value> {
-		let tx_proof = args
-			.get("tx_proof")
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing tx_proof".to_string())
-			})?
-			.clone();
-
+		let tx_proof = extract_object(args, "tx_proof")?.clone();
 		self.rpc_client.verify_transaction_proof(tx_proof).await
 	}
 
 	async fn call_get_block_economic_state(&self, args: &Value) -> Result<Value> {
-		let block_hash = args
-			.get("block_hash")
-			.and_then(|v| v.as_str())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing block_hash".to_string())
-			})?;
-
+		let block_hash = extract_str(args, "block_hash")?;
 		self.rpc_client.get_block_economic_state(block_hash).await
 	}
 
 	async fn call_get_block_median_time(&self, args: &Value) -> Result<Value> {
-		let block_hash = args
-			.get("block_hash")
-			.and_then(|v| v.as_str())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing block_hash".to_string())
-			})?;
-
+		let block_hash = extract_str(args, "block_hash")?;
 		self.rpc_client.get_block_median_time(block_hash).await
 	}
 
 	async fn call_get_block_filter(&self, args: &Value) -> Result<Value> {
-		let block_hash = args
-			.get("block_hash")
-			.and_then(|v| v.as_str())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing block_hash".to_string())
-			})?;
-
+		let block_hash = extract_str(args, "block_hash")?;
 		self.rpc_client.get_block_filter(block_hash).await
 	}
 
 	async fn call_get_fork_block(&self, args: &Value) -> Result<Value> {
-		let block_hash = args
-			.get("block_hash")
-			.and_then(|v| v.as_str())
-			.ok_or_else(|| {
-				shared::error::CkbMcpError::InvalidParameter("Missing block_hash".to_string())
-			})?;
-
-		let verbosity = args.get("verbosity").and_then(|v| v.as_u64()).map(|v| v as u32);
-
+		let block_hash = extract_str(args, "block_hash")?;
+		let verbosity = extract_u64_opt(args, "verbosity").map(|v| v as u32);
 		self.rpc_client.get_fork_block(block_hash, verbosity).await
 	}
 

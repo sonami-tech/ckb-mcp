@@ -2,6 +2,7 @@ use clap::Parser;
 use shared::{
 	error::Result,
 	server::{HasMcpHandler, McpHandlerTrait, McpServerConfig},
+	stats::Stats,
 };
 use std::{path::PathBuf, sync::Arc};
 
@@ -30,11 +31,16 @@ struct Args {
 	/// Log level
 	#[arg(long, default_value = "info")]
 	log_level: String,
+
+	/// Stats database path
+	#[arg(long, default_value = "./data/ckb-docs-stats.redb")]
+	stats_db: String,
 }
 
 #[derive(Clone)]
 struct AppState {
 	handler: Arc<McpHandler>,
+	stats: Arc<Stats>,
 }
 
 impl HasMcpHandler for AppState {
@@ -47,15 +53,20 @@ impl HasMcpHandler for AppState {
 	fn server_info_json(&self) -> serde_json::Value {
 		serde_json::json!({
 			"name": "ckb-docs-server",
-			"version": "0.1.0",
+			"version": env!("CARGO_PKG_VERSION"),
 			"description": "CKB Documentation MCP Server",
 			"endpoints": {
 				"mcp": "/mcp",
 				"sse": "/sse",
-				"health": "/health"
+				"health": "/health",
+				"stats": "/stats"
 			},
 			"transport": ["http"]
 		})
+	}
+
+	fn stats(&self) -> Option<&Arc<Stats>> {
+		Some(&self.stats)
 	}
 }
 
@@ -73,10 +84,13 @@ async fn main() -> Result<()> {
 	// Initialize docs provider
 	let docs_provider = DocsProvider::new(args.docs_path)?;
 
+	// Initialize stats tracking
+	let stats = Arc::new(Stats::open(&args.stats_db)?);
+
 	// Initialize MCP handler
 	let handler = Arc::new(McpHandler::new(docs_provider));
 
-	let state = AppState { handler };
+	let state = AppState { handler, stats };
 
 	// Configure and start server
 	let config = McpServerConfig::new(

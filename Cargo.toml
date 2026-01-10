@@ -36,6 +36,15 @@ reqwest = { version = "0.11", features = ["json"] }
 # Async streams
 tokio-stream = { version = "0.1", features = ["sync"] }
 
+# Random number generation
+rand = "0.8"
+
+# Embedded key-value database for stats persistence
+redb = "2.0"
+
+# Testing utilities
+tempfile = "3.14"
+
 # MCP protocol (using rust-mcp-sdk as placeholder - may need to adjust based on actual crate)
 # rust-mcp-sdk = "0.1"
 

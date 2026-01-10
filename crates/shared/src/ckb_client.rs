@@ -1,3 +1,4 @@
+use rand::Rng;
 use reqwest::Client;
 use crate::{
 	error::{CkbMcpError, Result},
@@ -11,20 +12,10 @@ use tracing::{debug, error};
 /// This client is used by both ckb-rpc-server and ckb-tools-server to make
 /// JSON-RPC calls to CKB nodes. It handles request ID generation, timeout
 /// configuration, and error handling consistently across all servers.
+#[derive(Clone)]
 pub struct CkbRpcClient {
 	client: Client,
 	url: String,
-	next_id: std::sync::atomic::AtomicU64,
-}
-
-impl Clone for CkbRpcClient {
-	fn clone(&self) -> Self {
-		Self {
-			client: self.client.clone(),
-			url: self.url.clone(),
-			next_id: std::sync::atomic::AtomicU64::new(1),
-		}
-	}
 }
 
 impl CkbRpcClient {
@@ -43,7 +34,6 @@ impl CkbRpcClient {
 		Ok(Self {
 			client,
 			url: url.into(),
-			next_id: std::sync::atomic::AtomicU64::new(1),
 		})
 	}
 
@@ -55,9 +45,8 @@ impl CkbRpcClient {
 	/// - Error handling for both HTTP and RPC errors
 	/// - Response parsing
 	pub async fn call(&self, method: &str, params: Value) -> Result<Value> {
-		let id = self
-			.next_id
-			.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+		// Use random u32 for request IDs to avoid collisions when cloning clients
+		let id = rand::thread_rng().gen::<u32>() as u64;
 
 		let request = JsonRpcRequest {
 			jsonrpc: "2.0".to_string(),
@@ -66,7 +55,7 @@ impl CkbRpcClient {
 			id,
 		};
 
-		debug!("CKB RPC request: {} - {}", method, serde_json::to_string(&request.params)?);
+		debug!("CKB RPC request: {} - {:?}", method, request.params);
 
 		let response = self
 			.client

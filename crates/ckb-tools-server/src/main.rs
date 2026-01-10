@@ -1,15 +1,17 @@
 use axum::{
-	extract::{Multipart, State},
+	extract::{Multipart, Query, State},
 	http::{HeaderValue, StatusCode},
+	response::{IntoResponse, Response},
 	routing::{get, post},
 	Json, Router,
 };
 use clap::Parser;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use shared::{
 	ckb_client::CkbRpcClient,
 	error::Result,
 	mcp::{McpRequest, McpResponse},
+	stats::Stats,
 };
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
@@ -45,12 +47,17 @@ struct Args {
 	/// Log level
 	#[arg(long, default_value = "info")]
 	log_level: String,
+
+	/// Stats database path
+	#[arg(long, default_value = "./data/ckb-tools-stats.redb")]
+	stats_db: String,
 }
 
 #[derive(Clone)]
 struct AppState {
 	handler: Arc<McpHandler>,
 	tools_provider: Arc<ToolsProvider>,
+	stats: Arc<Stats>,
 }
 
 /// Response from the file upload endpoint.
@@ -84,12 +91,16 @@ async fn main() -> Result<()> {
 	let tools_provider = ToolsProvider::new(ckb_client, args.ckb_rpc, args.private_key)?;
 	let tools_provider = Arc::new(tools_provider);
 
+	// Initialize stats tracking
+	let stats = Arc::new(Stats::open(&args.stats_db)?);
+
 	// Initialize MCP handler
 	let handler = Arc::new(McpHandler::new((*tools_provider).clone()));
 
 	let state = AppState {
 		handler,
 		tools_provider,
+		stats,
 	};
 
 	// Build router with MCP and HTTP endpoints
@@ -97,6 +108,7 @@ async fn main() -> Result<()> {
 		.route("/", get(server_info_handler))
 		.route("/mcp", post(mcp_handler))
 		.route("/health", get(health_handler))
+		.route("/stats", get(stats_handler))
 		.route("/deploy/file", post(upload_file_handler))
 		.layer(
 			CorsLayer::new()
@@ -119,12 +131,13 @@ async fn main() -> Result<()> {
 async fn server_info_handler() -> Json<serde_json::Value> {
 	Json(serde_json::json!({
 		"name": "ckb-tools-server",
-		"version": "0.1.0",
+		"version": env!("CARGO_PKG_VERSION"),
 		"description": "CKB Development Tools MCP Server",
 		"endpoints": {
 			"mcp": "/mcp",
 			"deploy_file": "/deploy/file",
-			"health": "/health"
+			"health": "/health",
+			"stats": "/stats"
 		},
 		"transport": ["http"]
 	}))
@@ -147,6 +160,47 @@ async fn mcp_handler(
 /// Health check handler.
 async fn health_handler() -> &'static str {
 	"OK"
+}
+
+/// Query parameters for stats endpoint.
+#[derive(Debug, Deserialize)]
+struct StatsQuery {
+	/// Output format: human (default), json, prometheus
+	#[serde(default)]
+	format: Option<String>,
+}
+
+/// Stats endpoint handler.
+async fn stats_handler(
+	State(state): State<AppState>,
+	Query(query): Query<StatsQuery>,
+) -> Response {
+	let format = query.format.as_deref().unwrap_or("human");
+
+	match format {
+		"json" => match state.stats.format_json() {
+			Ok(json) => (
+				StatusCode::OK,
+				[("content-type", "application/json")],
+				json,
+			)
+				.into_response(),
+			Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+		},
+		"prometheus" => match state.stats.format_prometheus() {
+			Ok(prom) => (
+				StatusCode::OK,
+				[("content-type", "text/plain; version=0.0.4")],
+				prom,
+			)
+				.into_response(),
+			Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+		},
+		_ => match state.stats.format_human() {
+			Ok(human) => (StatusCode::OK, [("content-type", "text/plain")], human).into_response(),
+			Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+		},
+	}
 }
 
 /// File upload handler for deploying large files.

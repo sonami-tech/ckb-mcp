@@ -34,6 +34,9 @@ COPY --from=builder /app/target/release/ckb-tools-server /usr/local/bin/
 # Copy application resources
 COPY --from=builder /app/docs /app/docs
 
+# Create data directory for stats persistence
+RUN mkdir -p /app/data
+
 # Copy supervisor configuration
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 

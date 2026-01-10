@@ -1,9 +1,11 @@
 use axum::{
-	extract::State,
+	extract::{Query, State},
 	http::{HeaderValue, StatusCode},
+	response::{IntoResponse, Response},
 	routing::{get, post},
 	Json, Router,
 };
+use serde::Deserialize;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 use tracing::{info, warn};
@@ -11,6 +13,7 @@ use tracing::{info, warn};
 use crate::{
 	error::Result,
 	mcp::{McpRequest, McpResponse},
+	stats::Stats,
 };
 
 /// Trait that server state must implement to provide MCP handling.
@@ -21,6 +24,11 @@ pub trait HasMcpHandler: Clone + Send + Sync + 'static {
 
 	/// Get the server info JSON for the "/" endpoint.
 	fn server_info_json(&self) -> serde_json::Value;
+
+	/// Get optional stats tracker. Override to enable /stats endpoint.
+	fn stats(&self) -> Option<&Arc<Stats>> {
+		None
+	}
 }
 
 /// Trait for MCP request handlers.
@@ -67,6 +75,7 @@ impl McpServerConfig {
 			.route("/", get(mcp_info_handler::<S>))
 			.route("/mcp", post(mcp_handler::<S>))
 			.route("/health", get(health_handler))
+			.route("/stats", get(stats_handler::<S>))
 			.layer(
 				CorsLayer::new()
 					.allow_origin("*".parse::<HeaderValue>().unwrap())
@@ -113,4 +122,55 @@ where
 /// Standard health check handler.
 async fn health_handler() -> &'static str {
 	"OK"
+}
+
+/// Query parameters for stats endpoint.
+#[derive(Debug, Deserialize)]
+pub struct StatsQuery {
+	/// Output format: human (default), json, prometheus
+	#[serde(default)]
+	pub format: Option<String>,
+}
+
+/// Stats endpoint handler.
+async fn stats_handler<S>(
+	State(state): State<S>,
+	Query(query): Query<StatsQuery>,
+) -> Response
+where
+	S: HasMcpHandler,
+{
+	let stats = match state.stats() {
+		Some(s) => s,
+		None => {
+			return (StatusCode::NOT_FOUND, "Stats not enabled").into_response();
+		}
+	};
+
+	let format = query.format.as_deref().unwrap_or("human");
+
+	match format {
+		"json" => match stats.format_json() {
+			Ok(json) => (
+				StatusCode::OK,
+				[("content-type", "application/json")],
+				json,
+			)
+				.into_response(),
+			Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+		},
+		"prometheus" => match stats.format_prometheus() {
+			Ok(prom) => (
+				StatusCode::OK,
+				[("content-type", "text/plain; version=0.0.4")],
+				prom,
+			)
+				.into_response(),
+			Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+		},
+		_ => match stats.format_human() {
+			Ok(human) => (StatusCode::OK, [("content-type", "text/plain")], human).into_response(),
+			Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+		},
+	}
 }

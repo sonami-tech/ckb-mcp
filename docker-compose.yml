@@ -13,6 +13,8 @@ services:
       - RUST_LOG=debug
       - CKB_RPC_URL=${CKB_RPC_URL:-http://127.0.0.1:8114}
       - TZ=America/Los_Angeles
+    volumes:
+      - ckb-mcp-data:/app/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "sh", "-c", "curl -f http://localhost:8001/health && curl -f http://localhost:8002/health && curl -f http://localhost:8003/health"]
@@ -20,3 +22,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+volumes:
+  ckb-mcp-data:

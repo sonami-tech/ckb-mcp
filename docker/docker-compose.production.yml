@@ -13,6 +13,8 @@ services:
       - RUST_LOG=info
       - CKB_RPC_URL=${CKB_RPC_URL:-http://127.0.0.1:8114}
       - TZ=America/Los_Angeles
+    volumes:
+      - ckb-mcp-data:/app/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "sh", "-c", "curl -f http://localhost:8001/health && curl -f http://localhost:8002/health && curl -f http://localhost:8003/health"]
@@ -23,3 +25,6 @@ services:
     labels:
       # Enable Watchtower auto-updates
       - "com.centurylinklabs.watchtower.enable=true"
+
+volumes:
+  ckb-mcp-data:

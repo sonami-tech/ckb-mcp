@@ -2,6 +2,7 @@ use clap::Parser;
 use shared::{
 	error::Result,
 	server::{HasMcpHandler, McpHandlerTrait, McpServerConfig},
+	stats::Stats,
 };
 use std::sync::Arc;
 
@@ -30,11 +31,16 @@ struct Args {
 	/// Log level
 	#[arg(long, default_value = "info")]
 	log_level: String,
+
+	/// Stats database path
+	#[arg(long, default_value = "./data/ckb-rpc-stats.redb")]
+	stats_db: String,
 }
 
 #[derive(Clone)]
 struct AppState {
 	handler: Arc<McpHandler>,
+	stats: Arc<Stats>,
 }
 
 impl HasMcpHandler for AppState {
@@ -47,11 +53,12 @@ impl HasMcpHandler for AppState {
 	fn server_info_json(&self) -> serde_json::Value {
 		serde_json::json!({
 			"name": "ckb-rpc-server",
-			"version": "0.1.0",
+			"version": env!("CARGO_PKG_VERSION"),
 			"description": "CKB RPC MCP Server",
 			"mcp_endpoint": "/mcp",
 			"sse_endpoint": "/sse",
 			"health_endpoint": "/health",
+			"stats_endpoint": "/stats",
 			"transport": ["http"],
 			"capabilities": {
 				"tools": true,
@@ -59,6 +66,10 @@ impl HasMcpHandler for AppState {
 				"prompts": false
 			}
 		})
+	}
+
+	fn stats(&self) -> Option<&Arc<Stats>> {
+		Some(&self.stats)
 	}
 }
 
@@ -76,10 +87,13 @@ async fn main() -> Result<()> {
 	// Initialize CKB RPC client
 	let rpc_client = CkbRpcClient::new(&args.ckb_rpc)?;
 
+	// Initialize stats tracking
+	let stats = Arc::new(Stats::open(&args.stats_db)?);
+
 	// Initialize MCP handler
 	let handler = Arc::new(McpHandler::new(rpc_client));
 
-	let state = AppState { handler };
+	let state = AppState { handler, stats };
 
 	// Configure and start server
 	let config = McpServerConfig::new(

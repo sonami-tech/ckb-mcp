@@ -398,7 +398,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-docs-server"
-version = "0.4.635"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "axum",
@@ -603,7 +603,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-rpc-server"
-version = "0.4.851"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "axum",
@@ -717,7 +717,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-tools-server"
-version = "0.4.797"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "axum",
@@ -2471,6 +2471,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "redb"
+version = "2.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8eca1e9d98d5a7e9002d0013e18d5a9b000aee942eb134883a82f06ebffb6c01"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2923,9 +2932,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "rand 0.8.5",
+ "redb",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror",
  "tokio",
  "tower 0.4.13",

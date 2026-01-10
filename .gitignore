@@ -12,5 +12,9 @@ Thumbs.db
 # Logs
 *.log
 
+# Stats databases
+data/
+*.redb
+
 # Local Claude Code configuration
 .claude/
