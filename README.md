@@ -51,20 +51,21 @@ ckb-mcp/
 cargo build --release
 
 # Development: Auto-rebuild and run on changes.
-# Replace http://127.0.0.1:8114 with your CKB node URL
+# Replace http://127.0.0.1:8114 with your CKB node URL.
 cargo watch --why -x "build --workspace" -i "crates/**/Cargo.*" -i "Cargo.lock" -s 'killall ckb-rpc-server ckb-docs-server ckb-tools-server 2>/dev/null || true; sleep 1; parallel --line-buffer ::: "target/debug/ckb-docs-server" "target/debug/ckb-rpc-server --ckb-rpc http://127.0.0.1:8114" "target/debug/ckb-tools-server --ckb-rpc http://127.0.0.1:8114"'
 
 # Simple run (starts on ports 8001, 8002, 8003).
-# Uses default CKB node at http://127.0.0.1:8114
+# Replace http://127.0.0.1:8114 with your CKB node URL.
 cargo run --bin ckb-rpc-server & \
 cargo run --bin ckb-docs-server & \
 cargo run --bin ckb-tools-server & \
 wait
 
 # Or specify a custom CKB node.
-cargo run --bin ckb-rpc-server -- --ckb-rpc http://your-node-ip:18114 & \
+# Replace http://127.0.0.1:8114 with your CKB node URL
+cargo run --bin ckb-rpc-server -- --ckb-rpc http://127.0.0.1:8114 & \
 cargo run --bin ckb-docs-server & \
-cargo run --bin ckb-tools-server -- --ckb-rpc http://your-node-ip:18114 & \
+cargo run --bin ckb-tools-server -- --ckb-rpc http://127.0.0.1:8114 & \
 wait
 ```
 
