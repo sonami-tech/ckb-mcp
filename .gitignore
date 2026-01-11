@@ -18,3 +18,12 @@ data/
 
 # Local Claude Code configuration
 .claude/
+
+# Nested CLAUDE.md files (root CLAUDE.md is tracked)
+**/CLAUDE.md
+!/CLAUDE.md
+
+# Python
+.venv/
+__pycache__/
+*.pyc
