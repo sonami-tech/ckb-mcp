@@ -187,6 +187,7 @@ impl DocsProvider {
 			("ckb-dev-context://api-reference/omnilock-ethereum-example", "api-reference/omnilock-ethereum-example.md"),
 			("ckb-dev-context://api-reference/xudt-minting-example", "api-reference/xudt-minting-example.md"),
 			("ckb-dev-context://examples/calculate_file_hashes", "examples/calculate_file_hashes.py"),
+			("ckb-dev-context://examples/consolidate_cells", "examples/consolidate_cells.py"),
 		];
 
 		for (uri, file_path) in resource_mappings.iter() {
