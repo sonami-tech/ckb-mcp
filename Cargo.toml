@@ -3,6 +3,7 @@ resolver = "2"
 members = [
 	"crates/shared",
 	"crates/test-common",
+	"crates/ckb-ai-mcp",
 	"crates/ckb-rpc-server",
 	"crates/ckb-docs-server",
 	"crates/ckb-tools-server",

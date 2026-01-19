@@ -1,0 +1,53 @@
+[package]
+name = "ckb-ai-mcp"
+version = "1.0.0"
+edition = "2024"
+description = "Unified MCP server for CKB blockchain development"
+license = "MIT"
+
+[[bin]]
+name = "ckb-ai-mcp"
+path = "src/main.rs"
+
+[dependencies]
+# MCP Protocol
+rmcp = { version = "0.13", features = [
+	"server",
+	"macros",
+	"transport-streamable-http-server",
+] }
+
+# Web Framework
+axum = { version = "0.8", features = ["multipart"] }
+tokio = { version = "1", features = ["full"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+schemars = "1.0"
+
+# CKB
+ckb-sdk = "4.4"
+ckb-types = "0.120"
+ckb-jsonrpc-types = "0.120"
+ckb-hash = "0.120"
+secp256k1 = "0.29"
+hex = "0.4"
+
+# Utilities
+clap = { version = "4", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+reqwest = { version = "0.12", features = ["json"] }
+anyhow = "1"
+thiserror = "2"
+uuid = { version = "1", features = ["v4"] }
+
+# Shared crate
+shared = { path = "../shared" }
+
+[dev-dependencies]
+tokio-test = "0.4"
+test-common = { path = "../test-common" }
