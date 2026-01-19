@@ -12,6 +12,7 @@ use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 mod capabilities;
+mod rpc;
 mod server;
 
 /// Default test private key for development (DO NOT USE IN PRODUCTION).

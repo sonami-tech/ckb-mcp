@@ -2,30 +2,52 @@
 
 use rmcp::handler::server::ServerHandler;
 use rmcp::model::{
-	CallToolResult, ErrorData, GetPromptResult, Implementation, ListPromptsResult,
+	CallToolResult, Content, ErrorData, GetPromptResult, Implementation, ListPromptsResult,
 	ListResourcesResult, ListToolsResult, PaginatedRequestParam, ProtocolVersion,
 	ReadResourceResult, ServerCapabilities, ServerInfo,
 };
 use rmcp::service::RequestContext;
+use shared::ckb_client::CkbRpcClient;
+use std::sync::Arc;
 use tracing::{debug, info};
 
+use crate::rpc::{RpcHandlers, RPC_TOOLS};
 use crate::ServerConfig;
 
 /// Main MCP server implementing all capabilities.
 #[derive(Clone)]
 pub struct CkbMcpServer {
 	config: ServerConfig,
+	rpc_handlers: Option<Arc<RpcHandlers>>,
 }
 
 impl CkbMcpServer {
 	/// Create a new CKB MCP server instance.
 	pub fn new(config: ServerConfig) -> Self {
 		info!("Creating new CKB MCP server instance");
-		Self { config }
+
+		// Create RPC handlers if RPC tools are enabled.
+		let rpc_handlers = if config.args.rpc_enabled() {
+			match CkbRpcClient::new(&config.args.ckb_rpc) {
+				Ok(client) => {
+					info!("RPC client created for {}", config.args.ckb_rpc);
+					Some(Arc::new(RpcHandlers::new(client)))
+				}
+				Err(e) => {
+					tracing::error!("Failed to create RPC client: {}", e);
+					None
+				}
+			}
+		} else {
+			None
+		};
+
+		Self {
+			config,
+			rpc_handlers,
+		}
 	}
 }
-
-// Note: EmptyParams and other tool parameter structs will be added in Phase 2.
 
 impl ServerHandler for CkbMcpServer {
 	fn get_info(&self) -> ServerInfo {
@@ -101,10 +123,21 @@ impl ServerHandler for CkbMcpServer {
 	) -> Result<ListToolsResult, ErrorData> {
 		debug!("list_tools called");
 
-		// Phase 1: Return empty tools list.
-		// Phase 2-5 will add actual tools.
+		let mut tools = Vec::new();
+
+		// Add RPC tools if enabled.
+		if self.config.args.rpc_enabled() {
+			tools.extend(RPC_TOOLS.iter().cloned());
+		}
+
+		// TODO: Add dev tools in Phase 4.
+		// TODO: Add search tools in Phase 5.
+
+		// Record stats.
+		// Note: We don't record list_tools calls in stats since it's called frequently.
+
 		Ok(ListToolsResult {
-			tools: vec![],
+			tools,
 			next_cursor: None,
 			meta: None,
 		})
@@ -117,12 +150,43 @@ impl ServerHandler for CkbMcpServer {
 	) -> Result<CallToolResult, ErrorData> {
 		debug!("call_tool called: {}", request.name);
 
-		// Phase 1: Return method not found.
-		// Phase 2-5 will implement tool handlers.
-		Err(ErrorData::invalid_params(
-			format!("Tool '{}' not implemented yet", request.name),
-			None,
-		))
+		let name: &str = &request.name;
+		let arguments = serde_json::Value::Object(request.arguments.unwrap_or_default());
+
+		// Route to appropriate handler.
+		let result = if RpcHandlers::is_rpc_tool(name) {
+			if !self.config.args.rpc_enabled() {
+				return Err(ErrorData::invalid_params("RPC tools are disabled", None));
+			}
+			if let Some(ref handlers) = self.rpc_handlers {
+				handlers.handle(name, &arguments).await
+			} else {
+				return Err(ErrorData::invalid_params(
+					"RPC client not initialized",
+					None,
+				));
+			}
+		} else {
+			// TODO: Route to dev tools in Phase 4.
+			// TODO: Route to search tools in Phase 5.
+			return Err(ErrorData::invalid_params(
+				format!("Unknown tool: {}", name),
+				None,
+			));
+		};
+
+		match result {
+			Ok(call_result) => {
+				// Record successful tool call in stats.
+				self.config.stats.record_tool_call(name);
+				Ok(call_result)
+			}
+			Err(e) => {
+				// Record error in stats.
+				self.config.stats.record_error();
+				Ok(CallToolResult::error(vec![Content::text(e.to_string())]))
+			}
+		}
 	}
 
 	async fn list_resources(
