@@ -61,9 +61,6 @@
 [submodule "resources/ickb-bot"]
 	path = resources/ickb-bot
 	url = https://github.com/ickb/bot.git
-[submodule "resources/ickb-sdk"]
-	path = resources/ickb-sdk
-	url = https://github.com/ickb/sdk.git
 [submodule "resources/ckb-miscellaneous-scripts"]
 	path = resources/ckb-miscellaneous-scripts
 	url = https://github.com/nervosnetwork/ckb-miscellaneous-scripts.git
