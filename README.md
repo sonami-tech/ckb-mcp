@@ -1,36 +1,34 @@
 # CKB MCP
 
-A collection of Model Context Protocol (MCP) servers for Nervos CKB development.
+A unified Model Context Protocol (MCP) server for Nervos CKB development.
 
 ## Current Development Status
 
 | Server | Status | Description |
 |--------|--------|-------------|
-| **ckb-docs-server** | **Alpha** | 84 documentation resources available via MCP. Ready for use. |
-| **ckb-rpc-server** | **Alpha** | 16 blockchain query tools operational. Ready for use. |
-| **ckb-tools-server** | **Alpha** | 9 cell deployment and account management tools. Ready for use. |
+| **ckb-ai-mcp** | **Alpha** | Unified MCP server with 36 RPC tools, 8 dev tools, 86 docs resources, and 4 workflow prompts. |
 
-⚠️ **Note**: These servers are under active development. Expect breaking changes and incomplete functionality.
+⚠️ **Note**: This server is under active development. Expect breaking changes and incomplete functionality.
 
 ## Overview
 
-This workspace provides multiple specialized MCP servers to help AI assistants build Nervos CKB smart contracts and applications:
+This workspace provides a unified MCP server to help AI assistants build Nervos CKB smart contracts and applications:
 
-- **ckb-rpc-server**: Query CKB blockchain data via RPC.
-- **ckb-docs-server**: Access CKB development documentation and resources.
-- **ckb-tools-server**: Generate, compile, test, and deploy CKB contracts.
+- **RPC Tools**: Query CKB blockchain data (blocks, transactions, cells, epochs).
+- **Dev Tools**: Deploy cells, manage addresses, request faucet funds.
+- **Documentation**: Access 86 CKB development resources and guides.
+- **Workflow Prompts**: Guided workflows for script creation, deployment, and transfers.
 
 ## Architecture
 
-Each server runs as an independent HTTP server with JSON-RPC transport, compatible with Claude Code and other MCP clients.
+The server runs as an HTTP server with Streamable HTTP transport (MCP protocol 2025-03-26), compatible with Claude Code and other MCP clients.
 
 ```
 ckb-mcp/
 ├── crates/
 │   ├── shared/              # Common types and utilities
-│   ├── ckb-rpc-server/      # Blockchain query tools (port 8001)
-│   ├── ckb-docs-server/     # Documentation resources (port 8002)
-│   └── ckb-tools-server/    # Development tools (port 8003)
+│   ├── test-common/         # Test utilities
+│   └── ckb-ai-mcp/          # Unified MCP server (port 3112)
 ├── docs/                    # CKB development documentation
 ├── resources/               # External resource references
 └── Cargo.toml              # Workspace configuration
@@ -47,62 +45,45 @@ ckb-mcp/
 ### Build and Run
 
 ```bash
-# Build all servers.
+# Build the server.
 cargo build --release
 
-# Development: Auto-rebuild and run on changes.
-# Replace http://127.0.0.1:8114 with your CKB node URL.
-cargo watch --why -x "build --workspace" -i "crates/**/Cargo.*" -i "Cargo.lock" -s 'killall ckb-rpc-server ckb-docs-server ckb-tools-server 2>/dev/null || true; sleep 1; parallel --line-buffer ::: "target/debug/ckb-docs-server" "target/debug/ckb-rpc-server --ckb-rpc http://127.0.0.1:8114" "target/debug/ckb-tools-server --ckb-rpc http://127.0.0.1:8114"'
+# Run the unified server (default port 3112).
+./target/release/ckb-ai-mcp --ckb-rpc http://127.0.0.1:8114
 
-# Simple run (starts on ports 8001, 8002, 8003).
-# Replace http://127.0.0.1:8114 with your CKB node URL.
-cargo run --bin ckb-rpc-server & \
-cargo run --bin ckb-docs-server & \
-cargo run --bin ckb-tools-server & \
-wait
+# Or run in docs-only mode (no CKB node required).
+./target/release/ckb-ai-mcp --docs-only
 
-# Or specify a custom CKB node.
-# Replace http://127.0.0.1:8114 with your CKB node URL
-cargo run --bin ckb-rpc-server -- --ckb-rpc http://127.0.0.1:8114 & \
-cargo run --bin ckb-docs-server & \
-cargo run --bin ckb-tools-server -- --ckb-rpc http://127.0.0.1:8114 & \
-wait
+# Development: Auto-rebuild on changes.
+cargo watch -x "build -p ckb-ai-mcp"
 ```
 
-### Run Individual Servers
+### Server Options
 
 ```bash
-# CKB RPC Server (port 8001) - defaults to http://127.0.0.1:8114
-cargo run --bin ckb-rpc-server
-
-# With custom CKB node.
-cargo run --bin ckb-rpc-server -- --ckb-rpc http://your-node-ip:18114
-
-# CKB Docs Server (port 8002)
-cargo run --bin ckb-docs-server
-
-# CKB Tools Server (port 8003) - defaults to http://127.0.0.1:8114
-cargo run --bin ckb-tools-server
-
-# With custom CKB node.
-cargo run --bin ckb-tools-server -- --ckb-rpc http://your-node-ip:18114
+ckb-ai-mcp [OPTIONS]
+  -p, --port <PORT>            Port [default: 3112]
+      --host <HOST>            Host [default: 0.0.0.0]
+      --ckb-rpc <CKB_RPC>      CKB node RPC URL [default: http://127.0.0.1:8114]
+      --private-key <KEY>      Private key for signing transactions
+      --docs-path <PATH>       Custom docs directory
+      --stats-db <PATH>        Path to stats database
+      --docs-only              Run in docs-only mode (no CKB node required)
+      --rpc-only               Run with RPC tools only
+      --tools-only             Run with dev tools only
+      --no-prompts             Disable workflow prompts
+      --log-level <LEVEL>      Log level [default: info]
 ```
 
 ## MCP Integration
 
 ### Claude Code (Project-Scoped)
 
-Add the MCP servers to your current project using the Claude Code CLI:
+Add the MCP server to your current project using the Claude Code CLI:
 
 ```bash
-# Add CKB RPC server for blockchain queries
-claude mcp add --scope project --transport http ckb-rpc http://localhost:8001/mcp
-
-# Add CKB Docs server for development documentation  
-claude mcp add --scope project --transport http ckb-docs http://localhost:8002/mcp
-
-# Add CKB Tools server for contract development
-claude mcp add --scope project --transport http ckb-tools http://localhost:8003/mcp
+# Add the unified CKB MCP server
+claude mcp add --scope project --transport http ckb-ai http://localhost:3112/mcp
 ```
 
 ### Verify MCP Configuration
@@ -112,17 +93,13 @@ claude mcp add --scope project --transport http ckb-tools http://localhost:8003/
 claude mcp list
 
 # Test server connectivity
-curl http://localhost:8001/health
-curl http://localhost:8002/health  
-curl http://localhost:8003/health
+curl http://localhost:3112/health
 
-# Remove servers if needed
-claude mcp remove --scope project ckb-rpc
-claude mcp remove --scope project ckb-docs
-claude mcp remove --scope project ckb-tools
+# Remove server if needed
+claude mcp remove --scope project ckb-ai
 ```
 
-### Using the MCP Servers
+### Using the MCP Server
 
 Once configured, Claude Code can access CKB development resources:
 
@@ -139,59 +116,41 @@ Once configured, Claude Code can access CKB development resources:
 "What are the CKB syscalls available?"
 ```
 
-**Generate and manage contracts:**
+**Deploy and manage cells:**
 ```
-"Create a new lock script template"
-"Compile my CKB contract and run tests"
-"Generate a contract template for NFT development"
-```
-
-The servers provide context-aware assistance for CKB development workflows.
-
-## Server Details
-
-### CKB RPC Server
-
-**Purpose**: Query CKB blockchain data
-
-**Chain Methods**:
-- `get_block` - Get CKB block by hash.
-- `get_block_by_number` - Get CKB block by number.
-- `get_header` - Get CKB block header by hash.
-- `get_header_by_number` - Get CKB block header by number.
-- `get_transaction` - Get CKB transaction by hash.
-- `get_block_hash` - Get block hash by number.
-- `get_tip_header` - Get tip block header.
-- `get_live_cell` - Get live cell by outpoint.
-- `get_tip_block_number` - Get tip block number.
-- `get_current_epoch` - Get current epoch information.
-- `get_epoch_by_number` - Get epoch by number.
-
-**Indexer Methods**:
-- `get_indexer_tip` - Get indexer tip.
-- `get_cells` - Search for cells by criteria.
-- `get_transactions` - Search for transactions by criteria.
-- `get_cells_capacity` - Get total capacity of cells by search criteria.
-
-**Network Methods**:
-- `local_node_info` - Get local node information.
-
-**Usage**:
-```bash
-ckb-rpc-server [OPTIONS]
-  -p, --port <PORT>            Port [default: 8001]
-      --host <HOST>            Host [default: 0.0.0.0]
-      --ckb-rpc <CKB_RPC>      CKB node RPC URL [default: http://127.0.0.1:8114]
-      --log-level <LOG_LEVEL>  Log level [default: info]
+"Deploy this contract to the blockchain"
+"What's my account balance?"
+"Request testnet funds"
 ```
 
-### CKB Docs Server
+The server provides context-aware assistance for CKB development workflows.
 
-**Purpose**: Provide development resources and documentation
+## Server Features
 
-**Resources** (served via `ckb-dev-context://` URI scheme):
+### RPC Tools (36 tools)
 
-All 84 documentation resources are available through the MCP server. Key resources include:
+Query CKB blockchain data:
+
+- **Chain Methods**: `get_block`, `get_block_by_number`, `get_header`, `get_transaction`, `get_tip_header`, `get_tip_block_number`, `get_current_epoch`, etc.
+- **Indexer Methods**: `get_indexer_tip`, `get_cells`, `get_transactions`, `get_cells_capacity`.
+- **Network Methods**: `local_node_info`.
+
+### Dev Tools (8 tools)
+
+Deploy and manage cells:
+
+- `DeployCellData` - Deploy a cell with hex-encoded data.
+- `GetAddressBalance` - Get CKB balance for an address.
+- `GetChainType` - Get chain type (mainnet/testnet/devnet).
+- `GetGenesisHash` - Get genesis block hash.
+- `GenerateLockInfo` - Generate lock script info from private key.
+- `GetLockInfoFromAddress` - Extract lock info from CKB address.
+- `RequestTestnetFunds` - Request testnet funds from faucet.
+- `GetDefaultAccountInfo` - Get configured account details and balance.
+
+### Documentation Resources (86 resources)
+
+Served via `ckb://docs/` URI scheme:
 
 *Core Concepts*:
 - Cell model fundamentals and advanced patterns.
@@ -224,38 +183,23 @@ All 84 documentation resources are available through the MCP server. Key resourc
 - Framework-specific error guides (Omnilock, xUDT, Spore, iCKB).
 - Transaction building errors.
 
-**Usage**:
+### Workflow Prompts (4 prompts)
+
+Guided workflows for common tasks:
+
+- Script creation workflow.
+- Deployment workflow.
+- Query workflow.
+- Transfer workflow.
+
+### File Upload Endpoint
+
+For deploying large binaries that exceed MCP context limits:
+
 ```bash
-ckb-docs-server [OPTIONS]
-  -p, --port <PORT>            Port [default: 8002]
-      --host <HOST>            Host [default: 0.0.0.0]
-      --docs-path <DOCS_PATH>  Custom docs directory
-      --log-level <LOG_LEVEL>  Log level [default: info]
-```
-
-### CKB Tools Server
-
-**Purpose**: Deploy cells, manage addresses and balances, generate lock info, request testnet funds.
-
-**Tools**:
-- `DeployCellData` - Deploy a cell with hex-encoded data.
-- `GetAddressBalance` - Get CKB balance for an address.
-- `GetChainType` - Get chain type (mainnet/testnet/devnet).
-- `GetGenesisHash` - Get genesis block hash.
-- `GenerateLockInfo` - Generate lock script info from private key.
-- `GetLockInfoFromAddress` - Extract lock info from CKB address.
-- `RequestTestnetFunds` - Request testnet funds from faucet.
-- `GetDefaultAccountInfo` - Get configured account details and balance.
-
-**Usage**:
-```bash
-ckb-tools-server [OPTIONS]
-  -p, --port <PORT>                Port [default: 8003]
-      --host <HOST>                Host [default: 0.0.0.0]
-      --ckb-rpc <CKB_RPC>          CKB node RPC URL [default: http://127.0.0.1:8114]
-      --private-key <PRIVATE_KEY>  Private key (hex, with/without 0x prefix)
-                                   Default: Test key - DO NOT USE IN PRODUCTION
-      --log-level <LOG_LEVEL>      Log level [default: info]
+# Upload and deploy a contract binary
+curl -X POST http://localhost:3112/deploy/file \
+  -F "file=@my-contract.wasm"
 ```
 
 ## Development
@@ -263,16 +207,15 @@ ckb-tools-server [OPTIONS]
 ### Project Structure
 
 - **shared/**: Common types, error handling, and MCP utilities.
-- **ckb-rpc-server/**: RPC client and blockchain query handlers.
-- **ckb-docs-server/**: Documentation provider and resource handlers.
-- **ckb-tools-server/**: Development tools and code generation.
+- **test-common/**: Shared test utilities and fixtures.
+- **ckb-ai-mcp/**: Unified MCP server implementation.
 
 ### Adding New Tools
 
-1. Define tool schema in `handlers.rs`.
-2. Implement tool logic in the appropriate provider module.
-3. Add tool to the tools list in `handle_tools_list()`.
-4. Add tool call handler in `handle_tools_call()`.
+1. Define tool schema in the appropriate module.
+2. Implement tool logic in the provider.
+3. Register the tool in the tools list.
+4. Add handler for tool calls.
 
 ### Testing
 
@@ -297,16 +240,14 @@ cargo nextest run
 # Specify URL inline for a single test run
 CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run
 
-# Test specific server
-CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run -p ckb-rpc-server
-CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run -p ckb-docs-server
-CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run -p ckb-tools-server
+# Test specific package
+CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run -p ckb-ai-mcp
 
 # Run tests with logging
 CKB_RPC_URL=http://your-node-ip:18114 RUST_LOG=debug cargo nextest run
 ```
 
-**Note**: This project uses `cargo-nextest` instead of `cargo test` for guaranteed sequential test execution. The `.config/nextest.toml` configuration ensures `test_00_*` sanity checks run first before other tests.
+**Note**: This project uses `cargo-nextest` instead of `cargo test` for guaranteed sequential test execution.
 
 ### Utilities
 
@@ -332,20 +273,18 @@ See `utils/README.md` for complete utility documentation.
   - `http://your-node-ip:18114` - Remote testnet node
   - `http://your-node-ip:28114` - Remote devnet node
 
-  This must match the URL used when starting the servers.
-
 ### Documentation Structure
 
 The documentation system includes:
 
 - **Core Documentation** (`docs/`): Comprehensive CKB development guides.
 - **External Resources** (`resources/`): Reference implementations and examples from CKB ecosystem projects.
-- **MCP Integration**: All docs served via ckb-docs-server with URI scheme `ckb-dev-context://`.
+- **MCP Integration**: All docs served via ckb-ai-mcp with URI scheme `ckb://docs/`.
 
 To add new documentation:
 1. Create markdown file in appropriate `docs/` subdirectory.
 2. **REQUIRED**: Add a `## Description` section after the main title (see CLAUDE.md for format requirements).
-3. Add URI mapping to `crates/ckb-docs-server/src/docs.rs`.
+3. Add URI mapping to `crates/ckb-ai-mcp/src/docs.rs`.
 4. Verify format: `python3 utils/verify_descriptions.py`
 5. Restart server to load new resources.
 

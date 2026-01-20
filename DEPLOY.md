@@ -2,11 +2,11 @@
 
 ## Description
 
-Comprehensive deployment documentation for CKB MCP servers using Docker containers. Covers staging and production environments with automated updates via Watchtower. Essential for DevOps teams deploying CKB blockchain development tools.
+Deployment documentation for the CKB MCP server using Docker containers. Covers staging and production environments with automated updates via Watchtower.
 
 ## Overview
 
-This project uses Docker containers for deployment with automatic updates. All three MCP servers (RPC, Docs, Tools) run in a single container managed by Supervisor.
+This project uses Docker containers for deployment with automatic updates. The unified MCP server runs in a single container.
 
 - **Staging Environment**: Auto-deploys from `develop` branch
 - **Production Environment**: Auto-deploys from tagged releases
@@ -20,9 +20,9 @@ This project includes multiple Docker configuration files for different environm
 ### Core Docker Files
 
 - **`Dockerfile`**: Multi-stage build configuration
-  - Builder stage: Compiles Rust binaries with dependencies
-  - Runtime stage: Debian bookworm-slim with Supervisor process manager
-  - Includes health checks for all three servers
+  - Builder stage: Compiles Rust binary with dependencies
+  - Runtime stage: Debian bookworm-slim with the unified server
+  - Includes health check for the server
 
 - **`.dockerignore`**: Excludes unnecessary files from build context
   - Skips target/, .git/, node_modules/, etc.
@@ -33,7 +33,6 @@ This project includes multiple Docker configuration files for different environm
 - **`docker-compose.yml`**: Local development environment
   - Builds from local Dockerfile
   - Uses `RUST_LOG=debug` for detailed logging
-  - Mounts code for development workflow
 
 - **`docker/docker-compose.staging.yml`**: Staging deployment
   - Uses `ghcr.io/sonami-tech/ckb-mcp:dev-latest` image
@@ -50,13 +49,6 @@ This project includes multiple Docker configuration files for different environm
   - Monitors Docker images for updates every 5 minutes
   - Automatically pulls and deploys new images
   - Works with both staging and production containers
-
-### Supervisor Configuration
-
-- **`docker/supervisord.conf`**: Process manager configuration
-  - Manages all three MCP servers in a single container
-  - Configures logging, auto-restart, and environment variables
-  - Uses shell command wrappers for environment variable substitution
 
 ### Environment Configuration
 
@@ -86,12 +78,10 @@ Images are automatically built and published to:
 
 ## Server Architecture
 
-Single container running three servers:
-- **Port 8001**: CKB RPC Server (blockchain queries)
-- **Port 8002**: CKB Docs Server (documentation)
-- **Port 8003**: CKB Tools Server (development tools)
+Single container running the unified MCP server:
+- **Port 3112**: Unified MCP Server (RPC, Docs, Tools, Prompts)
 
-Health checks monitor all three endpoints.
+Health check monitors the `/health` endpoint.
 
 ## Local Development
 
@@ -105,9 +95,7 @@ docker build -t ckb-mcp:local .
 docker compose up -d
 
 # Check health
-curl http://localhost:8001/health
-curl http://localhost:8002/health
-curl http://localhost:8003/health
+curl http://localhost:3112/health
 ```
 
 ### Configuration
@@ -168,10 +156,8 @@ docker compose -f docker/docker-compose.staging.yml up -d
 # Check container status
 docker compose -f docker/docker-compose.staging.yml ps
 
-# Check health endpoints
-curl http://staging-server:8001/health
-curl http://staging-server:8002/health
-curl http://staging-server:8003/health
+# Check health endpoint
+curl http://staging-server:3112/health
 
 # Check Watchtower logs
 docker logs ckb-mcp-watchtower
@@ -218,10 +204,8 @@ docker compose -f docker/docker-compose.production.yml up -d
 # Check container status
 docker compose -f docker/docker-compose.production.yml ps
 
-# Check health endpoints
-curl http://production-server:8001/health
-curl http://production-server:8002/health
-curl http://production-server:8003/health
+# Check health endpoint
+curl http://production-server:3112/health
 ```
 
 ## Automatic Updates
@@ -297,13 +281,11 @@ git push origin v1.0.0
 
 ### Health Checks
 
-All containers include health checks that verify all three servers are responding:
+Container includes health check that verifies the server is responding:
 
 ```bash
 # Manual health check
-curl -f http://localhost:8001/health && \
-curl -f http://localhost:8002/health && \
-curl -f http://localhost:8003/health
+curl -f http://localhost:3112/health
 ```
 
 ### Log Monitoring
@@ -409,16 +391,14 @@ docker stats
 
 ### Health Check Failures
 
-1. Check individual server status:
+1. Check server status:
 ```bash
-docker exec ckb-mcp-staging supervisorctl status
+curl -v http://localhost:3112/health
 ```
 
 2. Check server logs:
 ```bash
-docker exec ckb-mcp-staging supervisorctl tail -f ckb-rpc-server
-docker exec ckb-mcp-staging supervisorctl tail -f ckb-docs-server
-docker exec ckb-mcp-staging supervisorctl tail -f ckb-tools-server
+docker logs ckb-mcp-staging
 ```
 
 ### Watchtower Not Updating
@@ -444,7 +424,6 @@ docker pull ghcr.io/sonami-tech/ckb-mcp:dev-latest
 - No sensitive data in images
 - Registry access via GitHub tokens
 - Health checks use internal network only
-- Supervisor manages process isolation
 
 ## File Structure
 
@@ -453,7 +432,6 @@ ckb-mcp/
 ├── Dockerfile                           # Multi-stage build configuration
 ├── .dockerignore                        # Exclude files from build context
 ├── docker/
-│   ├── supervisord.conf                 # Process manager configuration
 │   ├── docker-compose.staging.yml       # Staging environment
 │   ├── docker-compose.production.yml    # Production environment
 │   └── docker-compose.watchtower.yml    # Auto-updater configuration

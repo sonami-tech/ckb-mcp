@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This is a Rust workspace providing Model Context Protocol (MCP) servers for Nervos CKB blockchain development. The workspace contains a unified MCP server and legacy individual servers.
+This is a Rust workspace providing a unified Model Context Protocol (MCP) server for Nervos CKB blockchain development.
 
 ## Architecture
 
@@ -10,17 +10,15 @@ This is a Rust workspace providing Model Context Protocol (MCP) servers for Nerv
 ckb-mcp/
 ├── crates/
 │   ├── shared/              # Common types, errors, and utilities
-│   ├── ckb-ai-mcp/          # Unified MCP server (port 3112) - RECOMMENDED
-│   ├── ckb-rpc-server/      # Legacy: Blockchain query tools (port 8001)
-│   ├── ckb-docs-server/     # Legacy: Documentation resources (port 8002)
-│   └── ckb-tools-server/    # Legacy: Development tools (port 8003)
+│   ├── test-common/         # Test utilities
+│   └── ckb-ai-mcp/          # Unified MCP server (port 3112)
 ├── docs/                    # CKB development documentation
 └── Cargo.toml              # Workspace configuration
 ```
 
 ### ckb-ai-mcp (Unified Server)
 
-The recommended server that combines all functionality in a single process using MCP protocol 2025-03-26 with Streamable HTTP transport:
+The server combines all functionality in a single process using MCP protocol 2025-03-26 with Streamable HTTP transport:
 
 - **36 RPC Tools** (`rpc_*`): Query blockchain data, transactions, cells, headers, blocks
 - **8 Dev Tools** (`dev_*`): Deploy cells, manage addresses, request faucet funds
@@ -28,14 +26,6 @@ The recommended server that combines all functionality in a single process using
 - **86 Documentation Resources**: CKB concepts, patterns, API references
 - **4 Workflow Prompts**: Guided workflows for script creation, deployment, queries, transfers
 - **File Upload Endpoint**: POST /deploy/file for large binary deployments
-
-### Legacy Servers
-
-The individual servers remain available for specific use cases:
-
-- **ckb-rpc-server**: Query live CKB blockchain data, transaction details, cell information.
-- **ckb-docs-server**: Serve CKB development documentation, patterns, and API references.
-- **ckb-tools-server**: Deploy cells, manage addresses and balances, generate lock info, request testnet funds.
 
 ## Development Guidelines
 
@@ -50,7 +40,7 @@ The individual servers remain available for specific use cases:
 
 ### Testing
 
-**REQUIRED**: Tests need the `CKB_RPC_URL` environment variable set to the CKB node URL. This should match the URL used when starting the servers.
+**REQUIRED**: Tests need the `CKB_RPC_URL` environment variable set to the CKB node URL. This should match the URL used when starting the server.
 
 **REQUIRED**: This project uses `cargo-nextest` instead of `cargo test` for guaranteed sequential test execution.
 
@@ -71,10 +61,8 @@ cargo nextest run
 # Or specify URL inline for a single test run
 CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run
 
-# Run tests for specific server with custom node
-CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run -p ckb-rpc-server
-CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run -p ckb-docs-server
-CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run -p ckb-tools-server
+# Run tests for the unified server
+CKB_RPC_URL=http://your-node-ip:18114 cargo nextest run -p ckb-ai-mcp
 
 # Run tests with logging
 CKB_RPC_URL=http://your-node-ip:18114 RUST_LOG=debug cargo nextest run
@@ -130,65 +118,52 @@ let chain_type = &shared_data.chain_type;
 let genesis_block = &shared_data.genesis_block;
 ```
 
-**IMPORTANT: Test Timing Expectations**
-- **ckb-rpc-server** tests: Fast (< 5 seconds total).
-- **ckb-docs-server** tests: Fast (< 5 seconds total).
-- **ckb-tools-server** tests: Slow - deployment tests wait up to 60 seconds per test for blockchain transaction confirmation. The full test suite can take several minutes. This is expected behavior as these tests deploy actual cells to the blockchain and verify confirmation.
-
 ### Building and Running
 
 **⚠️ CRITICAL: Server Management - MUST ASK USER FIRST ⚠️**
 
 **BEFORE running any tests, building servers, or starting/stopping servers, you MUST ask the user:**
 
-"Are the MCP servers (ports 8001-8003) auto-managed in another window, or should I manage them manually?"
+"Is the MCP server (port 3112) auto-managed in another window, or should I manage it manually?"
 
 Wait for the user's response before proceeding. Do not assume or guess.
 
 Once confirmed, follow the appropriate workflow:
 
-1. **Auto-managed in another window**: Servers auto-restart when code changes are detected. You should NOT manually start/stop them. However, if a request fails or times out, automatically retry at least once as the server may still be compiling.
-2. **Manually managed by you**: After rebuilding, you must start/stop servers as needed.
+1. **Auto-managed in another window**: Server auto-restarts when code changes are detected. You should NOT manually start/stop it. However, if a request fails or times out, automatically retry at least once as the server may still be compiling.
+2. **Manually managed by you**: After rebuilding, you must start/stop the server as needed.
 
 **Auto-managed workflow:**
 ```bash
 # Only build to validate compilation
 cargo build --workspace --release
 
-# Servers restart automatically - DO NOT manually start/stop
+# Server restarts automatically - DO NOT manually start/stop
 # If requests fail/timeout, retry automatically (server may be compiling)
 ```
 
 **Manual management workflow:**
 ```bash
-# Build and restart servers after code changes
+# Build and restart server after code changes
 cargo build --workspace --release
 
-# RECOMMENDED: Start unified server
+# Start unified server
 ./target/release/ckb-ai-mcp --host 0.0.0.0 --port 3112 --ckb-rpc <node-url>
 
-# Or start unified server in docs-only mode (no CKB node required)
+# Or start in docs-only mode (no CKB node required)
 ./target/release/ckb-ai-mcp --docs-only --port 3112
-
-# Legacy servers (for specific use cases):
-./target/release/ckb-rpc-server --host 0.0.0.0 --port 8001 --ckb-rpc <node-url>
-./target/release/ckb-docs-server --host 0.0.0.0 --port 8002
-./target/release/ckb-tools-server --host 0.0.0.0 --port 8003 --ckb-rpc <node-url>
 ```
 
 ### CLI Parameters
 
-If you need to run servers manually for debugging, use `--help` to see available parameters:
+If you need to run the server manually for debugging, use `--help` to see available parameters:
 
 ```bash
-# View parameters for each server
-cargo run --bin ckb-ai-mcp -- --help       # Unified server
-cargo run --bin ckb-rpc-server -- --help   # Legacy
-cargo run --bin ckb-docs-server -- --help  # Legacy
-cargo run --bin ckb-tools-server -- --help # Legacy
+# View parameters
+cargo run --bin ckb-ai-mcp -- --help
 ```
 
-**ckb-ai-mcp parameters (unified server):**
+**ckb-ai-mcp parameters:**
 - `--host`, `--port` (default: 3112), `--log-level`
 - `--ckb-rpc` (CKB node URL, default: http://127.0.0.1:8114)
 - `--private-key` (transaction signing key)
@@ -196,19 +171,11 @@ cargo run --bin ckb-tools-server -- --help # Legacy
 - `--stats-db` (path to stats database)
 - Feature flags: `--docs-only`, `--rpc-only`, `--tools-only`, `--no-prompts`
 
-**Legacy server parameters:**
-- All servers: `--host`, `--port`, `--log-level`
-- **ckb-rpc-server**: `--ckb-rpc` (CKB node URL)
-- **ckb-docs-server**: `--docs-path` (custom docs directory)
-- **ckb-tools-server**: `--ckb-rpc`, `--private-key` (transaction signing key)
-
 ### Debugging
 
-- Unified server runs on port 3112 (default).
-- Legacy servers run on ports 8001, 8002, 8003 respectively.
+- Server runs on port 3112 (default).
 - Use `RUST_LOG=debug` for detailed logging.
-- Unified server uses Streamable HTTP transport (MCP 2025-03-26).
-- Legacy servers use HTTP transport only (MCP 2024-11-05).
+- Server uses Streamable HTTP transport (MCP 2025-03-26).
 - Test endpoints manually with curl or use MCP client tools.
 
 ## Dependencies
@@ -256,7 +223,7 @@ The `docs/` directory contains comprehensive CKB development documentation:
   - RGB++ asset protocol.
 - **troubleshooting/**: Common errors and debugging guides.
 
-Documentation is served via the ckb-docs-server with URI scheme `ckb-dev-context://`
+Documentation is served via the ckb-ai-mcp server with URI scheme `ckb://docs/`
 
 ### Documentation Format Requirements
 
@@ -274,7 +241,7 @@ Documentation is served via the ckb-docs-server with URI scheme `ckb-dev-context
 **AI-Optimized Documentation Guidelines**:
 - **Target audience**: AI assistants exclusively, not human readers
 - **Concise style**: Remove verbose transitions, explanatory padding, and redundant qualifiers
-- **Direct statements**: Replace "This guide covers X" with "X" 
+- **Direct statements**: Replace "This guide covers X" with "X"
 - **Information density**: Maximize technical content, minimize prose
 
 Example format:
@@ -289,7 +256,7 @@ Token creation patterns for CKB blockchain. Production-ready Rust code for fungi
 ...
 ```
 
-The ckb-docs-server automatically extracts these descriptions for the MCP resource listing, making documentation discoverable and providing context to AI assistants.
+The server automatically extracts these descriptions for the MCP resource listing, making documentation discoverable and providing context to AI assistants.
 
 ## Common Tasks
 
@@ -297,8 +264,8 @@ The ckb-docs-server automatically extracts these descriptions for the MCP resour
 
 1. Create markdown file in appropriate `docs/` subdirectory.
 2. **REQUIRED**: Add a `## Description` section immediately after the main title (see Documentation Format Requirements above).
-3. **CRITICAL**: Add URI mapping to `crates/ckb-docs-server/src/docs.rs` in the `resource_mappings` array.
-   - Format: `("ckb-dev-context://path/filename", "path/filename.md")`
+3. **CRITICAL**: Add URI mapping to `crates/ckb-ai-mcp/src/docs.rs` in the `resource_mappings` array.
+   - Format: `("ckb://docs/path/filename", "path/filename.md")`
    - Without this step, the new documentation will NOT be available through the MCP server
 4. **RECOMMENDED**: Verify description format using the validation script:
    ```bash
@@ -309,23 +276,23 @@ The ckb-docs-server automatically extracts these descriptions for the MCP resour
 
 **⚠️ IMPORTANT**: Always add newly created documents to the MCP server mapping. Documentation files are only accessible to AI assistants when properly registered in the `resource_mappings` array in `docs.rs`.
 
-### Adding New RPC Endpoints  
+### Adding New RPC Endpoints
 
 1. Define request/response types in `shared/src/types.rs`.
-2. Implement handler in respective server's `handlers/` module.
+2. Implement handler in the appropriate module.
 3. Register route in server's main routing.
 4. Add comprehensive error handling.
 
 ### Contract Development Integration
 
-1. Use ckb-tools-server for contract operations.
+1. Use the dev tools for contract operations.
 2. Use modern CKB development tools and frameworks.
 3. Follow CKB development best practices.
 4. Test on both testnet and mainnet configurations.
 
 ## Error Handling
 
-All servers use structured error types:
+The server uses structured error types:
 
 ```rust
 // Shared error types
@@ -346,11 +313,11 @@ Always provide meaningful error messages and proper HTTP status codes.
 - Log security-relevant events appropriately.
 - Handle sensitive data (private keys, seeds) carefully.
 - Never commit secrets to version control.
-- **IMPORTANT**: The ckb-tools-server includes a default test private key for development convenience. This key should **NEVER** be used in production. Always provide a secure `--private-key` parameter when deploying to production environments.
+- **IMPORTANT**: The server includes a default test private key for development convenience. This key should **NEVER** be used in production. Always provide a secure `--private-key` parameter when deploying to production environments.
 
 ### Deployment Endpoint Security Model
 
-The ckb-tools-server provides two methods for deploying cell data:
+The server provides two methods for deploying cell data:
 
 1. **MCP Tool (DeployCellData)**: Limited to 1KB inline hex data. Intended for small deployments within AI context limits.
 2. **HTTP Endpoint (POST /deploy/file)**: Multipart form upload for files of any size. Accessed via curl or similar tools.
@@ -376,7 +343,7 @@ The ckb-tools-server provides two methods for deploying cell data:
 ### Common Issues
 
 1. **CKB Node Connection**: Ensure CKB node is running and accessible.
-2. **Port Conflicts**: Check ports 8001-8003 are available.
+2. **Port Conflicts**: Check port 3112 is available.
 3. **Documentation Loading**: Verify file paths and permissions.
 4. **MCP Protocol**: Validate HTTP headers and JSON-RPC format.
 
@@ -384,22 +351,12 @@ The ckb-tools-server provides two methods for deploying cell data:
 
 ```bash
 # Check server health
-curl http://localhost:8001/health
-curl http://localhost:8002/health
-curl http://localhost:8003/health
+curl http://localhost:3112/health
 
-# List available resources
-curl http://localhost:8002/resources
-
-# Test RPC connectivity
-curl -X POST http://localhost:8001/rpc \
+# Test MCP endpoint
+curl -X POST http://localhost:3112/mcp \
   -H "Content-Type: application/json" \
-  -d '{"method": "get_tip_header", "params": [], "id": 1}'
-
-# Test tools server (examples require parameters - see MCP tools/list for schemas)
-curl -X POST http://localhost:8003/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"GetDefaultAccountInfo","arguments":{}}}'
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```
 
 ## Utility Scripts

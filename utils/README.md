@@ -10,7 +10,7 @@ Verifies that all markdown documentation files have proper Description sections 
 
 #### Purpose
 
-The CKB documentation is served through the ckb-docs-server MCP server, which uses the Description sections to provide meaningful summaries to AI assistants. This script ensures all documentation maintains consistent quality and format.
+The CKB documentation is served through the ckb-ai-mcp server, which uses the Description sections to provide meaningful summaries to AI assistants. This script ensures all documentation maintains consistent quality and format.
 
 #### Requirements
 

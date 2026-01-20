@@ -9,7 +9,7 @@ use tracing::{debug, error};
 
 /// Shared CKB RPC client for communicating with CKB nodes.
 ///
-/// This client is used by both ckb-rpc-server and ckb-tools-server to make
+/// This client is used by the ckb-ai-mcp server to make
 /// JSON-RPC calls to CKB nodes. It handles request ID generation, timeout
 /// configuration, and error handling consistently across all servers.
 #[derive(Clone)]
