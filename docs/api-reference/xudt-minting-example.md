@@ -5,7 +5,7 @@ Complete xUDT token minting example demonstrating owner mode setup, minting tran
 ## Related Resources
 
 - xUDT Protocol: ckb://docs/protocols/xudt-protocol
-- Token Creation: ckb://docs/patterns/token-creation
+- Token Creation: ckb://docs/patterns/token-creation-guide
 - Troubleshooting: ckb://docs/troubleshooting/xudt-errors
 
 ## Complete xUDT Minting Example

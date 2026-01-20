@@ -163,7 +163,7 @@ async fn test_read_resource_token_creation() {
 	let ctx = TestContext::new();
 
 	let result = ctx
-		.read_resource("ckb://docs/patterns/token-creation")
+		.read_resource("ckb://docs/patterns/token-creation-guide")
 		.await
 		.expect("Should read token-creation");
 

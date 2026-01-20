@@ -5,7 +5,7 @@ Implementation guide for Simple User Defined Tokens (SUDT) on CKB blockchain. Pr
 ## Related Resources
 
 - [ckb://docs/protocols/xudt-protocol](ckb://docs/protocols/xudt-protocol) - eXtensible User Defined Token protocol extending sUDT with modular extension capabilities
-- [ckb://docs/patterns/udt-tokens](ckb://docs/patterns/udt-tokens) - UDT token development patterns and best practices
+- [ckb://docs/patterns/udt-tokens-guide](ckb://docs/patterns/udt-tokens-guide) - UDT token development patterns and best practices
 
 ## Complete Working Implementation
 

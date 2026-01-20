@@ -337,7 +337,7 @@ Derive CKB addresses from other blockchain key pairs.
 ## Related Documentation
 
 - [Cell Model](ckb://docs/concepts/cell-model) - Understanding cells and scripts
-- [Minimal Lock Script](ckb://docs/patterns/minimal-lock-script) - Building custom locks
+- [Minimal Lock Script](ckb://docs/patterns/minimal-lock-script-pattern) - Building custom locks
 - [CKB Rust SDK Examples](ckb://docs/api-reference/ckb-rust-sdk-practical-examples) - SDK usage patterns
 - [Transaction Structure](ckb://docs/concepts/transaction-structure) - Transaction composition
 

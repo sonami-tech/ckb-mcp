@@ -498,7 +498,7 @@ Monitor for confirmation using `rpc_get_transaction`.
 
 ## Documentation Resources
 - `ckb://docs/concepts/cell-model` - Cell capacity rules
-- `ckb://docs/patterns/token-creation` - UDT patterns
+- `ckb://docs/patterns/token-creation-guide` - UDT patterns
 - `ckb://docs/concepts/transaction-structure` - Transaction format"#,
 			match token_type {
 				"ckb" => format!(

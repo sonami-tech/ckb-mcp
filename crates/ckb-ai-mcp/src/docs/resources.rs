@@ -240,9 +240,9 @@ impl DocResourceDefinitions {
 			),
 			// Patterns
 			make_resource(
-				"ckb://docs/patterns/c-to-rust-script-migration",
+				"ckb://docs/patterns/c-to-rust-migration-guide",
 				"C to Rust Script Migration",
-				"patterns/c-to-rust-script-migration.md",
+				"patterns/c-to-rust-migration-guide.md",
 			),
 			make_resource(
 				"ckb://docs/patterns/cota-nft-development",
@@ -255,9 +255,9 @@ impl DocResourceDefinitions {
 				"patterns/dao-development-patterns.md",
 			),
 			make_resource(
-				"ckb://docs/patterns/development-tools-and-templates",
+				"ckb://docs/patterns/development-tools-guide",
 				"Development Tools and Templates",
-				"patterns/development-tools-and-templates.md",
+				"patterns/development-tools-guide.md",
 			),
 			make_resource(
 				"ckb://docs/patterns/file-storage-patterns",
@@ -275,14 +275,14 @@ impl DocResourceDefinitions {
 				"patterns/ickb-liquidity-patterns.md",
 			),
 			make_resource(
-				"ckb://docs/patterns/minimal-lock-script",
+				"ckb://docs/patterns/minimal-lock-script-pattern",
 				"Minimal Lock Script",
-				"patterns/minimal-lock-script.md",
+				"patterns/minimal-lock-script-pattern.md",
 			),
 			make_resource(
-				"ckb://docs/patterns/minimal-type-script",
+				"ckb://docs/patterns/minimal-type-script-pattern",
 				"Minimal Type Script",
-				"patterns/minimal-type-script.md",
+				"patterns/minimal-type-script-pattern.md",
 			),
 			make_resource(
 				"ckb://docs/patterns/molecule-schema-development",
@@ -295,14 +295,14 @@ impl DocResourceDefinitions {
 				"patterns/omnilock-development.md",
 			),
 			make_resource(
-				"ckb://docs/patterns/omnilock-interoperability",
+				"ckb://docs/patterns/omnilock-interoperability-guide",
 				"Omnilock Interoperability",
-				"patterns/omnilock-interoperability.md",
+				"patterns/omnilock-interoperability-guide.md",
 			),
 			make_resource(
-				"ckb://docs/patterns/operation-detection",
+				"ckb://docs/patterns/operation-detection-pattern",
 				"Operation Detection",
-				"patterns/operation-detection.md",
+				"patterns/operation-detection-pattern.md",
 			),
 			make_resource(
 				"ckb://docs/patterns/rust-script-development-patterns",
@@ -325,9 +325,9 @@ impl DocResourceDefinitions {
 				"patterns/seed-cell-pattern.md",
 			),
 			make_resource(
-				"ckb://docs/patterns/simple-transfer",
+				"ckb://docs/patterns/simple-transfer-guide",
 				"Simple Transfer",
-				"patterns/simple-transfer.md",
+				"patterns/simple-transfer-guide.md",
 			),
 			make_resource(
 				"ckb://docs/patterns/spore-development",
@@ -340,9 +340,9 @@ impl DocResourceDefinitions {
 				"patterns/system-scripts-and-core-patterns.md",
 			),
 			make_resource(
-				"ckb://docs/patterns/token-creation",
+				"ckb://docs/patterns/token-creation-guide",
 				"Token Creation",
-				"patterns/token-creation.md",
+				"patterns/token-creation-guide.md",
 			),
 			make_resource(
 				"ckb://docs/patterns/transaction-building-patterns",
@@ -355,19 +355,19 @@ impl DocResourceDefinitions {
 				"patterns/type-id-pattern.md",
 			),
 			make_resource(
-				"ckb://docs/patterns/udt-tokens",
+				"ckb://docs/patterns/udt-tokens-guide",
 				"UDT Tokens",
-				"patterns/udt-tokens.md",
+				"patterns/udt-tokens-guide.md",
 			),
 			make_resource(
-				"ckb://docs/patterns/cobuild-integration",
+				"ckb://docs/patterns/cobuild-integration-guide",
 				"CoBuild Integration",
-				"patterns/cobuild-integration.md",
+				"patterns/cobuild-integration-guide.md",
 			),
 			make_resource(
-				"ckb://docs/patterns/ssri-implementation",
+				"ckb://docs/patterns/ssri-implementation-guide",
 				"SSRI Implementation",
-				"patterns/ssri-implementation.md",
+				"patterns/ssri-implementation-guide.md",
 			),
 			make_resource(
 				"ckb://docs/patterns/dob-development",

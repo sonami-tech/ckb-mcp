@@ -6,7 +6,7 @@ CKB's universal lock script enabling cross-blockchain interoperability with nati
 
 - Development Guide: ckb://docs/patterns/omnilock-development
 - API Examples: ckb://docs/api-reference/omnilock-api-examples
-- Interoperability Patterns: ckb://docs/patterns/omnilock-interoperability
+- Interoperability Patterns: ckb://docs/patterns/omnilock-interoperability-guide
 
 ## Overview
 
