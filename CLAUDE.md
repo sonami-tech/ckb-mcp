@@ -385,6 +385,26 @@ This script ensures all documentation files maintain the required Description fo
 6. Ensure all tests pass before submitting changes.
 7. **Create git commits**: Make a git commit for every major group of changes (e.g., feature implementation, documentation updates, bug fixes). This helps maintain clear project history and facilitates easier rollbacks if needed.
 
+## Adding to Claude Code
+
+To add this MCP server to Claude Code, first start the server, then use:
+
+```bash
+claude mcp add --transport http ckb-ai-mcp http://localhost:3112/mcp
+```
+
+Verify it's configured:
+
+```bash
+claude mcp list
+```
+
+Remove if needed:
+
+```bash
+claude mcp remove ckb-ai-mcp
+```
+
 ## Resources
 
 - [CKB Developer Docs](https://docs.nervos.org/)
