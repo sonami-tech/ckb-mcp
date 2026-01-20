@@ -652,8 +652,12 @@ impl DevHandlers {
 			.lock(lock_script.clone())
 			.build();
 
+		let data_capacity = Capacity::bytes(data.len()).map_err(|e| {
+			CkbMcpError::InvalidParameter(format!("Data size too large: {}", e))
+		})?;
+
 		let output_capacity = temp_output
-			.occupied_capacity(Capacity::bytes(data.len()).unwrap())
+			.occupied_capacity(data_capacity)
 			.map_err(|e| CkbMcpError::Internal(format!("Capacity calculation error: {}", e)))?;
 
 		debug!("Output capacity needed: {} shannons", output_capacity.as_u64());

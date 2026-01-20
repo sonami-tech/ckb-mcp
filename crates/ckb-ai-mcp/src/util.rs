@@ -11,7 +11,11 @@ pub fn make_tool(
 	Tool {
 		name: name.into(),
 		description: Some(description.into()),
-		input_schema: input_schema.as_object().unwrap().clone().into(),
+		input_schema: input_schema
+			.as_object()
+			.expect("input_schema must be a JSON object")
+			.clone()
+			.into(),
 		annotations: None,
 		output_schema: None,
 		title: None,
