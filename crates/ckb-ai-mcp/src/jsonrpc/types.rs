@@ -98,19 +98,16 @@ impl JsonRpcResponse {
 	}
 
 	/// Create a method not found response.
-	#[allow(dead_code)]
 	pub fn method_not_found(id: Value, method: &str) -> Self {
 		Self::error(id, METHOD_NOT_FOUND, format!("Method not found: {}", method))
 	}
 
 	/// Create an invalid params response.
-	#[allow(dead_code)]
 	pub fn invalid_params(id: Value, message: impl Into<String>) -> Self {
 		Self::error(id, INVALID_PARAMS, message)
 	}
 
 	/// Create an internal error response.
-	#[allow(dead_code)]
 	pub fn internal_error(id: Value, message: impl Into<String>) -> Self {
 		Self::error(id, INTERNAL_ERROR, message)
 	}
