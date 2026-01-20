@@ -4,7 +4,7 @@ Production-ready CKB Rust SDK examples covering transfers, UDT tokens, multi-sig
 
 ## Overview
 
-All examples are based on real implementations from the CKB ecosystem and follow current best practices as of 2024.
+All examples are based on actual CKB Rust SDK v5.x implementations. The SDK provides transaction builders (implementing the `TxBuilder` trait), script unlockers (implementing `ScriptUnlocker`), and utility functions for common operations.
 
 ## Quick Start Examples
 
@@ -106,37 +106,44 @@ pub async fn transfer_ckb(
 
 ### 2. UDT Token Transfer
 
-Based on `resources/ckb-sdk-rust/examples/sudt_send.rs`:
+Based on actual `ckb-sdk-rust/src/tx_builder/udt/mod.rs`:
 
 ```rust
 use ckb_sdk::{
-    constants::{SIGHASH_TYPE_HASH, SUDT_CODE_HASH},
+    constants::SIGHASH_TYPE_HASH,
     rpc::CkbRpcClient,
-    traits::{DefaultCellCollector, DefaultCellDepResolver, DefaultTransactionDependencyProvider},
-    tx_builder::{sudt::SudtTransferBuilder, CapacityBalancer, TxBuilder},
+    traits::{
+        DefaultCellCollector, DefaultCellDepResolver, DefaultHeaderDepResolver,
+        DefaultTransactionDependencyProvider, SecpCkbRawKeySigner,
+    },
+    tx_builder::{
+        udt::{UdtTargetReceiver, UdtTransferBuilder},
+        CapacityBalancer, TransferAction, TxBuilder,
+    },
+    types::ScriptId,
     unlock::{ScriptUnlocker, SecpSighashUnlocker},
-    Address, ScriptId,
+    Address,
 };
 use ckb_types::{
     bytes::Bytes,
     core::ScriptHashType,
-    packed::{CellOutput, Script},
+    packed::Script,
     prelude::*,
     H256,
 };
 use std::collections::HashMap;
 
-/// Transfer UDT tokens
+/// Transfer UDT tokens using the SDK's UdtTransferBuilder
 pub async fn transfer_udt_tokens(
     ckb_rpc_url: &str,
     sender_private_key: H256,
-    receiver_address: Address,
+    receiver_lock: Script,
+    udt_type_script: Script,  // The UDT type script (sUDT or xUDT)
     token_amount: u128,
-    owner_lock_hash: H256,
 ) -> Result<H256, Box<dyn std::error::Error>> {
     let mut ckb_client = CkbRpcClient::new(ckb_rpc_url);
-    
-    // Setup components (similar to transfer_ckb)
+
+    // Setup components
     let cell_dep_resolver = setup_cell_dep_resolver(&mut ckb_client)?;
     let header_dep_resolver = DefaultHeaderDepResolver::new(ckb_rpc_url);
     let mut cell_collector = DefaultCellCollector::new(ckb_rpc_url);
@@ -146,30 +153,28 @@ pub async fn transfer_udt_tokens(
     let sender_key = secp256k1::SecretKey::from_slice(sender_private_key.as_bytes())?;
     let sender_script = generate_sighash_script(&sender_key)?;
 
-    // Create UDT type script
-    let udt_script = Script::new_builder()
-        .code_hash(SUDT_CODE_HASH.pack())
-        .hash_type(ScriptHashType::Type.into())
-        .args(Bytes::from(owner_lock_hash.as_bytes().to_vec()).pack())
-        .build();
-
     // Setup unlockers
-    let unlockers = setup_unlockers(vec![sender_key])?;
+    let unlockers = setup_unlockers(vec![sender_key.clone()])?;
 
-    // Create UDT transfer builder
-    let mut builder = SudtTransferBuilder::new();
-    
-    // Add transfer output
-    builder.add_output(
-        CellOutput::new_builder()
-            .lock(Script::from(&receiver_address))
-            .type_(Some(udt_script.clone()).pack())
-            .capacity(150_00000000u64.pack()) // Minimum capacity for UDT cell
-            .build(),
-        token_amount,
-    );
+    // Create UDT transfer builder with:
+    // - type_script: The UDT type script
+    // - sender: Sender's lock script (to find sender's UDT cell)
+    // - receivers: List of transfer targets
+    let receivers = vec![
+        UdtTargetReceiver::new(
+            TransferAction::Create,  // Create new cell for recipient
+            receiver_lock,
+            token_amount,
+        ),
+    ];
 
-    // Build and sign transaction
+    let builder = UdtTransferBuilder {
+        type_script: udt_type_script,
+        sender: sender_script.clone(),
+        receivers,
+    };
+
+    // Build and sign transaction using TxBuilder trait
     let balancer = CapacityBalancer::new_simple(
         sender_script.clone(),
         create_placeholder_witness(),
@@ -188,7 +193,7 @@ pub async fn transfer_udt_tokens(
     // Send transaction
     let json_tx = ckb_jsonrpc_types::TransactionView::from(tx);
     let tx_hash = ckb_client.send_transaction(json_tx.inner, None)?;
-    
+
     println!("UDT transfer sent: {:#x}", tx_hash);
     Ok(tx_hash)
 }
@@ -196,22 +201,27 @@ pub async fn transfer_udt_tokens(
 
 ### 3. Multi-Signature Transaction
 
-Based on `resources/ckb-sdk-rust/examples/transfer_from_multisig.rs`:
+Based on actual `ckb-sdk-rust/src/unlock/signer.rs` and `unlocker.rs`:
 
 ```rust
 use ckb_sdk::{
-    constants::MULTISIG_TYPE_HASH,
-    traits::{DefaultCellCollector, MultisigConfig},
-    tx_builder::transfer::CapacityTransferBuilder,
-    unlock::{MultisigUnlocker, ScriptUnlocker},
-    Address, HumanCapacity,
+    constants::MultisigScript,
+    rpc::CkbRpcClient,
+    traits::{
+        DefaultCellCollector, DefaultCellDepResolver, DefaultHeaderDepResolver,
+        DefaultTransactionDependencyProvider, SecpCkbRawKeySigner,
+    },
+    tx_builder::{transfer::CapacityTransferBuilder, CapacityBalancer, TxBuilder},
+    types::ScriptId,
+    unlock::{MultisigConfig, ScriptUnlocker, SecpMultisigScriptSigner, SecpMultisigUnlocker},
+    Address, HumanCapacity, NetworkInfo,
 };
 use ckb_types::{
     bytes::Bytes,
     core::ScriptHashType,
-    packed::{CellOutput, Script},
+    packed::{CellOutput, Script, WitnessArgs},
     prelude::*,
-    H256,
+    H160, H256,
 };
 use std::collections::HashMap;
 
@@ -219,44 +229,51 @@ use std::collections::HashMap;
 pub async fn transfer_from_multisig(
     ckb_rpc_url: &str,
     private_keys: Vec<H256>,
-    public_keys: Vec<secp256k1::PublicKey>,
+    sighash_addresses: Vec<H160>,  // Blake160 hashes of public keys
+    require_first_n: u8,
     threshold: u8,
     receiver_address: Address,
     amount: HumanCapacity,
 ) -> Result<H256, Box<dyn std::error::Error>> {
     // Setup basic components
     let mut ckb_client = CkbRpcClient::new(ckb_rpc_url);
-    let cell_dep_resolver = setup_cell_dep_resolver(&mut ckb_client)?;
+    let genesis_block = ckb_client.get_block_by_number(0.into())?.unwrap();
+    let genesis_block: ckb_types::core::BlockView = genesis_block.into();
+    let cell_dep_resolver = DefaultCellDepResolver::from_genesis(&genesis_block)?;
     let header_dep_resolver = DefaultHeaderDepResolver::new(ckb_rpc_url);
     let mut cell_collector = DefaultCellCollector::new(ckb_rpc_url);
     let tx_dep_provider = DefaultTransactionDependencyProvider::new(ckb_rpc_url, 10);
 
     // Create multisig configuration
-    let multisig_config = MultisigConfig::new_with_pubkeys(
-        public_keys.iter().map(|pk| pk.serialize()).collect(),
-        threshold,
-    )?;
+    // MultisigConfig takes sighash_addresses (H160 hashes), require_first_n, and threshold
+    let multisig_config = MultisigConfig::new_with(sighash_addresses, require_first_n, threshold)?;
 
-    // Generate multisig script
+    // Get multisig script ID from MultisigScript enum
+    // Choose Legacy or V2 depending on which you want to use
+    let multisig_script_variant = MultisigScript::Legacy;
+    let multisig_script_id = multisig_script_variant.script_id();
+
+    // Generate multisig lock script
     let multisig_script = Script::new_builder()
-        .code_hash(MULTISIG_TYPE_HASH.pack())
-        .hash_type(ScriptHashType::Type.into())
-        .args(multisig_config.hash160().pack())
+        .code_hash(multisig_script_id.code_hash.pack())
+        .hash_type(multisig_script_id.hash_type)
+        .args(Bytes::from(multisig_config.hash160().as_bytes().to_vec()).pack())
         .build();
 
-    // Setup multisig unlocker
+    // Setup multisig unlocker with SecpMultisigUnlocker
     let secret_keys: Vec<secp256k1::SecretKey> = private_keys
         .iter()
         .map(|h| secp256k1::SecretKey::from_slice(h.as_bytes()))
         .collect::<Result<Vec<_>, _>>()?;
 
-    let multisig_unlocker = MultisigUnlocker::new(multisig_config, secret_keys);
-    let multisig_script_id = ScriptId::new_type(MULTISIG_TYPE_HASH.clone());
-    
-    let mut unlockers = HashMap::default();
+    let signer = SecpCkbRawKeySigner::new_with_secret_keys(secret_keys);
+    let multisig_signer = SecpMultisigScriptSigner::new(Box::new(signer), multisig_config.clone());
+    let multisig_unlocker = SecpMultisigUnlocker::new(multisig_signer);
+
+    let mut unlockers: HashMap<ScriptId, Box<dyn ScriptUnlocker>> = HashMap::default();
     unlockers.insert(
         multisig_script_id,
-        Box::new(multisig_unlocker) as Box<dyn ScriptUnlocker>,
+        Box::new(multisig_unlocker),
     );
 
     // Build transaction
@@ -266,8 +283,8 @@ pub async fn transfer_from_multisig(
         .build();
 
     let builder = CapacityTransferBuilder::new(vec![(output, Bytes::default())]);
-    
-    let placeholder_witness = create_multisig_placeholder_witness(threshold);
+
+    let placeholder_witness = create_multisig_placeholder_witness(&multisig_config);
     let balancer = CapacityBalancer::new_simple(multisig_script, placeholder_witness, 1000);
 
     let (tx, _) = builder.build_unlocked(
@@ -282,32 +299,39 @@ pub async fn transfer_from_multisig(
     // Send transaction
     let json_tx = ckb_jsonrpc_types::TransactionView::from(tx);
     let tx_hash = ckb_client.send_transaction(json_tx.inner, None)?;
-    
+
     println!("Multisig transfer sent: {:#x}", tx_hash);
     Ok(tx_hash)
 }
 
-fn create_multisig_placeholder_witness(threshold: u8) -> WitnessArgs {
-    // Create placeholder for multisig witness (65 bytes per signature)
-    let placeholder_signature = vec![0u8; 65 * threshold as usize];
-    
+fn create_multisig_placeholder_witness(config: &MultisigConfig) -> WitnessArgs {
+    // Multisig witness: config data + (65 bytes * threshold) signatures
+    let config_data = config.to_witness_data();
+    let mut placeholder = vec![0u8; config_data.len() + 65 * (config.threshold() as usize)];
+    placeholder[0..config_data.len()].copy_from_slice(&config_data);
+
     WitnessArgs::new_builder()
-        .lock(Some(Bytes::from(placeholder_signature)).pack())
+        .lock(Some(Bytes::from(placeholder)).pack())
         .build()
 }
 ```
 
 ### 4. Omnilock Cross-Chain Integration
 
-Based on `resources/ckb-sdk-rust/examples/transfer_from_omnilock_ethereum.rs`:
+Based on actual `ckb-sdk-rust/src/unlock/omni_lock.rs` and `unlocker.rs`:
 
 ```rust
 use ckb_sdk::{
-    constants::OMNILOCK_TYPE_HASH,
     rpc::CkbRpcClient,
-    traits::{DefaultCellCollector, OmnilockConfig},
-    tx_builder::transfer::CapacityTransferBuilder,
-    unlock::{OmnilockUnlocker, ScriptUnlocker},
+    traits::{
+        DefaultCellCollector, DefaultCellDepResolver, DefaultHeaderDepResolver,
+        DefaultTransactionDependencyProvider, SecpCkbRawKeySigner,
+    },
+    tx_builder::{transfer::CapacityTransferBuilder, CapacityBalancer, TxBuilder},
+    types::ScriptId,
+    unlock::{
+        OmniLockConfig, OmniLockScriptSigner, OmniLockUnlocker, OmniUnlockMode, ScriptUnlocker,
+    },
     Address, HumanCapacity,
 };
 use ckb_types::{
@@ -319,42 +343,53 @@ use ckb_types::{
 };
 use std::collections::HashMap;
 
+// Omnilock code hash (type script hash) - must be provided or discovered from deployment
+const OMNILOCK_CODE_HASH: H256 = H256([/* your omnilock code hash here */]);
+
 /// Transfer from Omnilock (Ethereum-compatible)
 pub async fn transfer_from_omnilock_ethereum(
     ckb_rpc_url: &str,
     ethereum_private_key: H256,
-    ethereum_address: H160,
+    ethereum_pubkey_hash: H160,  // keccak160 of Ethereum public key
+    omnilock_code_hash: H256,    // Omnilock script code hash (deploy-specific)
     receiver_address: Address,
     amount: HumanCapacity,
 ) -> Result<H256, Box<dyn std::error::Error>> {
     // Setup components
     let mut ckb_client = CkbRpcClient::new(ckb_rpc_url);
-    let cell_dep_resolver = setup_cell_dep_resolver(&mut ckb_client)?;
+    let genesis_block = ckb_client.get_block_by_number(0.into())?.unwrap();
+    let genesis_block: ckb_types::core::BlockView = genesis_block.into();
+    let cell_dep_resolver = DefaultCellDepResolver::from_genesis(&genesis_block)?;
     let header_dep_resolver = DefaultHeaderDepResolver::new(ckb_rpc_url);
     let mut cell_collector = DefaultCellCollector::new(ckb_rpc_url);
     let tx_dep_provider = DefaultTransactionDependencyProvider::new(ckb_rpc_url, 10);
 
-    // Create Omnilock configuration for Ethereum
-    let omnilock_config = OmnilockConfig::new_ethereum(ethereum_address.0);
-    
-    // Generate Omnilock script
+    // Create Omnilock configuration for Ethereum identity
+    // OmniLockConfig::new_ethereum takes keccak160 pubkey hash
+    let omnilock_config = OmniLockConfig::new_ethereum(ethereum_pubkey_hash);
+
+    // Generate Omnilock script - code_hash is deployment-specific
     let omnilock_script = Script::new_builder()
-        .code_hash(OMNILOCK_TYPE_HASH.pack())
+        .code_hash(omnilock_code_hash.pack())
         .hash_type(ScriptHashType::Type.into())
         .args(omnilock_config.build_args().pack())
         .build();
 
-    // Setup Omnilock unlocker
-    let omnilock_unlocker = OmnilockUnlocker::new_ethereum(
-        ethereum_private_key,
-        omnilock_config,
+    // Setup Omnilock unlocker with OmniLockScriptSigner and OmniLockUnlocker
+    let secret_key = secp256k1::SecretKey::from_slice(ethereum_private_key.as_bytes())?;
+    let signer = SecpCkbRawKeySigner::new_with_secret_keys(vec![secret_key]);
+    let omnilock_signer = OmniLockScriptSigner::new(
+        Box::new(signer),
+        omnilock_config.clone(),
+        OmniUnlockMode::Normal,
     );
-    
-    let omnilock_script_id = ScriptId::new_type(OMNILOCK_TYPE_HASH.clone());
-    let mut unlockers = HashMap::default();
+    let omnilock_unlocker = OmniLockUnlocker::new(omnilock_signer, omnilock_config.clone());
+
+    let omnilock_script_id = ScriptId::new_type(omnilock_code_hash);
+    let mut unlockers: HashMap<ScriptId, Box<dyn ScriptUnlocker>> = HashMap::default();
     unlockers.insert(
         omnilock_script_id,
-        Box::new(omnilock_unlocker) as Box<dyn ScriptUnlocker>,
+        Box::new(omnilock_unlocker),
     );
 
     // Build transaction
@@ -364,12 +399,9 @@ pub async fn transfer_from_omnilock_ethereum(
         .build();
 
     let builder = CapacityTransferBuilder::new(vec![(output, Bytes::default())]);
-    
-    // Omnilock uses 65-byte Ethereum signature format
-    let placeholder_witness = WitnessArgs::new_builder()
-        .lock(Some(Bytes::from(vec![0u8; 65])).pack())
-        .build();
-    
+
+    // Omnilock placeholder witness - use config's placeholder method
+    let placeholder_witness = omnilock_config.placeholder_witness(OmniUnlockMode::Normal)?;
     let balancer = CapacityBalancer::new_simple(omnilock_script, placeholder_witness, 1000);
 
     let (tx, _) = builder.build_unlocked(
@@ -384,7 +416,7 @@ pub async fn transfer_from_omnilock_ethereum(
     // Send transaction
     let json_tx = ckb_jsonrpc_types::TransactionView::from(tx);
     let tx_hash = ckb_client.send_transaction(json_tx.inner, None)?;
-    
+
     println!("Omnilock transfer sent: {:#x}", tx_hash);
     Ok(tx_hash)
 }
@@ -392,34 +424,47 @@ pub async fn transfer_from_omnilock_ethereum(
 
 ### 5. DAO Deposit and Withdrawal
 
-Based on `resources/ckb-sdk-rust/examples/dao_operations.rs`:
+Based on actual `ckb-sdk-rust/src/tx_builder/dao.rs`:
 
 ```rust
 use ckb_sdk::{
-    constants::{DAO_TYPE_HASH, SIGHASH_TYPE_HASH},
+    constants::DAO_TYPE_HASH,
     rpc::CkbRpcClient,
-    traits::{DefaultCellCollector, DaoCalculator},
-    tx_builder::dao::{DaoDepositBuilder, DaoWithdrawBuilder},
-    Address, HumanCapacity,
+    traits::{
+        DefaultCellCollector, DefaultCellDepResolver, DefaultHeaderDepResolver,
+        DefaultTransactionDependencyProvider, SecpCkbRawKeySigner,
+    },
+    tx_builder::{
+        dao::{DaoDepositBuilder, DaoDepositReceiver, DaoPrepareBuilder, DaoWithdrawBuilder,
+              DaoWithdrawItem, DaoWithdrawReceiver},
+        CapacityBalancer, TxBuilder,
+    },
+    types::ScriptId,
+    unlock::{ScriptUnlocker, SecpSighashUnlocker},
+    util::calculate_dao_maximum_withdraw4,
+    HumanCapacity,
 };
 use ckb_types::{
     bytes::Bytes,
-    core::{BlockNumber, EpochNumber, ScriptHashType},
-    packed::{CellOutput, OutPoint, Script},
+    core::ScriptHashType,
+    packed::{CellInput, CellOutput, OutPoint, Script, WitnessArgs},
     prelude::*,
     H256,
 };
+use std::collections::HashMap;
 
 /// Deposit CKB into Nervos DAO
 pub async fn deposit_to_dao(
     ckb_rpc_url: &str,
     sender_private_key: H256,
-    deposit_amount: HumanCapacity,
+    deposit_amount: u64,
 ) -> Result<H256, Box<dyn std::error::Error>> {
     let mut ckb_client = CkbRpcClient::new(ckb_rpc_url);
-    
+
     // Setup components
-    let cell_dep_resolver = setup_cell_dep_resolver(&mut ckb_client)?;
+    let genesis_block = ckb_client.get_block_by_number(0.into())?.unwrap();
+    let genesis_block: ckb_types::core::BlockView = genesis_block.into();
+    let cell_dep_resolver = DefaultCellDepResolver::from_genesis(&genesis_block)?;
     let header_dep_resolver = DefaultHeaderDepResolver::new(ckb_rpc_url);
     let mut cell_collector = DefaultCellCollector::new(ckb_rpc_url);
     let tx_dep_provider = DefaultTransactionDependencyProvider::new(ckb_rpc_url, 10);
@@ -428,26 +473,15 @@ pub async fn deposit_to_dao(
     let sender_key = secp256k1::SecretKey::from_slice(sender_private_key.as_bytes())?;
     let sender_script = generate_sighash_script(&sender_key)?;
 
-    // Create DAO type script
-    let dao_script = Script::new_builder()
-        .code_hash(DAO_TYPE_HASH.pack())
-        .hash_type(ScriptHashType::Type.into())
-        .build();
-
     // Setup unlocker
-    let unlockers = setup_unlockers(vec![sender_key])?;
+    let unlockers = setup_unlockers(vec![sender_key.clone()])?;
 
-    // Build DAO deposit transaction
-    let mut builder = DaoDepositBuilder::new();
-    
-    // Add deposit output
-    builder.add_output(
-        CellOutput::new_builder()
-            .lock(sender_script.clone())
-            .type_(Some(dao_script).pack())
-            .capacity(deposit_amount.0.pack())
-            .build(),
-    );
+    // Build DAO deposit transaction using DaoDepositBuilder
+    // DaoDepositBuilder takes a Vec<DaoDepositReceiver>
+    let receivers = vec![
+        DaoDepositReceiver::new(sender_script.clone(), deposit_amount),
+    ];
+    let builder = DaoDepositBuilder::new(receivers);
 
     let balancer = CapacityBalancer::new_simple(
         sender_script,
@@ -467,121 +501,127 @@ pub async fn deposit_to_dao(
     // Send transaction
     let json_tx = ckb_jsonrpc_types::TransactionView::from(tx);
     let tx_hash = ckb_client.send_transaction(json_tx.inner, None)?;
-    
+
     println!("DAO deposit sent: {:#x}", tx_hash);
     Ok(tx_hash)
 }
 
-/// Start DAO withdrawal (Phase 1)
+/// Start DAO withdrawal (Phase 1 - Prepare)
+/// This creates a "prepared" cell that records the deposit block number
 pub async fn start_dao_withdrawal(
     ckb_rpc_url: &str,
     sender_private_key: H256,
     deposit_out_point: OutPoint,
 ) -> Result<H256, Box<dyn std::error::Error>> {
     let mut ckb_client = CkbRpcClient::new(ckb_rpc_url);
-    
-    // Get deposit cell info
-    let cell_with_status = ckb_client.get_live_cell(deposit_out_point.clone(), true)?;
-    let deposit_cell = cell_with_status.cell.unwrap();
-    
-    // Setup components (similar to deposit)
-    let cell_dep_resolver = setup_cell_dep_resolver(&mut ckb_client)?;
+
+    // Setup components
+    let genesis_block = ckb_client.get_block_by_number(0.into())?.unwrap();
+    let genesis_block: ckb_types::core::BlockView = genesis_block.into();
+    let cell_dep_resolver = DefaultCellDepResolver::from_genesis(&genesis_block)?;
     let header_dep_resolver = DefaultHeaderDepResolver::new(ckb_rpc_url);
+    let mut cell_collector = DefaultCellCollector::new(ckb_rpc_url);
     let tx_dep_provider = DefaultTransactionDependencyProvider::new(ckb_rpc_url, 10);
 
     // Generate scripts and unlockers
     let sender_key = secp256k1::SecretKey::from_slice(sender_private_key.as_bytes())?;
-    let unlockers = setup_unlockers(vec![sender_key])?;
+    let unlockers = setup_unlockers(vec![sender_key.clone()])?;
+    let sender_script = generate_sighash_script(&sender_key)?;
 
-    // Get current tip block number for withdrawal data
-    let tip_header = ckb_client.get_tip_header()?;
-    let withdraw_block_number = tip_header.inner.number.value();
+    // Build prepare transaction using DaoPrepareBuilder
+    // DaoPrepareBuilder takes Vec<DaoPrepareItem> (CellInput can convert to DaoPrepareItem)
+    let input = CellInput::new(deposit_out_point, 0);
+    let builder = DaoPrepareBuilder::new(vec![input.into()]);
 
-    // Build withdrawal transaction
-    let mut builder = DaoWithdrawBuilder::new();
-    
-    // Add deposit input
-    builder.add_input(deposit_out_point, deposit_cell.output);
-    
-    // Add withdrawal output (same capacity, different data)
-    let withdraw_data = Bytes::from(withdraw_block_number.to_le_bytes().to_vec());
-    builder.add_output(deposit_cell.output, withdraw_data);
+    let balancer = CapacityBalancer::new_simple(
+        sender_script,
+        create_placeholder_witness(),
+        1000,
+    );
 
     let (tx, _) = builder.build_unlocked(
+        &mut cell_collector,
         &cell_dep_resolver,
         &header_dep_resolver,
         &tx_dep_provider,
+        &balancer,
         &unlockers,
     )?;
 
     // Send transaction
     let json_tx = ckb_jsonrpc_types::TransactionView::from(tx);
     let tx_hash = ckb_client.send_transaction(json_tx.inner, None)?;
-    
-    println!("DAO withdrawal phase 1 sent: {:#x}", tx_hash);
+
+    println!("DAO withdrawal phase 1 (prepare) sent: {:#x}", tx_hash);
     Ok(tx_hash)
 }
 
-/// Complete DAO withdrawal (Phase 2) - after 180 epochs
+/// Complete DAO withdrawal (Phase 2 - Withdraw)
+/// Must wait ~180 epochs after prepare before this can be executed
 pub async fn complete_dao_withdrawal(
     ckb_rpc_url: &str,
     sender_private_key: H256,
-    withdraw_out_point: OutPoint,
-    deposit_block_hash: H256,
+    prepared_out_point: OutPoint,
 ) -> Result<H256, Box<dyn std::error::Error>> {
     let mut ckb_client = CkbRpcClient::new(ckb_rpc_url);
-    
-    // Calculate DAO compensation
-    let dao_calculator = DaoCalculator::new(&mut ckb_client);
-    let compensation = dao_calculator.calculate_dao_maximum_withdraw(
-        &withdraw_out_point,
-        &deposit_block_hash,
-    ).await?;
-    
+
     // Setup components
-    let cell_dep_resolver = setup_cell_dep_resolver(&mut ckb_client)?;
+    let genesis_block = ckb_client.get_block_by_number(0.into())?.unwrap();
+    let genesis_block: ckb_types::core::BlockView = genesis_block.into();
+    let cell_dep_resolver = DefaultCellDepResolver::from_genesis(&genesis_block)?;
     let header_dep_resolver = DefaultHeaderDepResolver::new(ckb_rpc_url);
+    let mut cell_collector = DefaultCellCollector::new(ckb_rpc_url);
     let tx_dep_provider = DefaultTransactionDependencyProvider::new(ckb_rpc_url, 10);
 
     // Generate sender components
     let sender_key = secp256k1::SecretKey::from_slice(sender_private_key.as_bytes())?;
     let sender_script = generate_sighash_script(&sender_key)?;
-    let unlockers = setup_unlockers(vec![sender_key])?;
+    let unlockers = setup_unlockers(vec![sender_key.clone()])?;
 
-    // Build final withdrawal transaction
-    let output = CellOutput::new_builder()
-        .lock(sender_script)
-        .capacity(compensation.pack())
+    // Build withdraw transaction using DaoWithdrawBuilder
+    // DaoWithdrawBuilder takes:
+    // - items: Vec<DaoWithdrawItem> (prepared cells to withdraw)
+    // - receiver: DaoWithdrawReceiver (where to send the withdrawn capacity)
+    let placeholder_witness = WitnessArgs::new_builder()
+        .lock(Some(Bytes::from(vec![0u8; 65])).pack())
         .build();
 
-    let mut tx_builder = TransactionBuilder::default();
-    
-    // Add withdrawal input
-    tx_builder = tx_builder.input(CellInput::new(withdraw_out_point, 0));
-    
-    // Add compensation output
-    tx_builder = tx_builder.output(output);
-    tx_builder = tx_builder.output_data(Bytes::new().pack());
-    
-    // Add required header dependencies for DAO calculation
-    tx_builder = tx_builder.header_dep(deposit_block_hash.pack());
-    
-    // Add witness
-    let witness = create_placeholder_witness();
-    tx_builder = tx_builder.witness(witness.as_bytes().pack());
-    
-    let tx = tx_builder.build();
+    let items = vec![
+        DaoWithdrawItem::new(prepared_out_point, Some(placeholder_witness)),
+    ];
 
-    // Sign transaction
-    let signed_tx = sign_transaction(tx, &unlockers)?;
+    let receiver = DaoWithdrawReceiver::LockScript {
+        script: sender_script.clone(),
+        fee_rate: Some(ckb_types::core::FeeRate::from_u64(1000)),
+    };
+
+    let builder = DaoWithdrawBuilder::new(items, receiver);
+
+    let balancer = CapacityBalancer::new_simple(
+        sender_script,
+        create_placeholder_witness(),
+        1000,
+    );
+
+    let (tx, _) = builder.build_unlocked(
+        &mut cell_collector,
+        &cell_dep_resolver,
+        &header_dep_resolver,
+        &tx_dep_provider,
+        &balancer,
+        &unlockers,
+    )?;
 
     // Send transaction
-    let json_tx = ckb_jsonrpc_types::TransactionView::from(signed_tx);
+    let json_tx = ckb_jsonrpc_types::TransactionView::from(tx);
     let tx_hash = ckb_client.send_transaction(json_tx.inner, None)?;
-    
-    println!("DAO withdrawal phase 2 sent: {:#x}", tx_hash);
+
+    println!("DAO withdrawal phase 2 (withdraw) sent: {:#x}", tx_hash);
     Ok(tx_hash)
 }
+
+// Note: DAO compensation is calculated internally by DaoWithdrawBuilder
+// using the `calculate_dao_maximum_withdraw4` utility function from ckb_sdk::util
 ```
 
 ## Utility Functions

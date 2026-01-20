@@ -18,37 +18,41 @@ offckb node
 ```
 Starts local devnet with:
 - CKB node on port 8114
-- Indexer on port 8116  
-- 20 pre-funded accounts (10,000 CKB each)
+- Indexer on port 8116
+- 20 pre-funded accounts
 - Pre-deployed system scripts
 
 ### Account Management
 ```bash
-# List all accounts with balances
+# List all pre-funded accounts
 offckb accounts
 
-# Show specific account details
-offckb account <address>
+# Check balance of specific address
+offckb balance <address>
+offckb balance <address> --network testnet
 
-# Pre-funded test accounts (private keys in account/keys)
-# Account 0: ckt1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsqvwg2cen8extgq8s5puft8vf40px3f9c7c2g5ufy
+# Pre-funded test accounts are defined in account/account.json
 ```
 
 ### Script Deployment
 ```bash
-# Deploy custom script
-offckb deploy --file <path/to/binary>
+# Deploy scripts from current directory to devnet
+offckb deploy
 
-# List deployed scripts  
-offckb scripts
+# Deploy scripts from specific path
+offckb deploy --target <path/to/binary>
 
-# Pre-deployed scripts:
-# - Secp256k1 Blake160 (system)
-# - Omnilock
-# - Simple UDT
-# - xUDT
-# - Spore
-# - Cluster
+# Deploy to testnet
+offckb deploy --network testnet --privkey <your-private-key>
+
+# Deploy with Type ID (upgradable)
+offckb deploy --type-id
+
+# Print system scripts info
+offckb system-scripts
+offckb system-scripts --network testnet
+offckb system-scripts --export-style lumos  # or ccc, system
+offckb system-scripts -o scripts.json  # Export to JSON file
 ```
 
 ### Project Templates
@@ -222,36 +226,42 @@ test('deploy and interact with contract', async () => {
 
 ## Debugging
 
-### View Logs
-```bash
-# CKB node logs
-tail -f ~/.offckb/ckb.log
-
-# Indexer logs  
-tail -f ~/.offckb/indexer.log
-```
-
 ### Debug Transactions
 ```bash
-# Get transaction details
-offckb tx <tx_hash>
+# Debug a transaction by its hash (shows all script executions)
+offckb debug --tx-hash <tx_hash>
 
-# Decode transaction
-offckb decode-tx <tx_hex>
+# Debug a specific cell script in a transaction
+offckb debug --tx-hash <tx_hash> --single-script "input:0:lock"
+offckb debug --tx-hash <tx_hash> --single-script "output:1:type"
 
-# Trace script execution
-offckb trace <tx_hash>
+# Debug with a replacement binary (for testing changes)
+offckb debug --tx-hash <tx_hash> --single-script "input:0:lock" --bin ./my-script
+
+# Debug on different networks
+offckb debug --tx-hash <tx_hash> --network testnet
+```
+
+### Raw CKB Debugger
+```bash
+# Access the underlying CKB Standalone Debugger directly
+offckb debugger --help
+offckb debugger <debugger-args>
+```
+
+### View Logs
+```bash
+# CKB node logs (location depends on platform)
+tail -f ~/.offckb/devnet/ckb.log
 ```
 
 ### Common Issues
 
 **Port Already in Use**
 ```bash
-# Stop existing OffCKB instance
-offckb stop
-
-# Or use custom ports
-offckb init --ckb-port 8115 --indexer-port 8117
+# Clean and restart devnet
+offckb clean
+offckb node
 ```
 
 **Script Deployment Failed**
@@ -298,11 +308,11 @@ const tx = await createTransaction({
 # Build all contracts in workspace
 make build
 
-# Deploy all contracts
-offckb deploy --network devnet
+# Deploy all contracts from build output
+offckb deploy --target ./build --network devnet -o ./deployment
 
-# Export deployment info
-offckb export-config > deployments.json
+# Deployment records are written to the output folder as JSON files
+# Use these files in your app to reference deployed scripts
 ```
 
 ## Best Practices

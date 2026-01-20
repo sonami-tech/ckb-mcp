@@ -9,52 +9,68 @@ The CCC SDK provides a unified interface for integrating multiple blockchain wal
 ## Supported Wallet Types
 
 ### Bitcoin Wallets
-- OKX Wallet.
-- UniSat.
-- Xverse.
-- UTXO Global (multi-chain UTXO support).
+- OKX Wallet
+- UniSat
+- Xverse
+- UTXO Global (multi-chain UTXO support)
 
 ### Ethereum Wallets
-- EIP-6963 compliant wallets.
-- MetaMask and other standard Ethereum wallets.
+- EIP-6963 compliant wallets (MetaMask, etc.)
+- Any EIP-1193 compatible provider
 
 ### Other Protocols
-- JoyID (WebAuthn-based).
-- Nostr (NIP-07 protocol).
+- JoyID (WebAuthn-based)
+- Nostr (NIP-07 protocol)
 
-## Unified Signer Interface
+## Package Structure
 
-All wallet types implement a common signer interface:
-
-```typescript
-// Initialize any supported wallet type
-const btcSigner = new ccc.SignerBtc(client, provider);
-const ethSigner = new ccc.SignerEip6963(client, provider);
-const nostrSigner = new ccc.SignerNip07(client, provider);
-
-// Common operations work across all signers
-await signer.connect();
-const addresses = await signer.getAddresses();
-const signedTx = await signer.signTransaction(tx);
-```
+Each wallet type is provided as a separate package:
+- `@ckb-ccc/okx` - OKX wallet
+- `@ckb-ccc/uni-sat` - UniSat wallet
+- `@ckb-ccc/xverse` - Xverse wallet
+- `@ckb-ccc/utxo-global` - UTXO Global wallet
+- `@ckb-ccc/eip6963` - EIP-6963 Ethereum wallets
+- `@ckb-ccc/nip07` - Nostr NIP-07 wallets
+- `@ckb-ccc/joy-id` - JoyID wallet
 
 ## Bitcoin Wallet Integration
 
-### Basic Setup
+### OKX Wallet
 
 ```typescript
 import { ccc } from "@ckb-ccc/ccc";
+import { Okx } from "@ckb-ccc/okx";
 
-// Initialize Bitcoin signer with OKX wallet
+// Initialize client
 const client = new ccc.ClientPublicTestnet();
-const signer = new ccc.okx.SignerOkx(client);
 
-// Connect and get CKB address from Bitcoin wallet
+// Create OKX Bitcoin signer
+// OKX provides separate providers for different chains
+const signer = new Okx.BitcoinSigner(client, {
+  bitcoin: window.okxwallet?.bitcoin,
+  bitcoinTestnet: window.okxwallet?.bitcoinTestnet,
+});
+
+// Connect and get CKB address
 await signer.connect();
-const ckbAddress = await signer.getRecommendedAddress();
+const addresses = await signer.getAddressObjs();
+const ckbAddress = addresses[0].toString();
 ```
 
-### Transaction Signing
+### UniSat Wallet
+
+```typescript
+import { ccc } from "@ckb-ccc/ccc";
+import { UniSat } from "@ckb-ccc/uni-sat";
+
+const client = new ccc.ClientPublicTestnet();
+const signer = new UniSat.Signer(client, window.unisat);
+
+await signer.connect();
+const address = await signer.getAddressObjs();
+```
+
+### Transaction Signing with Bitcoin Wallet
 
 ```typescript
 // Build CKB transaction
@@ -62,7 +78,8 @@ const tx = ccc.Transaction.from({
   outputs: [{
     lock: recipientLock,
     capacity: ccc.fixedPointFrom(100)
-  }]
+  }],
+  outputsData: [new Uint8Array()]
 });
 
 // Complete and sign with Bitcoin wallet
@@ -73,16 +90,45 @@ const txHash = await signer.sendTransaction(tx);
 
 ## Ethereum Wallet Integration
 
-### EIP-6963 Discovery
+### EIP-6963 Wallet Discovery
+
+The EIP-6963 standard provides a way to discover all available Ethereum wallets. CCC uses event-based discovery:
 
 ```typescript
-// Discover available Ethereum wallets
-const providers = await ccc.eip6963.getProviders();
+import { ccc } from "@ckb-ccc/ccc";
+import { Eip6963 } from "@ckb-ccc/eip6963";
 
-// Connect to first available wallet
-if (providers.length > 0) {
-  const signer = new ccc.SignerEip6963(client, providers[0]);
+const client = new ccc.ClientPublicTestnet();
+
+// Create signer factory for wallet discovery
+const factory = new Eip6963.SignerFactory(client);
+
+// Subscribe to discover available wallets
+const unsubscribe = factory.subscribeSigners((signer, detail) => {
+  console.log("Discovered wallet:", detail?.info.name);
+  console.log("Wallet icon:", detail?.info.icon);
+
+  // Connect to this wallet
+  signer.connect().then(() => {
+    console.log("Connected to", detail?.info.name);
+  });
+});
+
+// Later: stop listening for new wallets
+unsubscribe();
+```
+
+### Direct EIP-1193 Provider
+
+```typescript
+import { Eip6963 } from "@ckb-ccc/eip6963";
+
+// Connect directly to window.ethereum (legacy approach)
+if (window.ethereum) {
+  const signer = new Eip6963.Signer(client, window.ethereum);
   await signer.connect();
+  const evmAddress = await signer.getEvmAccount();
+  const ckbAddresses = await signer.getAddressObjs();
 }
 ```
 
@@ -91,95 +137,137 @@ if (providers.length > 0) {
 ```typescript
 // Sign arbitrary messages (useful for authentication)
 const message = "Login to CKB dApp";
-const signature = await signer.signMessage(message);
+const signature = await signer.signMessageRaw(message);
 ```
 
-## Cross-Chain Transaction Patterns
-
-### Multi-Wallet Support
+## Nostr Wallet Integration (NIP-07)
 
 ```typescript
+import { ccc } from "@ckb-ccc/ccc";
+import { Nip07 } from "@ckb-ccc/nip07";
+
+const client = new ccc.ClientPublicTestnet();
+
+// Create Nostr signer (requires NIP-07 compatible extension)
+const signer = new Nip07.Signer(client, window.nostr);
+
+await signer.connect();
+const publicKey = await signer.getNostrPublicKey();
+const addresses = await signer.getAddressObjs();
+```
+
+## JoyID Integration (WebAuthn)
+
+```typescript
+import { ccc } from "@ckb-ccc/ccc";
+import { JoyId } from "@ckb-ccc/joy-id";
+
+const client = new ccc.ClientPublicTestnet();
+
+// Create JoyID CKB signer
+const signer = new JoyId.CkbSigner(
+  client,
+  "My dApp Name",              // App name shown in JoyID
+  "https://example.com/icon.png" // App icon
+);
+
+// WebAuthn-based authentication
+await signer.connect();
+
+// Biometric signing
+const tx = ccc.Transaction.from({ /* ... */ });
+await tx.completeInputsByCapacity(signer);
+const signedTx = await signer.signOnlyTransaction(tx);
+```
+
+## Multi-Wallet Support Pattern
+
+```typescript
+import { ccc } from "@ckb-ccc/ccc";
+import { Okx } from "@ckb-ccc/okx";
+import { UniSat } from "@ckb-ccc/uni-sat";
+import { Eip6963 } from "@ckb-ccc/eip6963";
+import { Nip07 } from "@ckb-ccc/nip07";
+
 class MultiWalletManager {
+  private client: ccc.Client;
   private signers: Map<string, ccc.Signer> = new Map();
-  
-  async addWallet(type: string, provider: any) {
+
+  constructor() {
+    this.client = new ccc.ClientPublicTestnet();
+  }
+
+  async addWallet(type: string): Promise<ccc.Signer | null> {
     let signer: ccc.Signer;
-    
+
     switch(type) {
-      case 'bitcoin-okx':
-        signer = new ccc.okx.SignerOkx(this.client, provider);
+      case 'okx':
+        if (!window.okxwallet?.bitcoin) return null;
+        signer = new Okx.BitcoinSigner(this.client, {
+          bitcoin: window.okxwallet.bitcoin,
+          bitcoinTestnet: window.okxwallet.bitcoinTestnet,
+        });
         break;
-      case 'ethereum':
-        signer = new ccc.SignerEip6963(this.client, provider);
+      case 'unisat':
+        if (!window.unisat) return null;
+        signer = new UniSat.Signer(this.client, window.unisat);
+        break;
+      case 'metamask':
+        if (!window.ethereum) return null;
+        signer = new Eip6963.Signer(this.client, window.ethereum);
         break;
       case 'nostr':
-        signer = new ccc.SignerNip07(this.client, provider);
+        if (!window.nostr) return null;
+        signer = new Nip07.Signer(this.client, window.nostr);
         break;
+      default:
+        return null;
     }
-    
+
     await signer.connect();
     this.signers.set(type, signer);
+    return signer;
+  }
+
+  getSigner(type: string): ccc.Signer | undefined {
+    return this.signers.get(type);
   }
 }
 ```
 
-### UTXO Chain Bridge Pattern
-
-```typescript
-// Bridge Bitcoin UTXO to CKB cell
-const utxoGlobalSigner = new ccc.utxoGlobal.SignerUtxoGlobal(
-  client,
-  provider,
-  { chain: 'BTC' }
-);
-
-// Ensure correct network
-await utxoGlobalSigner.ensureNetwork();
-
-// Create corresponding CKB transaction
-const bridgeTx = await createBridgeTransaction(utxoData);
-await utxoGlobalSigner.signTransaction(bridgeTx);
-```
-
-## WebAuthn Integration with JoyID
-
-```typescript
-// Initialize JoyID signer
-const joySigner = new ccc.joyId.SignerJoyId(client);
-
-// WebAuthn-based authentication
-await joySigner.connect();
-
-// Biometric signing
-const tx = await buildTransaction();
-const signedTx = await joySigner.signTransaction(tx);
-```
-
 ## Best Practices
 
-### Network Compatibility
-
-Always ensure network compatibility when using cross-chain wallets:
+### Wallet Detection
 
 ```typescript
-try {
-  await signer.ensureNetwork();
-} catch (error) {
-  console.error("Network mismatch:", error);
-  // Handle network switching or show error to user
+function detectAvailableWallets(): string[] {
+  const wallets: string[] = [];
+
+  // Check Bitcoin wallets
+  if (window.okxwallet?.bitcoin) wallets.push('okx');
+  if (window.unisat) wallets.push('unisat');
+
+  // Check Ethereum
+  if (window.ethereum) wallets.push('ethereum');
+
+  // Check Nostr
+  if (window.nostr) wallets.push('nostr');
+
+  return wallets;
 }
 ```
 
 ### Error Handling
 
 ```typescript
-async function safeConnect(signer: ccc.Signer) {
+async function safeConnect(signer: ccc.Signer): Promise<boolean> {
   try {
     await signer.connect();
     return true;
-  } catch (error) {
+  } catch (error: any) {
     if (error.code === 4001) {
       // User rejected connection
+      console.log("User rejected wallet connection");
       return false;
     }
     throw error;
@@ -187,62 +275,19 @@ async function safeConnect(signer: ccc.Signer) {
 }
 ```
 
-### Wallet Detection
+### Connection State
 
 ```typescript
-function detectAvailableWallets() {
-  const wallets = [];
-  
-  // Check Bitcoin wallets
-  if (window.okxwallet) wallets.push({ type: 'okx', name: 'OKX Wallet' });
-  if (window.unisat) wallets.push({ type: 'unisat', name: 'UniSat' });
-  
-  // Check Ethereum wallets via EIP-6963
-  ccc.eip6963.getProviders().then(providers => {
-    providers.forEach(p => wallets.push({ type: 'ethereum', name: p.info.name }));
-  });
-  
-  return wallets;
-}
-```
+// Check if signer is connected
+const connected = await signer.isConnected();
 
-## Advanced Features
-
-### Custom Signing Strategies
-
-```typescript
-class CustomMultiSigSigner extends ccc.Signer {
-  constructor(
-    private signers: ccc.Signer[],
-    private threshold: number
-  ) {
-    super();
-  }
-  
-  async signTransaction(tx: ccc.Transaction): Promise<ccc.Transaction> {
-    const signatures = [];
-    
-    for (let i = 0; i < this.threshold; i++) {
-      const sig = await this.signers[i].signTransaction(tx);
-      signatures.push(sig);
-    }
-    
-    return combineSignatures(tx, signatures);
-  }
-}
-```
-
-### Cross-Chain Event Monitoring
-
-```typescript
-// Monitor events across chains
-const monitor = new CrossChainMonitor();
-
-monitor.on('btc-transaction', async (btcTx) => {
-  // Trigger corresponding CKB action
-  const ckbTx = await createMirrorTransaction(btcTx);
-  await signer.sendTransaction(ckbTx);
+// Listen for account changes (if supported)
+const unsubscribe = signer.onReplaced(() => {
+  console.log("Account changed, re-fetch addresses");
 });
+
+// Cleanup when done
+unsubscribe();
 ```
 
 ## Integration Examples
@@ -250,14 +295,20 @@ monitor.on('btc-transaction', async (btcTx) => {
 ### DeFi Application
 
 ```typescript
-// Allow users to interact with CKB DeFi using any wallet
-async function swapTokens(fromToken: string, toToken: string, amount: bigint) {
-  const wallet = await selectWallet(); // UI wallet selector
-  const signer = createSigner(wallet);
-  
+async function swapTokens(
+  signer: ccc.Signer,
+  fromToken: string,
+  toToken: string,
+  amount: bigint
+) {
+  // Build swap transaction
   const swapTx = await buildSwapTransaction(fromToken, toToken, amount);
+
+  // Complete inputs and fee using any wallet type
   await swapTx.completeInputsByCapacity(signer);
-  
+  await swapTx.completeFeeBy(signer);
+
+  // Sign and send
   return signer.sendTransaction(swapTx);
 }
 ```
@@ -265,13 +316,13 @@ async function swapTokens(fromToken: string, toToken: string, amount: bigint) {
 ### NFT Marketplace
 
 ```typescript
-// List NFT for sale using Bitcoin wallet
 async function listNFT(nftId: string, price: bigint) {
-  const btcSigner = new ccc.okx.SignerOkx(client);
-  await btcSigner.connect();
-  
-  const listingTx = await createNFTListing(nftId, price);
-  return btcSigner.sendTransaction(listingTx);
+  // Works with any connected signer
+  const addresses = await signer.getAddressObjs();
+  const ownerLock = addresses[0].script;
+
+  const listingTx = await createNFTListing(nftId, price, ownerLock);
+  return signer.sendTransaction(listingTx);
 }
 ```
 
@@ -280,18 +331,20 @@ async function listNFT(nftId: string, price: bigint) {
 ### Common Issues
 
 1. **Wallet Not Detected**: Ensure wallet extension is installed and unlocked
-2. **Network Mismatch**: Use `ensureNetwork()` to verify correct network
-3. **Signing Failures**: Check wallet permissions and transaction format
-4. **Connection Timeouts**: Implement retry logic with exponential backoff
+2. **Connection Rejected**: User clicked "Reject" - handle error code 4001
+3. **Wrong Network**: Check client network matches wallet network preference
+4. **Signing Failures**: Verify transaction format and cell dependencies
 
-### Debug Mode
+### Debug Tips
 
 ```typescript
-// Enable detailed logging
-ccc.setDebugMode(true);
+// Get signer type for debugging
+console.log("Signer type:", signer.type);  // e.g., "BTC", "EVM", "CKB"
 
-// Monitor wallet events
-signer.on('connect', () => console.log('Wallet connected'));
-signer.on('disconnect', () => console.log('Wallet disconnected'));
-signer.on('accountsChanged', (accounts) => console.log('Accounts:', accounts));
+// Check addresses
+const addrs = await signer.getAddressObjs();
+addrs.forEach((addr, i) => {
+  console.log(`Address ${i}:`, addr.toString());
+  console.log(`Lock script:`, addr.script);
+});
 ```

@@ -33,19 +33,24 @@ SSRI allows smart contracts to:
 
 ```typescript
 import { ccc } from "@ckb-ccc/ccc";
+import { Udt } from "@ckb-ccc/udt";
 
 // Create UDT instance with SSRI support
-const udt = new ccc.udt.Udt(
-  tokenTypeScript,
-  client
+// Requires: code cell OutPoint and the UDT type script
+const udt = new Udt(
+  { txHash: "0x...", index: 0 },  // Code cell out point
+  tokenTypeScript                  // UDT type script
 );
 
-// Fetch token metadata via SSRI
-const info = await udt.getInfo();
+// Fetch token metadata via SSRI (separate method calls)
+const nameRes = await udt.name();
+const symbolRes = await udt.symbol();
+const decimalsRes = await udt.decimals();
+
 console.log({
-  name: info.name,        // "My Token"
-  symbol: info.symbol,    // "MTK"
-  decimals: info.decimals // 8
+  name: nameRes.res,        // "My Token" or undefined
+  symbol: symbolRes.res,    // "MTK" or undefined
+  decimals: decimalsRes.res // 8n or undefined (as bigint)
 });
 ```
 
@@ -53,12 +58,35 @@ console.log({
 
 ```typescript
 // Get token icon as data URI
-const icon = await udt.getIcon();
-if (icon) {
+const iconRes = await udt.icon();
+if (iconRes.res) {
   // icon is a data URI that can be used directly in img tags
   // e.g., "data:image/svg+xml;base64,..."
-  document.getElementById('token-icon').src = icon;
+  document.getElementById('token-icon').src = iconRes.res;
 }
+```
+
+### UDT Transfer
+
+```typescript
+import { Udt } from "@ckb-ccc/udt";
+
+const udt = new Udt(codeOutPoint, typeScript);
+
+// Transfer tokens to multiple recipients
+const { res: tx } = await udt.transfer(
+  signer,
+  [
+    { to: recipientLock1, amount: 100n },
+    { to: recipientLock2, amount: 200n }
+  ]
+);
+
+// Complete the transaction
+const completedTx = await udt.completeBy(tx, signer);
+await completedTx.completeInputsByCapacity(signer);
+await completedTx.completeFeeBy(signer);
+const txHash = await signer.sendTransaction(completedTx);
 ```
 
 ## Implementing SSRI in Smart Contracts
@@ -116,20 +144,37 @@ pub fn handle_advanced_ssri(function_id: u32) -> Result<Bytes, Error> {
 
 ## Using SSRI with CCC SDK
 
+### SSRI Executor Setup
+
+```typescript
+import { ssri } from "@ckb-ccc/ssri";
+
+// Create JSON-RPC executor connected to SSRI server
+const executor = new ssri.ExecutorJsonRpc("https://ssri-server.example.com/");
+
+// Or create executor with custom requestor
+const executor = new ssri.ExecutorJsonRpc(
+  "https://ssri-server.example.com/",
+  { timeout: 30000 }
+);
+```
+
 ### Direct SSRI Calls
 
 ```typescript
-// Execute arbitrary SSRI function
-const result = await ccc.ssri.execute(
-  client,
-  {
-    script: contractScript,
-    functionId: 0x00000010, // SSRI_TOTAL_SUPPLY
-    args: []
-  }
+import { ssri } from "@ckb-ccc/ssri";
+
+// Execute arbitrary SSRI function using the executor
+const result = await executor.runScript(
+  codeOutPoint,           // Code cell OutPoint
+  "UDT.totalSupply",      // Method name (e.g., "UDT.name", "UDT.symbol")
+  [],                     // Arguments as hex strings
+  { script: contractScript }  // Context
 );
 
-const totalSupply = ccc.numFromBytes(result);
+// Result contains response and cell dependencies
+const totalSupply = ccc.numFromBytes(result.res);
+console.log("Cell deps used:", result.cellDeps);
 ```
 
 ### Creating SSRI-Compatible UDTs
@@ -173,45 +218,48 @@ class SSRICache {
 
 ## SSRI Patterns
 
-### Dynamic Pricing Information
+### Using Executor for Custom Queries
 
 ```typescript
-// SSRI function that returns current token price
-const SSRI_CURRENT_PRICE = 0x00000020;
+import { ssri } from "@ckb-ccc/ssri";
+import { ccc } from "@ckb-ccc/ccc";
 
-async function getTokenPrice(tokenScript: ccc.Script): Promise<bigint> {
-  const result = await ccc.ssri.execute(client, {
-    script: tokenScript,
-    functionId: SSRI_CURRENT_PRICE,
-    args: []
-  });
-  
-  return ccc.numFromBytes(result);
+// Create executor
+const executor = new ssri.ExecutorJsonRpc("https://ssri-server.example.com/");
+
+// Query custom SSRI method
+async function getTokenPrice(
+  codeOutPoint: ccc.OutPointLike,
+  tokenScript: ccc.Script
+): Promise<bigint> {
+  const result = await executor.runScript(
+    codeOutPoint,
+    "Token.price",  // Custom SSRI method
+    [],
+    { script: tokenScript }
+  );
+
+  return ccc.numFromBytes(result.res);
 }
 ```
 
 ### Governance Parameters
 
 ```typescript
-// Fetch on-chain governance settings
-const SSRI_VOTING_THRESHOLD = 0x00000030;
-const SSRI_PROPOSAL_DURATION = 0x00000031;
-
-async function getGovernanceParams(daoScript: ccc.Script) {
-  const [threshold, duration] = await Promise.all([
-    ccc.ssri.execute(client, {
-      script: daoScript,
-      functionId: SSRI_VOTING_THRESHOLD
-    }),
-    ccc.ssri.execute(client, {
-      script: daoScript,
-      functionId: SSRI_PROPOSAL_DURATION
-    })
+// Fetch on-chain governance settings via SSRI
+async function getGovernanceParams(
+  executor: ssri.Executor,
+  codeOutPoint: ccc.OutPointLike,
+  daoScript: ccc.Script
+) {
+  const [thresholdRes, durationRes] = await Promise.all([
+    executor.runScript(codeOutPoint, "DAO.votingThreshold", [], { script: daoScript }),
+    executor.runScript(codeOutPoint, "DAO.proposalDuration", [], { script: daoScript })
   ]);
-  
+
   return {
-    votingThreshold: ccc.numFromBytes(threshold),
-    proposalDuration: ccc.numFromBytes(duration)
+    votingThreshold: ccc.numFromBytes(thresholdRes.res),
+    proposalDuration: ccc.numFromBytes(durationRes.res)
   };
 }
 ```
@@ -220,31 +268,30 @@ async function getGovernanceParams(daoScript: ccc.Script) {
 
 ```typescript
 // Query role-based permissions
-const SSRI_IS_ADMIN = 0x00000040;
-const SSRI_IS_MINTER = 0x00000041;
-
 async function checkPermissions(
+  executor: ssri.Executor,
+  codeOutPoint: ccc.OutPointLike,
   contractScript: ccc.Script,
-  userLock: ccc.Script
-): Promise<Permissions> {
-  const args = userLock.hash();
-  
-  const [isAdmin, isMinter] = await Promise.all([
-    ccc.ssri.execute(client, {
-      script: contractScript,
-      functionId: SSRI_IS_ADMIN,
-      args
-    }),
-    ccc.ssri.execute(client, {
-      script: contractScript,
-      functionId: SSRI_IS_MINTER,
-      args
-    })
+  userLockHash: ccc.Hex
+): Promise<{ admin: boolean; minter: boolean }> {
+  const [isAdminRes, isMinterRes] = await Promise.all([
+    executor.runScript(
+      codeOutPoint,
+      "Access.isAdmin",
+      [userLockHash],
+      { script: contractScript }
+    ),
+    executor.runScript(
+      codeOutPoint,
+      "Access.isMinter",
+      [userLockHash],
+      { script: contractScript }
+    )
   ]);
-  
+
   return {
-    admin: isAdmin[0] === 1,
-    minter: isMinter[0] === 1
+    admin: ccc.bytesFrom(isAdminRes.res)[0] === 1,
+    minter: ccc.bytesFrom(isMinterRes.res)[0] === 1
   };
 }
 ```
@@ -254,16 +301,29 @@ async function checkPermissions(
 ### Error Handling
 
 ```typescript
-async function safeGetTokenInfo(udt: ccc.udt.Udt) {
+import { Udt } from "@ckb-ccc/udt";
+import { ssri } from "@ckb-ccc/ssri";
+
+async function safeGetTokenInfo(udt: Udt) {
   try {
-    return await udt.getInfo();
+    const [nameRes, symbolRes, decimalsRes] = await Promise.all([
+      udt.name(),
+      udt.symbol(),
+      udt.decimals()
+    ]);
+
+    return {
+      name: nameRes.res ?? 'Unknown Token',
+      symbol: symbolRes.res ?? 'UNK',
+      decimals: decimalsRes.res ?? 8n
+    };
   } catch (error) {
-    if (error.code === 'SSRI_NOT_SUPPORTED') {
-      // Fallback to default values
+    if (error instanceof ssri.ExecutorErrorExecutionFailed) {
+      // SSRI not supported, return defaults
       return {
         name: 'Unknown Token',
         symbol: 'UNK',
-        decimals: 8
+        decimals: 8n
       };
     }
     throw error;
@@ -274,22 +334,28 @@ async function safeGetTokenInfo(udt: ccc.udt.Udt) {
 ### Performance Optimization
 
 ```typescript
-// Batch SSRI calls for efficiency
+// Batch SSRI calls for efficiency using Promise.all
 async function batchSSRICalls(
+  executor: ssri.Executor,
+  codeOutPoint: ccc.OutPointLike,
   script: ccc.Script,
-  functionIds: number[]
-): Promise<any[]> {
-  const calls = functionIds.map(id => ({
-    script,
-    functionId: id,
-    args: []
-  }));
-  
-  // Execute in parallel
+  methods: string[]
+): Promise<ssri.ExecutorResponse<ccc.Hex>[]> {
+  // Execute all methods in parallel
   return Promise.all(
-    calls.map(call => ccc.ssri.execute(client, call))
+    methods.map(method =>
+      executor.runScript(codeOutPoint, method, [], { script })
+    )
   );
 }
+
+// Usage
+const results = await batchSSRICalls(
+  executor,
+  codeOutPoint,
+  tokenScript,
+  ["UDT.name", "UDT.symbol", "UDT.decimals", "UDT.icon"]
+);
 ```
 
 ### Validation
@@ -312,27 +378,28 @@ function validateTokenInfo(info: any): boolean {
 ### Token Explorer
 
 ```typescript
-async function displayTokenDetails(tokenAddress: string) {
-  const script = ccc.Script.fromAddress(tokenAddress);
-  const udt = new ccc.udt.Udt(script, client);
-  
-  // Fetch all metadata
-  const [info, icon, totalSupply] = await Promise.all([
-    udt.getInfo(),
-    udt.getIcon(),
-    ccc.ssri.execute(client, {
-      script,
-      functionId: 0x00000010 // TOTAL_SUPPLY
-    })
+import { Udt } from "@ckb-ccc/udt";
+
+async function displayTokenDetails(
+  codeOutPoint: ccc.OutPointLike,
+  typeScript: ccc.Script
+) {
+  const udt = new Udt(codeOutPoint, typeScript);
+
+  // Fetch all metadata in parallel
+  const [nameRes, symbolRes, decimalsRes, iconRes] = await Promise.all([
+    udt.name(),
+    udt.symbol(),
+    udt.decimals(),
+    udt.icon()
   ]);
-  
+
   // Display in UI
   updateUI({
-    name: info.name,
-    symbol: info.symbol,
-    decimals: info.decimals,
-    icon: icon || '/default-token-icon.svg',
-    totalSupply: formatUnits(totalSupply, info.decimals)
+    name: nameRes.res ?? 'Unknown',
+    symbol: symbolRes.res ?? 'UNK',
+    decimals: Number(decimalsRes.res ?? 8n),
+    icon: iconRes.res || '/default-token-icon.svg'
   });
 }
 ```
@@ -340,22 +407,28 @@ async function displayTokenDetails(tokenAddress: string) {
 ### DeFi Integration
 
 ```typescript
+import { Udt } from "@ckb-ccc/udt";
+
 // Automatic token detection in DeFi app
-async function addTokenToPool(tokenScript: ccc.Script) {
-  const udt = new ccc.udt.Udt(tokenScript, client);
-  
-  // Verify token is SSRI-compatible
-  let tokenInfo;
-  try {
-    tokenInfo = await udt.getInfo();
-  } catch {
-    throw new Error('Token must support SSRI for automatic listing');
+async function addTokenToPool(
+  codeOutPoint: ccc.OutPointLike,
+  tokenScript: ccc.Script
+) {
+  const udt = new Udt(codeOutPoint, tokenScript);
+
+  // Verify token has SSRI metadata
+  const nameRes = await udt.name();
+  const symbolRes = await udt.symbol();
+
+  if (!nameRes.res || !symbolRes.res) {
+    throw new Error('Token must provide name and symbol via SSRI');
   }
-  
+
   // Add to liquidity pool
   await liquidityPool.addToken({
     script: tokenScript,
-    ...tokenInfo
+    name: nameRes.res,
+    symbol: symbolRes.res
   });
 }
 ```
@@ -372,22 +445,37 @@ async function addTokenToPool(tokenScript: ccc.Script) {
 ### Debugging
 
 ```typescript
+import { ssri } from "@ckb-ccc/ssri";
+import { ccc } from "@ckb-ccc/ccc";
+
 // Debug SSRI calls
-async function debugSSRI(script: ccc.Script, functionId: number) {
-  console.log(`Calling SSRI function ${functionId.toString(16)}`);
-  
+async function debugSSRI(
+  executor: ssri.Executor,
+  codeOutPoint: ccc.OutPointLike,
+  script: ccc.Script,
+  method: string
+) {
+  console.log(`Calling SSRI method: ${method}`);
+
   try {
-    const result = await ccc.ssri.execute(client, {
-      script,
-      functionId,
-      args: []
-    });
-    
-    console.log('Raw result:', result);
-    console.log('Hex:', ccc.hexFrom(result));
-    console.log('UTF-8:', new TextDecoder().decode(result));
+    const result = await executor.runScript(
+      codeOutPoint,
+      method,
+      [],
+      { script }
+    );
+
+    console.log('Raw result:', result.res);
+    console.log('Cell deps:', result.cellDeps);
+    console.log('As UTF-8:', ccc.bytesTo(result.res, "utf8"));
   } catch (error) {
-    console.error('SSRI execution failed:', error);
+    if (error instanceof ssri.ExecutorErrorExecutionFailed) {
+      console.error('SSRI execution failed:', error.message);
+    } else if (error instanceof ssri.ExecutorErrorDecode) {
+      console.error('Failed to decode response:', error.message);
+    } else {
+      console.error('Unknown error:', error);
+    }
   }
 }
 ```

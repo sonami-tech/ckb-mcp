@@ -15,50 +15,44 @@ Examples of using the Spore SDK for building applications with the Spore Protoco
 ### NPM Installation
 
 ```bash
-# Core SDK
+# Core SDK (includes all APIs and helpers)
 npm install @spore-sdk/core
 
-# Helper utilities (optional)
-npm install @spore-sdk/helpers
-
-# Additional dependencies
-npm install @ckb-lumos/base @ckb-lumos/helpers @ckb-lumos/ckb-indexer
+# Required Lumos dependencies
+npm install @ckb-lumos/lumos @ckb-lumos/base @ckb-lumos/bi
 ```
 
 ### Configuration
 
+The Spore SDK uses a configuration object that can be passed to API functions or retrieved via `getSporeConfig()`. The SDK includes predefined configurations for mainnet and testnet.
+
 ```typescript
-import { config, predefined } from '@spore-sdk/core';
+import { getSporeConfig, setSporeConfig, SporeConfig } from '@spore-sdk/core';
 
-// Testnet configuration
-config.initializeConfig(predefined.Aggron4.TESTNET);
+// Get the default configuration (testnet by default)
+const config = getSporeConfig();
 
-// Mainnet configuration  
-config.initializeConfig(predefined.Lina.MAINNET);
-
-// Custom configuration
-config.initializeConfig({
+// Set a custom configuration
+const customConfig: SporeConfig = {
   lumos: {
+    // Lumos config object with script definitions
     SCRIPTS: {
-      SPORE: {
-        CODE_HASH: '0x4a4dce1df3dffff7f8b2cd7dff7303df3b6150c9788cb75dcf6747247132b9f5',
-        HASH_TYPE: 'type',
-        TX_HASH: '0x...',
-        INDEX: '0x0',
-        DEP_TYPE: 'code',
-      },
-      CLUSTER: {
-        CODE_HASH: '0x7366a61534fa7c7e6225ecc0d828ea3b5366adec2b58206f2ee84995fe030075',
-        HASH_TYPE: 'type',
-        TX_HASH: '0x...',
-        INDEX: '0x1',
-        DEP_TYPE: 'code',
-      },
+      // ... script definitions
     },
     PREFIX: 'ckt', // 'ckb' for mainnet
   },
   ckbNodeUrl: 'https://testnet.ckbapp.dev/rpc',
   ckbIndexerUrl: 'https://testnet.ckbapp.dev/indexer',
+  // Optional: Maximum transaction size
+  maxTransactionSize: 500_000,
+};
+
+// Functions accept config as an optional parameter
+const result = await createSpore({
+  data: { /* ... */ },
+  toLock: ownerLock,
+  fromInfos: [ownerAddress],
+  config: customConfig, // Optional: use custom config
 });
 ```
 
@@ -324,73 +318,95 @@ const zeroFeeClusterTransfer = await transferCluster({
 });
 ```
 
-## Helper Functions
+## Query Functions
 
-### Query Functions
+All query functions are exported from `@spore-sdk/core`:
 
 ```typescript
 import {
-  getSporeById,
-  getClusterById,
-  findSporesByCluster,
-  findSporesByAddress,
-  findClustersByAddress,
-} from '@spore-sdk/helpers';
+  getSpore,
+  getCluster,
+  getClusterProxy,
+  getClusterAgent,
+  getMutant,
+} from '@spore-sdk/core';
+import { OutPoint } from '@ckb-lumos/base';
 
-// Get specific Spore
-const spore = await getSporeById({
+// Get specific Spore by OutPoint
+const sporeOutPoint: OutPoint = {
   txHash: '0x...',
   index: '0x0',
-});
+};
+const spore = await getSpore(sporeOutPoint);
+console.log('Spore content type:', spore.data.contentType);
+console.log('Spore content:', spore.data.content);
 
-// Get specific Cluster
-const cluster = await getClusterById({
+// Get specific Cluster by OutPoint
+const clusterOutPoint: OutPoint = {
   txHash: '0x...',
   index: '0x0',
-});
+};
+const cluster = await getCluster(clusterOutPoint);
+console.log('Cluster name:', new TextDecoder().decode(cluster.data.name));
 
-// Find all Spores in a cluster
-const clusterSpores = await findSporesByCluster({
-  txHash: '0x...',
-  index: '0x0',
-});
+// Get ClusterProxy
+const clusterProxy = await getClusterProxy(clusterProxyOutPoint);
 
-// Find Spores owned by address
-const mySpores = await findSporesByAddress('ckt1...');
+// Get ClusterAgent
+const clusterAgent = await getClusterAgent(clusterAgentOutPoint);
 
-// Find Clusters owned by address
-const myClusters = await findClustersByAddress('ckt1...');
+// Get Mutant
+const mutant = await getMutant(mutantOutPoint);
 ```
 
-### Utility Functions
+### Finding Cells by Script
+
+Use the Lumos Indexer to query cells by lock or type script:
 
 ```typescript
-import { 
-  calculateSporeCapacity,
-  validateSporeData,
-  extractSporeContent,
-  generateSporeId,
-} from '@spore-sdk/helpers';
+import { Indexer } from '@ckb-lumos/lumos';
+import { getSporeConfig, getSporeScript } from '@spore-sdk/core';
 
-// Calculate required capacity
-const requiredCapacity = calculateSporeCapacity({
-  contentType: 'image/png',
-  content: imageData,
-  clusterId: clusterOutPoint,
-});
+const config = getSporeConfig();
+const indexer = new Indexer(config.ckbIndexerUrl, config.ckbNodeUrl);
 
-// Validate Spore data
-const isValid = validateSporeData({
-  contentType: 'application/json',
-  content: jsonData,
-});
+// Find all Spore cells owned by an address
+async function findSporesByLock(ownerLock: Script): Promise<Cell[]> {
+  const sporeScript = getSporeScript(config, 'Spore');
+  const collector = indexer.collector({
+    lock: ownerLock,
+    type: {
+      codeHash: sporeScript.script.codeHash,
+      hashType: sporeScript.script.hashType,
+      args: '0x', // Will match any args
+    },
+  });
 
-// Extract content from Spore
-const { contentType, content } = extractSporeContent(spore);
-const contentString = new TextDecoder().decode(content);
+  const cells: Cell[] = [];
+  for await (const cell of collector.collect()) {
+    cells.push(cell);
+  }
+  return cells;
+}
 
-// Generate deterministic Spore ID
-const sporeId = generateSporeId(txHash, outputIndex);
+// Find all Clusters owned by an address
+async function findClustersByLock(ownerLock: Script): Promise<Cell[]> {
+  const clusterScript = getSporeScript(config, 'Cluster');
+  const collector = indexer.collector({
+    lock: ownerLock,
+    type: {
+      codeHash: clusterScript.script.codeHash,
+      hashType: clusterScript.script.hashType,
+      args: '0x',
+    },
+  });
+
+  const cells: Cell[] = [];
+  for await (const cell of collector.collect()) {
+    cells.push(cell);
+  }
+  return cells;
+}
 ```
 
 ## Advanced Usage Patterns
