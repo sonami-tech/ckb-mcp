@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This is a Rust workspace providing Model Context Protocol (MCP) servers for Nervos CKB blockchain development. The workspace contains three specialized MCP servers that help AI assistants build CKB smart contracts and applications.
+This is a Rust workspace providing Model Context Protocol (MCP) servers for Nervos CKB blockchain development. The workspace contains a unified MCP server and legacy individual servers.
 
 ## Architecture
 
@@ -10,14 +10,28 @@ This is a Rust workspace providing Model Context Protocol (MCP) servers for Nerv
 ckb-mcp/
 ├── crates/
 │   ├── shared/              # Common types, errors, and utilities
-│   ├── ckb-rpc-server/      # Blockchain query tools (port 8001)
-│   ├── ckb-docs-server/     # Documentation resources (port 8002)
-│   └── ckb-tools-server/    # Development tools (port 8003)
+│   ├── ckb-ai-mcp/          # Unified MCP server (port 3112) - RECOMMENDED
+│   ├── ckb-rpc-server/      # Legacy: Blockchain query tools (port 8001)
+│   ├── ckb-docs-server/     # Legacy: Documentation resources (port 8002)
+│   └── ckb-tools-server/    # Legacy: Development tools (port 8003)
 ├── docs/                    # CKB development documentation
 └── Cargo.toml              # Workspace configuration
 ```
 
-### Server Responsibilities
+### ckb-ai-mcp (Unified Server)
+
+The recommended server that combines all functionality in a single process using MCP protocol 2025-03-26 with Streamable HTTP transport:
+
+- **36 RPC Tools** (`rpc_*`): Query blockchain data, transactions, cells, headers, blocks
+- **8 Dev Tools** (`dev_*`): Deploy cells, manage addresses, request faucet funds
+- **2 Search Tools**: Search available tools and documentation resources
+- **86 Documentation Resources**: CKB concepts, patterns, API references
+- **4 Workflow Prompts**: Guided workflows for script creation, deployment, queries, transfers
+- **File Upload Endpoint**: POST /deploy/file for large binary deployments
+
+### Legacy Servers
+
+The individual servers remain available for specific use cases:
 
 - **ckb-rpc-server**: Query live CKB blockchain data, transaction details, cell information.
 - **ckb-docs-server**: Serve CKB development documentation, patterns, and API references.
@@ -150,7 +164,13 @@ cargo build --workspace --release
 # Build and restart servers after code changes
 cargo build --workspace --release
 
-# Then start servers manually:
+# RECOMMENDED: Start unified server
+./target/release/ckb-ai-mcp --host 0.0.0.0 --port 3112 --ckb-rpc <node-url>
+
+# Or start unified server in docs-only mode (no CKB node required)
+./target/release/ckb-ai-mcp --docs-only --port 3112
+
+# Legacy servers (for specific use cases):
 ./target/release/ckb-rpc-server --host 0.0.0.0 --port 8001 --ckb-rpc <node-url>
 ./target/release/ckb-docs-server --host 0.0.0.0 --port 8002
 ./target/release/ckb-tools-server --host 0.0.0.0 --port 8003 --ckb-rpc <node-url>
@@ -162,12 +182,21 @@ If you need to run servers manually for debugging, use `--help` to see available
 
 ```bash
 # View parameters for each server
-cargo run --bin ckb-rpc-server -- --help
-cargo run --bin ckb-docs-server -- --help
-cargo run --bin ckb-tools-server -- --help
+cargo run --bin ckb-ai-mcp -- --help       # Unified server
+cargo run --bin ckb-rpc-server -- --help   # Legacy
+cargo run --bin ckb-docs-server -- --help  # Legacy
+cargo run --bin ckb-tools-server -- --help # Legacy
 ```
 
-**Key parameters:**
+**ckb-ai-mcp parameters (unified server):**
+- `--host`, `--port` (default: 3112), `--log-level`
+- `--ckb-rpc` (CKB node URL, default: http://127.0.0.1:8114)
+- `--private-key` (transaction signing key)
+- `--docs-path` (custom docs directory)
+- `--stats-db` (path to stats database)
+- Feature flags: `--docs-only`, `--rpc-only`, `--tools-only`, `--no-prompts`
+
+**Legacy server parameters:**
 - All servers: `--host`, `--port`, `--log-level`
 - **ckb-rpc-server**: `--ckb-rpc` (CKB node URL)
 - **ckb-docs-server**: `--docs-path` (custom docs directory)
@@ -175,9 +204,11 @@ cargo run --bin ckb-tools-server -- --help
 
 ### Debugging
 
-- Servers run on ports 8001, 8002, 8003 respectively.
+- Unified server runs on port 3112 (default).
+- Legacy servers run on ports 8001, 8002, 8003 respectively.
 - Use `RUST_LOG=debug` for detailed logging.
-- MCP communication uses HTTP transport only.
+- Unified server uses Streamable HTTP transport (MCP 2025-03-26).
+- Legacy servers use HTTP transport only (MCP 2024-11-05).
 - Test endpoints manually with curl or use MCP client tools.
 
 ## Dependencies
