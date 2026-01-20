@@ -4,9 +4,9 @@ Build cost-effective NFT applications using CoTA (Compact Token Aggregator) prot
 
 ## Related Resources
 
-- [ckb-dev-context://protocols/cota-protocol](ckb-dev-context://protocols/cota-protocol) - Layer-1.5 account-based token management solution using Sparse Merkle Trees
-- [ckb-dev-context://api-reference/cota-sdk-examples](ckb-dev-context://api-reference/cota-sdk-examples) - CoTA SDK JavaScript implementation guide with production-ready examples
-- [ckb-dev-context://deployment/cota-infrastructure](ckb-dev-context://deployment/cota-infrastructure) - Comprehensive deployment guide for CoTA infrastructure
+- [ckb://docs/protocols/cota-protocol](ckb://docs/protocols/cota-protocol) - Layer-1.5 account-based token management solution using Sparse Merkle Trees
+- [ckb://docs/api-reference/cota-sdk-examples](ckb://docs/api-reference/cota-sdk-examples) - CoTA SDK JavaScript implementation guide with production-ready examples
+- [ckb://docs/deployment/cota-infrastructure](ckb://docs/deployment/cota-infrastructure) - Comprehensive deployment guide for CoTA infrastructure
 
 ## Complete CoTA NFT Development Workflow
 

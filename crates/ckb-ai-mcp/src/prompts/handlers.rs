@@ -93,9 +93,9 @@ Key files to understand:
 
 ### Step 3: Implement Script Logic
 Read relevant documentation resources:
-- `ckb-dev-context://concepts/cell-model` - Understand the cell model
-- `ckb-dev-context://patterns/{script_type}-script-development` - {script_type} script patterns
-- `ckb-dev-context://api-reference/ckb-syscalls` - Available syscalls
+- `ckb://docs/concepts/cell-model` - Understand the cell model
+- `ckb://docs/patterns/{script_type}-script-development` - {script_type} script patterns
+- `ckb://docs/api-reference/ckb-syscalls` - Available syscalls
 
 ### Step 4: Write Tests
 Create tests in `tests/src/tests.rs` using the CKB testing framework.
@@ -402,9 +402,9 @@ Scripts are identified by:
 4. For specific cells, use `rpc_get_live_cell` with the out point
 
 ## Documentation Resources
-- `ckb-dev-context://concepts/cell-model` - Understanding cells
-- `ckb-dev-context://concepts/transaction-structure` - Transaction format
-- `ckb-dev-context://api-reference/ckb-rpc` - Full RPC reference"#,
+- `ckb://docs/concepts/cell-model` - Understanding cells
+- `ckb://docs/concepts/transaction-structure` - Transaction format
+- `ckb://docs/api-reference/ckb-rpc` - Full RPC reference"#,
 			tools.join("\n- ")
 		);
 
@@ -497,9 +497,9 @@ Monitor for confirmation using `rpc_get_transaction`.
 - `rpc_get_cells` - Search cells
 
 ## Documentation Resources
-- `ckb-dev-context://concepts/cell-model` - Cell capacity rules
-- `ckb-dev-context://patterns/token-creation` - UDT patterns
-- `ckb-dev-context://concepts/transaction-structure` - Transaction format"#,
+- `ckb://docs/concepts/cell-model` - Cell capacity rules
+- `ckb://docs/patterns/token-creation` - UDT patterns
+- `ckb://docs/concepts/transaction-structure` - Transaction format"#,
 			match token_type {
 				"ckb" => format!(
 					r#"For native CKB transfer:

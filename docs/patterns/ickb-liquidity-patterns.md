@@ -4,10 +4,10 @@ Advanced iCKB liquidity management with automated rebalancing algorithms, pool o
 
 ## Related Resources
 
-- [ckb-dev-context://protocols/ickb-protocol](ckb-dev-context://protocols/ickb-protocol) - Revolutionary liquidity protocol tokenizing NervosDAO deposits
-- [ckb-dev-context://patterns/ickb-development](ckb-dev-context://patterns/ickb-development) - Build applications with iCKB liquid staking protocol for enhanced CKB yield
-- [ckb-dev-context://api-reference/ickb-sdk-examples](ckb-dev-context://api-reference/ickb-sdk-examples) - iCKB SDK reference with TypeScript examples for conversions and order management
-- [ckb-dev-context://troubleshooting/ickb-debugging](ckb-dev-context://troubleshooting/ickb-debugging) - Specialized debugging guide for iCKB protocol development
+- [ckb://docs/protocols/ickb-protocol](ckb://docs/protocols/ickb-protocol) - Revolutionary liquidity protocol tokenizing NervosDAO deposits
+- [ckb://docs/patterns/ickb-development](ckb://docs/patterns/ickb-development) - Build applications with iCKB liquid staking protocol for enhanced CKB yield
+- [ckb://docs/api-reference/ickb-sdk-examples](ckb://docs/api-reference/ickb-sdk-examples) - iCKB SDK reference with TypeScript examples for conversions and order management
+- [ckb://docs/troubleshooting/ickb-debugging](ckb://docs/troubleshooting/ickb-debugging) - Specialized debugging guide for iCKB protocol development
 
 Advanced patterns for managing liquidity in the iCKB protocol, including automated rebalancing, arbitrage strategies, and pool optimization techniques.
 

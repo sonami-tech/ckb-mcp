@@ -4,10 +4,10 @@ Specialized debugging guide for iCKB protocol development covering liquidity poo
 
 ## Related Resources
 
-- [ckb-dev-context://protocols/ickb-protocol](ckb-dev-context://protocols/ickb-protocol) - Revolutionary liquidity protocol tokenizing NervosDAO deposits
-- [ckb-dev-context://patterns/ickb-development](ckb-dev-context://patterns/ickb-development) - Build applications with iCKB liquid staking protocol for enhanced CKB yield
-- [ckb-dev-context://patterns/ickb-liquidity-patterns](ckb-dev-context://patterns/ickb-liquidity-patterns) - Advanced iCKB liquidity management with automated rebalancing algorithms
-- [ckb-dev-context://api-reference/ickb-sdk-examples](ckb-dev-context://api-reference/ickb-sdk-examples) - iCKB SDK reference with TypeScript examples for conversions and order management
+- [ckb://docs/protocols/ickb-protocol](ckb://docs/protocols/ickb-protocol) - Revolutionary liquidity protocol tokenizing NervosDAO deposits
+- [ckb://docs/patterns/ickb-development](ckb://docs/patterns/ickb-development) - Build applications with iCKB liquid staking protocol for enhanced CKB yield
+- [ckb://docs/patterns/ickb-liquidity-patterns](ckb://docs/patterns/ickb-liquidity-patterns) - Advanced iCKB liquidity management with automated rebalancing algorithms
+- [ckb://docs/api-reference/ickb-sdk-examples](ckb://docs/api-reference/ickb-sdk-examples) - iCKB SDK reference with TypeScript examples for conversions and order management
 
 This guide covers common issues, debugging techniques, and troubleshooting patterns specific to the iCKB protocol implementation.
 

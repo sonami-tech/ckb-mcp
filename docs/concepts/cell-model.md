@@ -36,7 +36,7 @@ CKB uses a **deposit-based storage model**:
 - Common types: Secp256k1 signatures, multi-sig, time locks
 - Runs when cell is used as transaction input
 
-For a detailed understanding of how lock scripts are generated from private keys and the complete transformation chain (Private Key → Public Key → Lock Arg → Lock Script → Lock Hash → Address), see the [Lock Value Relationships](ckb-dev-context://concepts/lock-value-relationships) guide.
+For a detailed understanding of how lock scripts are generated from private keys and the complete transformation chain (Private Key → Public Key → Lock Arg → Lock Script → Lock Hash → Address), see the [Lock Value Relationships](ckb://docs/concepts/lock-value-relationships) guide.
 
 ### Type Script (Optional)
 - Validates the data stored in the cell

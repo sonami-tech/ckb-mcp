@@ -4,9 +4,9 @@ Complete xUDT token minting example demonstrating owner mode setup, minting tran
 
 ## Related Resources
 
-- xUDT Protocol: ckb-dev-context://protocols/xudt-protocol
-- Token Creation: ckb-dev-context://patterns/token-creation
-- Troubleshooting: ckb-dev-context://troubleshooting/xudt-errors
+- xUDT Protocol: ckb://docs/protocols/xudt-protocol
+- Token Creation: ckb://docs/patterns/token-creation
+- Troubleshooting: ckb://docs/troubleshooting/xudt-errors
 
 ## Complete xUDT Minting Example
 
@@ -309,7 +309,7 @@ function collectXudtCells(
 }
 
 // Helper: Calculate minimum capacity
-// Simplified calculation for xUDT. See ckb-dev-context://concepts-for-coding/cell-lifecycle for details
+// Simplified calculation for xUDT. See ckb://docs/concepts-for-coding/cell-lifecycle for details
 function calculateMinCapacity(data: Uint8Array): bigint {
   const base = 8; // Capacity field
   const dataSize = data.length;

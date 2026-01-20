@@ -4,9 +4,9 @@ xUDT script error debugging guide covering extension validation failures, amount
 
 ## Related Resources
 
-- Protocol Spec: ckb-dev-context://protocols/xudt-protocol
-- Token Creation: ckb-dev-context://patterns/token-creation
-- UDT Patterns: ckb-dev-context://patterns/udt-tokens
+- Protocol Spec: ckb://docs/protocols/xudt-protocol
+- Token Creation: ckb://docs/patterns/token-creation
+- UDT Patterns: ckb://docs/patterns/udt-tokens
 
 ## Common xUDT Errors
 

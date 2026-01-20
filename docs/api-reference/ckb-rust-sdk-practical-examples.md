@@ -882,4 +882,4 @@ These examples provide a solid foundation for building CKB applications using th
 
 ## Related Documentation
 
-For understanding how addresses and lock scripts are generated from private keys, see the [Lock Value Relationships](ckb-dev-context://concepts/lock-value-relationships) guide.
+For understanding how addresses and lock scripts are generated from private keys, see the [Lock Value Relationships](ckb://docs/concepts/lock-value-relationships) guide.

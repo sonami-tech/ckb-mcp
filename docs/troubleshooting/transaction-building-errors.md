@@ -4,9 +4,9 @@ Transaction construction error debugging covering insufficient capacity, missing
 
 ## Related Resources
 
-- Transaction Patterns: ckb-dev-context://patterns/transaction-building-patterns
-- Transaction Structure: ckb-dev-context://concepts/transaction-structure
-- Script Errors: ckb-dev-context://troubleshooting/common-script-errors
+- Transaction Patterns: ckb://docs/patterns/transaction-building-patterns
+- Transaction Structure: ckb://docs/concepts/transaction-structure
+- Script Errors: ckb://docs/troubleshooting/common-script-errors
 
 ## Common Transaction Building Errors
 
@@ -16,7 +16,7 @@ Transaction construction error debugging covering insufficient capacity, missing
 
 **Cause**: Output cells don't have minimum required capacity for their data/type
 
-**Quick Reference**: For complete capacity calculation details, see [Cell Capacity Calculation](ckb-dev-context://concepts-for-coding/cell-lifecycle)
+**Quick Reference**: For complete capacity calculation details, see [Cell Capacity Calculation](ckb://docs/concepts-for-coding/cell-lifecycle)
 
 **Troubleshooting Example**:
 ```typescript

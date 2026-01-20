@@ -367,7 +367,7 @@ pub fn build_udt_cell(amount: u128, script: &Script) -> (CellOutput, Bytes) {
 pub fn calculate_capacity(data: &Bytes, script: &Script) -> Capacity {
     // Rough estimate for test data generation.
     // For detailed capacity calculation, see:
-    // ckb-dev-context://concepts-for-coding/cell-lifecycle
+    // ckb://docs/concepts-for-coding/cell-lifecycle
 
     // Components: capacity_field (8) + data + type_script + lock_script (53)
     // Lock script estimate: secp256k1 standard (code_hash 32 + hash_type 1 + args 20)

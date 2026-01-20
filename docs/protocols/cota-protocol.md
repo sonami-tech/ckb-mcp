@@ -4,9 +4,9 @@ Layer-1.5 account-based token management solution using Sparse Merkle Trees for 
 
 ## Related Resources
 
-- [ckb-dev-context://patterns/cota-nft-development](ckb-dev-context://patterns/cota-nft-development) - Build cost-effective NFT applications using CoTA protocol
-- [ckb-dev-context://api-reference/cota-sdk-examples](ckb-dev-context://api-reference/cota-sdk-examples) - CoTA SDK JavaScript implementation guide with production-ready examples
-- [ckb-dev-context://deployment/cota-infrastructure](ckb-dev-context://deployment/cota-infrastructure) - Comprehensive deployment guide for CoTA infrastructure
+- [ckb://docs/patterns/cota-nft-development](ckb://docs/patterns/cota-nft-development) - Build cost-effective NFT applications using CoTA protocol
+- [ckb://docs/api-reference/cota-sdk-examples](ckb://docs/api-reference/cota-sdk-examples) - CoTA SDK JavaScript implementation guide with production-ready examples
+- [ckb://docs/deployment/cota-infrastructure](ckb://docs/deployment/cota-infrastructure) - Comprehensive deployment guide for CoTA infrastructure
 
 ## Protocol Overview
 

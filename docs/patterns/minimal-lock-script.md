@@ -168,4 +168,4 @@ library = []
 
 ## Related Documentation
 
-For understanding how lock scripts relate to addresses and the complete cryptographic transformation chain, see the [Lock Value Relationships](ckb-dev-context://concepts/lock-value-relationships) guide.
+For understanding how lock scripts relate to addresses and the complete cryptographic transformation chain, see the [Lock Value Relationships](ckb://docs/concepts/lock-value-relationships) guide.

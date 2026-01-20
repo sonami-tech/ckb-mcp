@@ -92,7 +92,7 @@ function calculateDeploymentCost(binaryPath) {
     // Simplified estimate: binary + minimum cell overhead
     // 61 CKB = capacity field (8) + typical lock script (~53)
     // For detailed capacity calculation, see:
-    // ckb-dev-context://concepts-for-coding/cell-lifecycle
+    // ckb://docs/concepts-for-coding/cell-lifecycle
     const cellOverhead = 61; // Minimum cell size in CKBytes
     const requiredCapacity = BigInt(binarySize + cellOverhead) * 100000000n; // Convert to Shannon
 
