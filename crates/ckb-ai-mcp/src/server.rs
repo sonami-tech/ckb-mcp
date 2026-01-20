@@ -1,40 +1,82 @@
 //! HTTP server setup with rmcp Streamable HTTP transport.
 
 use anyhow::Result;
-use axum::extract::State;
+use axum::extract::{Multipart, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::routing::get;
-use axum::Router;
+use axum::routing::{get, post};
+use axum::{Json, Router};
 use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
 use rmcp::transport::streamable_http_server::StreamableHttpService;
+use serde::Serialize;
+use shared::ckb_client::CkbRpcClient;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
-use tracing::info;
+use tracing::{error, info};
 
-use crate::capabilities::CkbMcpServer;
+use crate::capabilities::CkbMcpServerFactory;
+use crate::dev::DevHandlers;
+use crate::jsonrpc::jsonrpc_handler;
 use crate::ServerConfig;
 
 /// Application state shared across handlers.
 #[derive(Clone)]
 pub struct AppState {
 	pub config: ServerConfig,
+	pub dev_handlers: Option<Arc<DevHandlers>>,
+}
+
+/// Response from the file upload endpoint.
+#[derive(Serialize)]
+struct UploadResponse {
+	tx_hash: String,
+	output_index: u32,
+	data_size: usize,
+	capacity: u64,
+}
+
+/// Error response from the file upload endpoint.
+#[derive(Serialize)]
+struct UploadError {
+	error: String,
 }
 
 /// Run the MCP server.
 pub async fn run(addr: SocketAddr, config: ServerConfig) -> Result<()> {
-	let state = AppState {
-		config: config.clone(),
+	// Create dev handlers if tools are enabled.
+	let dev_handlers = if config.args.tools_enabled() {
+		match CkbRpcClient::new(&config.args.ckb_rpc) {
+			Ok(client) => match DevHandlers::new(
+				client,
+				config.args.ckb_rpc.clone(),
+				config.args.private_key.clone(),
+			) {
+				Ok(handlers) => Some(Arc::new(handlers)),
+				Err(e) => {
+					error!("Failed to create dev handlers for file upload: {}", e);
+					None
+				}
+			},
+			Err(e) => {
+				error!("Failed to create CKB client for file upload: {}", e);
+				None
+			}
+		}
+	} else {
+		None
 	};
 
-	// Create the MCP service with StreamableHttpService.
+	// Create the MCP service factory with shared dev handlers.
+	let factory = CkbMcpServerFactory::new(config.clone(), dev_handlers.clone());
+
+	let state = AppState {
+		config: config.clone(),
+		dev_handlers,
+	};
 	let mcp_service = StreamableHttpService::new(
-		{
-			let config = config.clone();
-			move || Ok(CkbMcpServer::new(config.clone()))
-		},
+		move || factory.create(),
 		LocalSessionManager::default().into(),
 		Default::default(),
 	);
@@ -45,6 +87,10 @@ pub async fn run(addr: SocketAddr, config: ServerConfig) -> Result<()> {
 		.route("/health", get(health_handler))
 		// Stats endpoint.
 		.route("/stats", get(stats_handler))
+		// File upload endpoint for large deployments.
+		.route("/deploy/file", post(upload_file_handler))
+		// JSON-RPC endpoint for plain HTTP requests.
+		.route("/rpc", post(jsonrpc_handler))
 		// MCP endpoint via StreamableHttpService.
 		.nest_service("/mcp", mcp_service)
 		// Shared state.
@@ -138,4 +184,80 @@ async fn shutdown_signal() {
 			info!("Received SIGTERM, shutting down");
 		}
 	}
+}
+
+/// File upload handler for deploying large files.
+async fn upload_file_handler(
+	State(state): State<Arc<AppState>>,
+	mut multipart: Multipart,
+) -> std::result::Result<Json<UploadResponse>, (StatusCode, Json<UploadError>)> {
+	// Check if dev tools are enabled.
+	let dev_handlers = state.dev_handlers.as_ref().ok_or_else(|| {
+		(
+			StatusCode::SERVICE_UNAVAILABLE,
+			Json(UploadError {
+				error: "Dev tools are not enabled. Use --tools-only or ensure tools are not disabled.".to_string(),
+			}),
+		)
+	})?;
+
+	// Extract file from multipart form.
+	let mut file_data: Option<Vec<u8>> = None;
+
+	while let Some(field) = multipart.next_field().await.map_err(|e| {
+		(
+			StatusCode::BAD_REQUEST,
+			Json(UploadError {
+				error: format!("Failed to read multipart field: {}", e),
+			}),
+		)
+	})? {
+		let name = field.name().unwrap_or("").to_string();
+		if name == "file" {
+			let data = field.bytes().await.map_err(|e| {
+				(
+					StatusCode::BAD_REQUEST,
+					Json(UploadError {
+						error: format!("Failed to read file data: {}", e),
+					}),
+				)
+			})?;
+			file_data = Some(data.to_vec());
+			break;
+		}
+	}
+
+	let data = file_data.ok_or_else(|| {
+		(
+			StatusCode::BAD_REQUEST,
+			Json(UploadError {
+				error: "No 'file' field found in multipart form. Use: curl -F 'file=@/path/to/file' <url>/deploy/file".to_string(),
+			}),
+		)
+	})?;
+
+	info!("Received file upload: {} bytes", data.len());
+
+	// Deploy using dev handlers.
+	let result = dev_handlers.deploy_cell_data(data).await.map_err(|e| {
+		error!("File deployment failed: {}", e);
+		(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(UploadError {
+				error: format!("Deployment failed: {}", e),
+			}),
+		)
+	})?;
+
+	info!(
+		"File deployed successfully: tx_hash={}, output_index={}",
+		result.tx_hash, result.output_index
+	);
+
+	Ok(Json(UploadResponse {
+		tx_hash: result.tx_hash,
+		output_index: result.output_index,
+		data_size: result.data_size,
+		capacity: result.capacity,
+	}))
 }

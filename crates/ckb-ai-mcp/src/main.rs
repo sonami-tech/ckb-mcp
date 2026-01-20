@@ -12,8 +12,14 @@ use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 mod capabilities;
+mod dev;
+mod docs;
+mod jsonrpc;
+mod prompts;
 mod rpc;
+mod search;
 mod server;
+mod util;
 
 /// Default test private key for development (DO NOT USE IN PRODUCTION).
 const DEFAULT_TEST_PRIVATE_KEY: &str =
@@ -83,14 +89,14 @@ impl Args {
 
 	/// Check if RPC tools are enabled.
 	pub fn rpc_enabled(&self) -> bool {
-		// RPC is enabled if: not docs_only, and either no flags set or rpc_only set
-		!self.docs_only && ((!self.rpc_only && !self.tools_only) || self.rpc_only)
+		// RPC is enabled when: not docs_only, and not exclusively tools_only.
+		!self.docs_only && !self.tools_only
 	}
 
 	/// Check if development tools are enabled.
 	pub fn tools_enabled(&self) -> bool {
-		// Tools are enabled if: not docs_only, and either no flags set or tools_only set
-		!self.docs_only && ((!self.rpc_only && !self.tools_only) || self.tools_only)
+		// Tools are enabled when: not docs_only, and not exclusively rpc_only.
+		!self.docs_only && !self.rpc_only
 	}
 
 	/// Check if documentation resources are enabled.

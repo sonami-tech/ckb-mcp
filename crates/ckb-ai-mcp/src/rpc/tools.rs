@@ -3,26 +3,13 @@
 //! Tools are renamed from the original CKB RPC names to follow the pattern:
 //! `rpc_{action}_{target}`
 
+use crate::util::make_tool;
 use rmcp::model::Tool;
 use serde_json::json;
 use std::sync::LazyLock;
 
 /// Static list of all RPC tools.
 pub static RPC_TOOLS: LazyLock<Vec<Tool>> = LazyLock::new(RpcToolDefinitions::all);
-
-/// Helper to create a tool with all required fields.
-fn make_tool(name: &'static str, description: &'static str, input_schema: serde_json::Value) -> Tool {
-	Tool {
-		name: name.into(),
-		description: Some(description.into()),
-		input_schema: input_schema.as_object().unwrap().clone().into(),
-		annotations: None,
-		output_schema: None,
-		title: None,
-		icons: None,
-		meta: None,
-	}
-}
 
 /// RPC tool definitions.
 pub struct RpcToolDefinitions;

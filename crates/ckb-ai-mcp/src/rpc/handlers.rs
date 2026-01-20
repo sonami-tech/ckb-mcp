@@ -195,10 +195,8 @@ impl RpcHandlers {
 		let group_by_transaction = extract_bool(args, "group_by_transaction", false);
 
 		// Add group_by_transaction to search_key if specified.
-		if group_by_transaction {
-			if let Some(obj) = search_key.as_object_mut() {
-				obj.insert("group_by_transaction".to_string(), json!(true));
-			}
+		if group_by_transaction && let Some(obj) = search_key.as_object_mut() {
+			obj.insert("group_by_transaction".to_string(), json!(true));
 		}
 
 		let params = json!([search_key, order, limit, after_cursor]);
