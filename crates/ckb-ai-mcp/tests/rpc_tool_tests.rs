@@ -364,17 +364,17 @@ async fn test_rpc_get_block_median_time() {
 }
 
 #[tokio::test]
-async fn test_rpc_get_block_economic_state_genesis() {
+async fn test_rpc_get_block_economics_genesis() {
 	let ctx = TestContext::new();
 	let shared_data = SharedTestData::get_or_init_async().await;
 
 	let result = ctx
 		.call_tool(
-			"rpc_get_block_economic_state",
+			"rpc_get_block_economics",
 			json!({"block_hash": shared_data.genesis_hash}),
 		)
 		.await
-		.expect("rpc_get_block_economic_state should succeed");
+		.expect("rpc_get_block_economics should succeed");
 
 	let content = result["content"][0]["text"].as_str().unwrap();
 	let state: serde_json::Value =
