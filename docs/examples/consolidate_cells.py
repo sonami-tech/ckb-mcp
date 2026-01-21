@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
 """
-CKB Cell Consolidation Script
+# CKB Cell Consolidation Script
 
-Consolidates multiple cells with data into fewer cells without data,
-releasing the occupied capacity back to free/spendable capacity.
+## Description
 
-Requirements:
-    pip install requests secp256k1 blake3
+Python utility for consolidating CKB cells with data into fewer cells without data, releasing occupied capacity back to free/spendable capacity. Queries cells by private key address, batches to avoid transaction size limits, builds and signs consolidation transactions, and waits for confirmation. Complete implementation of Molecule serialization, secp256k1 signing, and CKB RPC interactions.
 
-Usage:
-    python consolidate_cells.py --rpc-url http://127.0.0.1:8114 --private-key <hex>
+## Requirements
 
-The script will:
+```bash
+pip install requests secp256k1 blake3
+```
+
+## Usage
+
+```bash
+python consolidate_cells.py --rpc-url http://127.0.0.1:8114 --private-key <hex>
+```
+
+## How It Works
+
 1. Query all cells owned by the private key's address
 2. Group cells into batches (to avoid transaction size limits)
 3. For each batch, create a consolidation transaction

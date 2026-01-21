@@ -232,12 +232,6 @@ impl DocResourceDefinitions {
 				"Tool Recommendations",
 				"getting-started/tool-recommendations.md",
 			),
-			// Integration Examples
-			make_resource(
-				"ckb://docs/integration-examples/cell-collection-automation",
-				"Cell Collection Automation",
-				"integration-examples/cell-collection-automation.md",
-			),
 			// Patterns
 			make_resource(
 				"ckb://docs/patterns/c-to-rust-migration-guide",
@@ -388,6 +382,11 @@ impl DocResourceDefinitions {
 				"ckb://docs/patterns/contract-workspace-development",
 				"Contract Workspace Development",
 				"patterns/contract-workspace-development.md",
+			),
+			make_resource(
+				"ckb://docs/patterns/cell-collection-automation",
+				"Cell Collection Automation",
+				"patterns/cell-collection-automation.md",
 			),
 			// Protocols
 			make_resource(
