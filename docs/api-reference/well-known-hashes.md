@@ -13,7 +13,7 @@ A CKB script consists of three essential components:
 
 - **Code Hash**: The hash identifying the script code (either data hash or type script hash).
 - **Hash Type**: Specifies how the code hash should be interpreted (`type`, `data`, `data1`, `data2`).
-- **Args**: Additional parameters passed to the script (can be empty `0x` or contain specific data).
+- **Args**: Additional parameters passed to the script. Can be empty (`0x`) or contain data like identity hashes, configuration flags, or operational parameters. **The script itself (identified by code_hash + hash_type) defines how args are interpreted.** For example, the SECP256K1 lock script uses args to store the 20-byte pubkey hash, meaning two cells with the same code_hash and hash_type but different args represent different users.
 
 ### Cell Dependencies
 
@@ -82,7 +82,11 @@ Contains the same system scripts at identical indices. Testnet uses separate dep
 **Mainnet**
 - **Code Hash**: `0x5c5069eb0857efc65e1bca0c07df34c31663b3622fd3876c876320fc9634e2a8`
 - **Hash Type**: `type`
-- **Args**: Contains multisig configuration and public key hashes.
+- **Args**: `<multisig_hash: 20 bytes> + <S|R|M: 1 byte> + <pubkeys: N×33 bytes>`
+  - **Bytes 0-19**: Blake160 hash of multisig script
+  - **Byte 20**: Configuration byte (bits 0-4: threshold M, bits 5-6: require_first_n R, bit 7: reserved S)
+  - **Bytes 21+**: Compressed secp256k1 public keys (33 bytes each)
+  - **Example**: 2-of-3 multisig = 20-byte hash + 1 config byte + 3×33 pubkey bytes = 120 bytes total
 
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0x71a7ba8fc96349fea0ed3a5c47992e3b4084b031a42264a018e0072e8172e46c`
@@ -92,7 +96,11 @@ Contains the same system scripts at identical indices. Testnet uses separate dep
 **Testnet**
 - **Code Hash**: `0x5c5069eb0857efc65e1bca0c07df34c31663b3622fd3876c876320fc9634e2a8`
 - **Hash Type**: `type`
-- **Args**: Contains multisig configuration and public key hashes.
+- **Args**: `<multisig_hash: 20 bytes> + <S|R|M: 1 byte> + <pubkeys: N×33 bytes>`
+  - **Bytes 0-19**: Blake160 hash of multisig script
+  - **Byte 20**: Configuration byte (bits 0-4: threshold M, bits 5-6: require_first_n R, bit 7: reserved S)
+  - **Bytes 21+**: Compressed secp256k1 public keys (33 bytes each)
+  - **Example**: 2-of-3 multisig = 20-byte hash + 1 config byte + 3×33 pubkey bytes = 120 bytes total
 
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0xf8de3bb47d055cdf460d93a2a6e1b05f7432f9777c8c474abf4eec1d4aee5d37`
@@ -195,27 +203,15 @@ Contains the same system scripts at identical indices. Testnet uses separate dep
 
 Omnilock is a universal lock script designed for cross-chain interoperability.
 
-**Authentication Methods:**
-- SECP256K1 (0x00): Standard CKB signature verification with blake160 hashing.
-- Ethereum (0x01): Ethereum wallet compatibility with message hash conversion.
-- Tron (0x03): Tron wallet compatibility.
-- Bitcoin (0x04): Supports P2WPKH (Native SegWit), P2SH-P2WPKH (Nested SegWit), and P2PKH (Legacy) addresses.
-- Dogecoin (0x05): Dogecoin wallet compatibility.
-- CKB Multisig (0x06): Adapted from native CKB multisig.
-- Script Hash (0xFC): P2SH-like delegation to another lock script.
-- Exec (0xFD): Dynamic execution delegation for alternative cryptographic schemes.
-- Dynamic Linking (0xFE): Swappable Signature Verification Protocol support.
-
-**Operating Modes (combinable via flags):**
-- Administrator (0x01): Governance with whitelist/blacklist for regulatory compliance.
-- Anyone-Can-Pay (0x02): Flexible payment acceptance with minimum CKB/UDT thresholds.
-- Time-Lock (0x04): Time-based asset freezing using check_since mechanism.
-- Supply (0x08): Token issuance control with max supply enforcement.
-
 **Mainnet (Mirana)**
 - **Code Hash**: `0x9b819793a64463aed77c615d6cb226eea5487ccfc0783043a587254cda2b6f26`
 - **Hash Type**: `type`
-- **Args**: 21-byte auth content followed by Omnilock args for mode flags.
+- **Args**: `<auth: 21 bytes> + <flags: 1 byte> + [optional configs]`
+  - **Auth byte 0**: Authentication method (0x00=CKB, 0x01=Ethereum, 0x03=Tron, 0x04=Bitcoin, 0x05=Dogecoin, 0x06=Multisig, 0xFC=Script Hash, 0xFD=Exec, 0xFE=Dynamic Linking)
+  - **Auth bytes 1-20**: Identity hash (blake160 of pubkey for most methods, address-specific for Bitcoin)
+  - **Flags byte**: Mode bitmask (0x01=Administrator, 0x02=Anyone-Can-Pay, 0x04=Time-Lock, 0x08=Supply)
+  - **Optional configs**: Appended based on enabled flags (32-byte SMT root, 8-byte since value, etc.)
+  - **Full spec**: [Omnilock Protocol](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0042-omnilock/0042-omnilock.md)
 
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0xc76edf469816aa22f416503c38d0b533d2a018e253e379f134c3985b3472c842`
@@ -225,7 +221,12 @@ Omnilock is a universal lock script designed for cross-chain interoperability.
 **Testnet (Pudge)**
 - **Code Hash**: `0xf329effd1c475a2978453c8600e1eaf0bc2087ee093c3ee64cc96ec6847752cb`
 - **Hash Type**: `type`
-- **Args**: 21-byte auth content followed by Omnilock args for mode flags.
+- **Args**: `<auth: 21 bytes> + <flags: 1 byte> + [optional configs]`
+  - **Auth byte 0**: Authentication method (0x00=CKB, 0x01=Ethereum, 0x03=Tron, 0x04=Bitcoin, 0x05=Dogecoin, 0x06=Multisig, 0xFC=Script Hash, 0xFD=Exec, 0xFE=Dynamic Linking)
+  - **Auth bytes 1-20**: Identity hash (blake160 of pubkey for most methods, address-specific for Bitcoin)
+  - **Flags byte**: Mode bitmask (0x01=Administrator, 0x02=Anyone-Can-Pay, 0x04=Time-Lock, 0x08=Supply)
+  - **Optional configs**: Appended based on enabled flags (32-byte SMT root, 8-byte since value, etc.)
+  - **Full spec**: [Omnilock Protocol](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0042-omnilock/0042-omnilock.md)
 
 **Cell Dependency (Testnet - RFC 0042)**
 - **TX Hash**: `0x3d4296df1bd2cc2bd3f483f61ab7ebeac462a2f336f2b944168fe6ba5d81c014`
@@ -248,7 +249,8 @@ PW Lock is a lock script for PW-SDK compatibility, enabling Ethereum-style authe
 **Mainnet**
 - **Code Hash**: `0xbf43c3602455798c1a61a596e0d95278864c552fafe231c063b3fabf97a8febc`
 - **Hash Type**: `type`
-- **Args**: Contains Ethereum-style authentication data.
+- **Args**: Multi-ecosystem authentication data (format varies by chain).
+  - **Note**: PW-SDK is deprecated. Use [Omnilock](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0042-omnilock/0042-omnilock.md) for cross-chain lock scripts in new deployments.
 
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0x1d60cb8f4666e039f418ea94730b1a8c5aa0bf2f7781474406387462924d15d4`
@@ -258,7 +260,8 @@ PW Lock is a lock script for PW-SDK compatibility, enabling Ethereum-style authe
 **Testnet**
 - **Code Hash**: `0x58c5f491aba6d61678b7cf7edf4910b1f5e00ec0cde2f42e0abb4fd9aff25a63`
 - **Hash Type**: `type`
-- **Args**: Contains Ethereum-style authentication data.
+- **Args**: Multi-ecosystem authentication data (format varies by chain).
+  - **Note**: PW-SDK is deprecated. Use [Omnilock](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0042-omnilock/0042-omnilock.md) for cross-chain lock scripts in new deployments.
 
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0x57a62003daeab9d54aa29b944fc3b451213a5ebdf2e232216a3cfed0dde61b38`
@@ -280,7 +283,12 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 - **Code Hash**: `0xd369597ff47f29fbc0d47d2e3775370d1250b85140c670e4718af712983a2354`
 - **Hash Type**: `type`
 - **Type ID**: `0xde8b879bd1e98399de0dc9be163e703fc1fb82d9379ee1e85143b9f5a863610c`
-- **Args**: 20-byte public key hash, optional minimum CKB/UDT amount.
+- **Args**: `<pubkey_hash: 20 bytes> [+ <ckb_min: 1 byte>] [+ <udt_min: 1 byte>]`
+  - **Bytes 0-19**: Blake160 hash of public key
+  - **Byte 20** (optional): Minimum CKB transfer (exponential: value n = 10^n shannons, e.g., 9 = 10 CKB)
+  - **Byte 21** (optional): Minimum UDT transfer (exponential: value n = 10^n base units)
+  - **Note**: Omitted minimums default to 0 (no minimum enforced)
+  - **Full spec**: [RFC 0026](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0026-anyone-can-pay/0026-anyone-can-pay.md)
 
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0x4153a2014952d7cac45f285ce9a7c5c0c0e1b21f2d378b82ac1433cb11c25c4d`
@@ -290,7 +298,12 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 **Testnet (Aggron)**
 - **Code Hash**: `0x3419a1c09eb2567f6552ee7a8ecffd64155cffe0f1796e6e61ec088d740c1356`
 - **Hash Type**: `type`
-- **Args**: 20-byte public key hash, optional minimum CKB/UDT amount.
+- **Args**: `<pubkey_hash: 20 bytes> [+ <ckb_min: 1 byte>] [+ <udt_min: 1 byte>]`
+  - **Bytes 0-19**: Blake160 hash of public key
+  - **Byte 20** (optional): Minimum CKB transfer (exponential: value n = 10^n shannons, e.g., 9 = 10 CKB)
+  - **Byte 21** (optional): Minimum UDT transfer (exponential: value n = 10^n base units)
+  - **Note**: Omitted minimums default to 0 (no minimum enforced)
+  - **Full spec**: [RFC 0026](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0026-anyone-can-pay/0026-anyone-can-pay.md)
 
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0xec26b0f85ed839ece5f11c4c4e837ec359f5adc4420410f6453b1f6b60fb96a6`
