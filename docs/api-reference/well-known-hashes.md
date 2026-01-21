@@ -27,6 +27,28 @@ Scripts cannot execute without their corresponding cell dependencies being inclu
 
 ## System Scripts
 
+### Genesis Block
+
+The genesis block (block 0) contains foundational system scripts referenced by multiple protocols.
+
+**Mainnet Genesis Transaction**
+
+**TX Hash**: `0xe2fb199810d49a4d8beec56718ba2593b665db9d52299a0f9e6e75416d73ff5c`
+
+**Outputs:**
+- Index 1: SECP256K1/blake160 lock binary
+- Index 2: NervosDAO type script
+- Index 3: secp256k1_data (precomputed elliptic curve parameters)
+- Index 4: Multisig lock binary
+
+**Testnet Genesis Transaction**
+
+**TX Hash**: `0x8f8c79eb6671709633fe6a46de93c0fedc9c1b8a6527a18d3983879542635c9f`
+
+Contains the same system scripts at identical indices. Testnet uses separate dep_group transactions (`0xf8de3bb...`) that bundle these genesis scripts for easier reference.
+
+**Usage:** Genesis scripts appear as dependencies in SECP256K1, Multisig, ACP, JoyID, and iCKB dep groups.
+
 ### SECP256K1_BLAKE160 (Fallback Lock Script)
 
 *Note: Sometimes called the default lock script.*
@@ -39,7 +61,7 @@ Scripts cannot execute without their corresponding cell dependencies being inclu
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0x71a7ba8fc96349fea0ed3a5c47992e3b4084b031a42264a018e0072e8172e46c`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (2 cells)
 
 **Testnet**
 - **Code Hash**: `0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8`
@@ -49,7 +71,7 @@ Scripts cannot execute without their corresponding cell dependencies being inclu
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0xf8de3bb47d055cdf460d93a2a6e1b05f7432f9777c8c474abf4eec1d4aee5d37`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (2 cells)
 
 **Source**: [RFC 0024: CKB Genesis Script List](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0024-ckb-genesis-script-list/0024-ckb-genesis-script-list.md)
 
@@ -65,7 +87,7 @@ Scripts cannot execute without their corresponding cell dependencies being inclu
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0x71a7ba8fc96349fea0ed3a5c47992e3b4084b031a42264a018e0072e8172e46c`
 - **Index**: `0x1`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (2 cells)
 
 **Testnet**
 - **Code Hash**: `0x5c5069eb0857efc65e1bca0c07df34c31663b3622fd3876c876320fc9634e2a8`
@@ -75,7 +97,7 @@ Scripts cannot execute without their corresponding cell dependencies being inclu
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0xf8de3bb47d055cdf460d93a2a6e1b05f7432f9777c8c474abf4eec1d4aee5d37`
 - **Index**: `0x1`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (2 cells)
 
 **Source**: [RFC 0024: CKB Genesis Script List](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0024-ckb-genesis-script-list/0024-ckb-genesis-script-list.md)
 
@@ -257,12 +279,13 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 **Mainnet (Lina)**
 - **Code Hash**: `0xd369597ff47f29fbc0d47d2e3775370d1250b85140c670e4718af712983a2354`
 - **Hash Type**: `type`
+- **Type ID**: `0xde8b879bd1e98399de0dc9be163e703fc1fb82d9379ee1e85143b9f5a863610c`
 - **Args**: 20-byte public key hash, optional minimum CKB/UDT amount.
 
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0x4153a2014952d7cac45f285ce9a7c5c0c0e1b21f2d378b82ac1433cb11c25c4d`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (2 cells)
 
 **Testnet (Aggron)**
 - **Code Hash**: `0x3419a1c09eb2567f6552ee7a8ecffd64155cffe0f1796e6e61ec088d740c1356`
@@ -272,7 +295,7 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0xec26b0f85ed839ece5f11c4c4e837ec359f5adc4420410f6453b1f6b60fb96a6`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (2 cells)
 
 **Source**: [RFC 0026: Anyone-Can-Pay Lock](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0026-anyone-can-pay/0026-anyone-can-pay.md)
 
@@ -331,12 +354,13 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 **Mainnet**
 - **Code Hash**: `0x1122a4fb54697cf2e6e3a96c9d80fd398a936559b90954c6e88eb7ba0cf652df`
 - **Hash Type**: `type`
+- **Type ID**: `0x8b8c859723698f5fd38372b6eadb8f1b4aaa823169baec7c203ed9b269953f0b`
 - **Args**: `0x`
 
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0xabaa25237554f0d6c586dc010e7e85e6870bcfd9fb8773257ecacfbe1fd738a0`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (3 cells)
 
 **Testnet**
 - **Code Hash**: `0x89cd8003a0eaf8e65e0c31525b7d1d5c1becefd2ea75bb4cff87810ae37764d8`
@@ -346,7 +370,7 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0x636a786001f87cb615acfcf408be0f9a1f077001f0bbc75ca54eadfe7e221713`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (3 cells)
 
 **Source**: [nervina-labs/cota-sdk-js constants](https://github.com/nervina-labs/cota-sdk-js/blob/develop/src/constants/index.ts)
 
@@ -355,6 +379,7 @@ ACP is a lock script that allows anyone to transfer CKB or UDT tokens to a cell.
 **Mainnet**
 - **Code Hash**: `0x90ca618be6c15f5857d3cbd09f9f24ca6770af047ba9ee70989ec3b229419ac7`
 - **Hash Type**: `type`
+- **Type ID**: `0xf89559d113f2814d62f087e155c767e5297967aabc6ffe918c34d8e00442c19c`
 - **Args**: `0x563631b49cee549f3585ab4dde5f9d590f507f1f`
 
 **Testnet**
@@ -376,11 +401,12 @@ CKBFS is a witnesses-based file storage protocol for CKB. Scripts can be referen
 - **Code Hash**: `0x31e6376287d223b8c0410d562fb422f04d1d617b2947596a14c3d2efb7218d3a`
 - **Hash Type**: `data1`
 - **Type ID**: `0xfd2058c9a0c0183354cf637e25d2707ffa9bb6fa2ba9b29f4ebc6be3e54ad7eb` (use with hash_type `type`)
+- **Type ID Args**: `0x4a8629bac7f1d135dc13c33596e29c6fd5ccfca8043a1546929438291fbd6e36`
 
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0xfab07962ed7178ed88d450774e2a6ecd50bae856bdb9b692980be8c5147d1bfa`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (2 cells)
 
 **Testnet**
 - **Code Hash**: `0x31e6376287d223b8c0410d562fb422f04d1d617b2947596a14c3d2efb7218d3a`
@@ -390,7 +416,7 @@ CKBFS is a witnesses-based file storage protocol for CKB. Scripts can be referen
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0x469af0d961dcaaedd872968a9388b546717a6ccfa47b3165b3f9c981e9d66aaa`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (2 cells)
 
 #### Adler32 Hasher Script (Version 20241025)
 
@@ -398,6 +424,7 @@ CKBFS is a witnesses-based file storage protocol for CKB. Scripts can be referen
 - **Code Hash**: `0x2138683f76944437c0c643664120d620bdb5858dd6c9d1d156805e279c2c536f`
 - **Hash Type**: `data1`
 - **Type ID**: `0x641c01d590833a3f5471bd441651d9f2a8a200141949cdfeef2d68d8094c5876` (use with hash_type `type`)
+- **Type ID Args**: `0xb8c16cf1dc255118176787b580c5c5cd8c327d5667cf3421b34bff05ffe77e7d`
 
 **Testnet**
 - **Code Hash**: `0x2138683f76944437c0c643664120d620bdb5858dd6c9d1d156805e279c2c536f`
@@ -420,15 +447,17 @@ Used for iCKB token minting and burning logic.
 - **Code Hash**: `0x2a8100ab5990fa055ab1b50891702e1e895c7bd1df6322cd725c1a6115873bd3`
 - **Hash Type**: `data1`
 
+*Note: Uses data hash (immutable) for security. iCKB is a public good where no entity can upgrade scripts to potentially steal deposited funds.*
+
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0x621a6f38de3b9f453016780edac3b26bfcbfa3e2ecb47c2da275471a5d3ed165`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (8 cells: 3 iCKB scripts + xUDT + 4 genesis scripts)
 
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0xf7ece4fb33d8378344cab11fcd6a4c6f382fd4207ac921cf5821f30712dcd311`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (8 cells: 3 iCKB scripts + xUDT + 4 genesis scripts)
 
 #### Limit Order Script
 
@@ -438,15 +467,17 @@ Used for iCKB limit order matching.
 - **Code Hash**: `0x49dfb6afee5cc8ac4225aeea8cb8928b150caf3cd92fea33750683c74b13254a`
 - **Hash Type**: `data1`
 
+*Note: Uses data hash (immutable) for security.*
+
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0x621a6f38de3b9f453016780edac3b26bfcbfa3e2ecb47c2da275471a5d3ed165`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (8 cells: 3 iCKB scripts + xUDT + 4 genesis scripts)
 
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0xf7ece4fb33d8378344cab11fcd6a4c6f382fd4207ac921cf5821f30712dcd311`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (8 cells: 3 iCKB scripts + xUDT + 4 genesis scripts)
 
 #### Owned-Owner Script
 
@@ -456,15 +487,17 @@ Used for ownership verification in iCKB operations.
 - **Code Hash**: `0xacc79e07d107831feef4c70c9e683dac5644d5993b9cb106dca6e74baa381bd0`
 - **Hash Type**: `data1`
 
+*Note: Uses data hash (immutable) for security.*
+
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0x621a6f38de3b9f453016780edac3b26bfcbfa3e2ecb47c2da275471a5d3ed165`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (8 cells: 3 iCKB scripts + xUDT + 4 genesis scripts)
 
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0xf7ece4fb33d8378344cab11fcd6a4c6f382fd4207ac921cf5821f30712dcd311`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (8 cells: 3 iCKB scripts + xUDT + 4 genesis scripts)
 
 #### iCKB xUDT Type Script
 
@@ -478,12 +511,12 @@ The iCKB token itself, implemented as an xUDT with specific args encoding the iC
 **Cell Dependency (Mainnet)**
 - **TX Hash**: `0x621a6f38de3b9f453016780edac3b26bfcbfa3e2ecb47c2da275471a5d3ed165`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (8 cells: 3 iCKB scripts + xUDT + 4 genesis scripts)
 
 **Cell Dependency (Testnet)**
 - **TX Hash**: `0xf7ece4fb33d8378344cab11fcd6a4c6f382fd4207ac921cf5821f30712dcd311`
 - **Index**: `0x0`
-- **Dep Type**: `dep_group`
+- **Dep Type**: `dep_group` (8 cells: 3 iCKB scripts + xUDT + 4 genesis scripts)
 
 *Note: The args encode the iCKB Logic script hash plus extension flags. This xUDT references the standard xUDT code hash with data1 hash type.*
 
