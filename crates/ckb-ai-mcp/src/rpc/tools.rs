@@ -3,7 +3,7 @@
 //! Tools are renamed from the original CKB RPC names to follow the pattern:
 //! `rpc_{action}_{target}`
 
-use crate::util::make_tool;
+use crate::util::{make_tool_annotated, ToolHints};
 use rmcp::model::Tool;
 use serde_json::json;
 use std::sync::LazyLock;
@@ -66,8 +66,9 @@ impl RpcToolDefinitions {
 	// Category: query
 
 	fn rpc_get_block() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_block",
+			"Get Block",
 			"Get CKB block by hash. Returns header, transactions, proposals, and uncles.",
 			json!({
 				"type": "object",
@@ -79,13 +80,15 @@ impl RpcToolDefinitions {
 				},
 				"required": ["block_hash"]
 			}),
+			ToolHints::query_idempotent(),
 		)
 	}
 
 	fn rpc_get_block_by_number() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_block_by_number",
-			"Get CKB block by number.",
+			"Get Block by Number",
+			"Get CKB block by number. Returns header, transactions, proposals, and uncles.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -96,12 +99,14 @@ impl RpcToolDefinitions {
 				},
 				"required": ["block_number"]
 			}),
+			ToolHints::query_idempotent(),
 		)
 	}
 
 	fn rpc_get_header() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_header",
+			"Get Header",
 			"Get CKB block header by hash.",
 			json!({
 				"type": "object",
@@ -113,13 +118,15 @@ impl RpcToolDefinitions {
 				},
 				"required": ["block_hash"]
 			}),
+			ToolHints::query_idempotent(),
 		)
 	}
 
 	fn rpc_get_header_by_number() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_header_by_number",
-			"Get CKB block header by number.",
+			"Get Header by Number",
+			"Get CKB block header by block number.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -130,13 +137,15 @@ impl RpcToolDefinitions {
 				},
 				"required": ["block_number"]
 			}),
+			ToolHints::query_idempotent(),
 		)
 	}
 
 	fn rpc_get_transaction() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_transaction",
-			"Get CKB transaction by hash.",
+			"Get Transaction",
+			"Get CKB transaction by hash. Returns transaction data and status.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -147,13 +156,16 @@ impl RpcToolDefinitions {
 				},
 				"required": ["tx_hash"]
 			}),
+			// Not idempotent: status changes (pending → committed).
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_get_block_hash() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_block_hash",
-			"Get block hash by number.",
+			"Get Block Hash",
+			"Get CKB block hash by block number.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -164,46 +176,54 @@ impl RpcToolDefinitions {
 				},
 				"required": ["block_number"]
 			}),
+			ToolHints::query_idempotent(),
 		)
 	}
 
 	fn rpc_get_tip_header() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_tip_header",
-			"Get tip block header.",
+			"Get Tip Header",
+			"Get the latest block header from the CKB chain tip.",
 			json!({
 				"type": "object",
 				"properties": {}
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_get_tip_block_number() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_tip_block_number",
-			"Get tip block number.",
+			"Get Tip Block Number",
+			"Get the current CKB chain tip block number (height).",
 			json!({
 				"type": "object",
 				"properties": {}
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_get_current_epoch() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_current_epoch",
-			"Get current epoch information.",
+			"Get Current Epoch",
+			"Get current CKB epoch information including number, start, and length.",
 			json!({
 				"type": "object",
 				"properties": {}
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_get_epoch_by_number() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_epoch_by_number",
-			"Get epoch by number.",
+			"Get Epoch by Number",
+			"Get CKB epoch information by epoch number.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -214,13 +234,15 @@ impl RpcToolDefinitions {
 				},
 				"required": ["epoch_number"]
 			}),
+			ToolHints::query_idempotent(),
 		)
 	}
 
 	fn rpc_get_live_cell() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_live_cell",
-			"Get live cell by outpoint.",
+			"Get Live Cell",
+			"Get live cell by outpoint (tx_hash + index). Returns cell data and status.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -240,13 +262,16 @@ impl RpcToolDefinitions {
 				},
 				"required": ["tx_hash", "index"]
 			}),
+			// Not idempotent: cell may be consumed.
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_get_fork_block() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_fork_block",
-			"Get fork block information by hash.",
+			"Get Fork Block",
+			"Get fork block information by hash. Used for chain reorganization analysis.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -261,26 +286,30 @@ impl RpcToolDefinitions {
 				},
 				"required": ["block_hash"]
 			}),
+			ToolHints::query_idempotent(),
 		)
 	}
 
 	// Category: search (Indexer)
 
 	fn rpc_get_indexer_tip() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_indexer_tip",
-			"Get indexer sync tip.",
+			"Get Indexer Tip",
+			"Get CKB indexer sync tip. Shows indexer synchronization status.",
 			json!({
 				"type": "object",
 				"properties": {}
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_search_cells() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_search_cells",
-			"Search for cells by criteria. Returns matching cells with pagination.",
+			"Search Cells",
+			"Search for CKB cells by lock/type script criteria. Returns matching cells with pagination.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -306,13 +335,15 @@ impl RpcToolDefinitions {
 				},
 				"required": ["search_key"]
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_search_transactions() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_search_transactions",
-			"Search for transactions by criteria.",
+			"Search Transactions",
+			"Search for CKB transactions by script criteria. Returns matching transactions.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -343,13 +374,15 @@ impl RpcToolDefinitions {
 				},
 				"required": ["search_key"]
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_get_cells_capacity() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_cells_capacity",
-			"Get total capacity of cells matching search criteria.",
+			"Get Cells Capacity",
+			"Get total CKB capacity of cells matching search criteria.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -360,15 +393,17 @@ impl RpcToolDefinitions {
 				},
 				"required": ["search_key"]
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	// Category: submit
 
 	fn rpc_submit_transaction() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_submit_transaction",
-			"Submit transaction to the network.",
+			"Submit Transaction",
+			"Submit a CKB transaction to the network for inclusion in a block.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -385,13 +420,15 @@ impl RpcToolDefinitions {
 				},
 				"required": ["tx"]
 			}),
+			ToolHints::submit(),
 		)
 	}
 
 	fn rpc_test_transaction() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_test_transaction",
-			"Test if transaction would be accepted without broadcasting.",
+			"Test Transaction",
+			"Test if a CKB transaction would be accepted without broadcasting. Dry-run validation.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -408,70 +445,82 @@ impl RpcToolDefinitions {
 				},
 				"required": ["tx"]
 			}),
+			ToolHints::query_idempotent(),
 		)
 	}
 
 	// Category: status
 
 	fn rpc_get_node_info() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_node_info",
-			"Get local node information.",
+			"Get Node Info",
+			"Get local CKB node information including version and protocols.",
 			json!({
 				"type": "object",
 				"properties": {}
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_get_sync_state() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_sync_state",
-			"Get chain synchronization state.",
+			"Get Sync State",
+			"Get CKB chain synchronization state. Shows sync progress.",
 			json!({
 				"type": "object",
 				"properties": {}
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_get_peers() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_peers",
-			"Get connected peers information.",
+			"Get Peers",
+			"Get connected CKB network peers information.",
 			json!({
 				"type": "object",
 				"properties": {}
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_get_pool_info() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_pool_info",
-			"Get transaction pool information.",
+			"Get Pool Info",
+			"Get CKB transaction pool information including size and fees.",
 			json!({
 				"type": "object",
 				"properties": {}
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_get_pool_ready() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_pool_ready",
-			"Check if tx-pool service is ready.",
+			"Get Pool Ready",
+			"Check if CKB tx-pool service is ready to accept transactions.",
 			json!({
 				"type": "object",
 				"properties": {}
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_get_pool_transactions() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_pool_transactions",
-			"Get all transaction IDs in tx pool.",
+			"Get Pool Transactions",
+			"Get all transaction IDs currently in the CKB tx pool.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -482,13 +531,15 @@ impl RpcToolDefinitions {
 					}
 				}
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_get_pool_tx_detail() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_pool_tx_detail",
-			"Get detailed information about a transaction in the pool.",
+			"Get Pool TX Detail",
+			"Get detailed information about a specific transaction in the CKB pool.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -499,48 +550,57 @@ impl RpcToolDefinitions {
 				},
 				"required": ["tx_hash"]
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_get_blockchain_info() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_blockchain_info",
-			"Get blockchain information including chain type and difficulty.",
+			"Get Blockchain Info",
+			"Get CKB blockchain information including chain type, difficulty, and median time.",
 			json!({
 				"type": "object",
 				"properties": {}
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_get_consensus() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_consensus",
-			"Get consensus parameters.",
+			"Get Consensus",
+			"Get CKB consensus parameters including block intervals and rewards.",
 			json!({
 				"type": "object",
 				"properties": {}
 			}),
+			// Not idempotent: consensus may change after hard forks.
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_get_deployments() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_deployments",
-			"Get soft fork deployment information.",
+			"Get Deployments",
+			"Get CKB soft fork deployment information and activation status.",
 			json!({
 				"type": "object",
 				"properties": {}
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	// Category: calculate
 
 	fn rpc_estimate_cycles() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_estimate_cycles",
-			"Estimate transaction execution cycles.",
+			"Estimate Cycles",
+			"Estimate CKB transaction execution cycles for fee calculation.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -551,13 +611,15 @@ impl RpcToolDefinitions {
 				},
 				"required": ["tx"]
 			}),
+			ToolHints::query_idempotent(),
 		)
 	}
 
 	fn rpc_estimate_fee_rate() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_estimate_fee_rate",
-			"Estimate transaction fee rate in shannons per kilobyte.",
+			"Estimate Fee Rate",
+			"Estimate CKB transaction fee rate in shannons per kilobyte.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -572,13 +634,15 @@ impl RpcToolDefinitions {
 					}
 				}
 			}),
+			ToolHints::query_live(),
 		)
 	}
 
 	fn rpc_calculate_dao_withdraw() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_calculate_dao_withdraw",
-			"Calculate maximum DAO withdrawal amount.",
+			"Calculate DAO Withdraw",
+			"Calculate maximum CKB Nervos DAO withdrawal amount including interest.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -597,13 +661,15 @@ impl RpcToolDefinitions {
 				},
 				"required": ["out_point", "kind"]
 			}),
+			ToolHints::query_idempotent(),
 		)
 	}
 
 	fn rpc_get_block_economics() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_block_economics",
-			"Get block issuance, miner rewards, and transaction fees.",
+			"Get Block Economics",
+			"Get CKB block issuance, miner rewards, and transaction fees breakdown.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -614,13 +680,15 @@ impl RpcToolDefinitions {
 				},
 				"required": ["block_hash"]
 			}),
+			ToolHints::query_idempotent(),
 		)
 	}
 
 	fn rpc_get_block_median_time() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_block_median_time",
-			"Get median timestamp of 37 consecutive blocks.",
+			"Get Block Median Time",
+			"Get median timestamp of 37 consecutive CKB blocks.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -631,13 +699,15 @@ impl RpcToolDefinitions {
 				},
 				"required": ["block_hash"]
 			}),
+			ToolHints::query_idempotent(),
 		)
 	}
 
 	fn rpc_get_block_filter() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_block_filter",
-			"Get BIP-157 block filter for light client SPV.",
+			"Get Block Filter",
+			"Get BIP-157 block filter for CKB light client SPV verification.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -648,15 +718,17 @@ impl RpcToolDefinitions {
 				},
 				"required": ["block_hash"]
 			}),
+			ToolHints::query_idempotent(),
 		)
 	}
 
 	// Category: verify
 
 	fn rpc_get_transaction_proof() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_get_transaction_proof",
-			"Generate Merkle proof for transaction inclusion.",
+			"Get Transaction Proof",
+			"Generate Merkle proof for CKB transaction inclusion in a block.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -672,13 +744,15 @@ impl RpcToolDefinitions {
 				},
 				"required": ["tx_hashes"]
 			}),
+			ToolHints::query_idempotent(),
 		)
 	}
 
 	fn rpc_verify_transaction_proof() -> Tool {
-		make_tool(
+		make_tool_annotated(
 			"rpc_verify_transaction_proof",
-			"Verify Merkle proof and return committed transaction hashes.",
+			"Verify Transaction Proof",
+			"Verify Merkle proof and return committed CKB transaction hashes.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -701,6 +775,7 @@ impl RpcToolDefinitions {
 				},
 				"required": ["tx_proof"]
 			}),
+			ToolHints::query_idempotent(),
 		)
 	}
 }

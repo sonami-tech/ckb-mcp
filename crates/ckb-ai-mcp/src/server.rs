@@ -12,6 +12,7 @@ use serde::Serialize;
 use shared::ckb_client::CkbRpcClient;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{error, info};
@@ -19,6 +20,7 @@ use tracing::{error, info};
 use crate::capabilities::CkbMcpServerFactory;
 use crate::dev::DevHandlers;
 use crate::jsonrpc::jsonrpc_handler;
+use crate::middleware::DeferLoadingLayer;
 use crate::ServerConfig;
 
 /// Application state shared across handlers.
@@ -81,6 +83,11 @@ pub async fn run(addr: SocketAddr, config: ServerConfig) -> Result<()> {
 		Default::default(),
 	);
 
+	// Wrap MCP service with DeferLoadingLayer to inject defer_loading property.
+	let mcp_service_with_defer = ServiceBuilder::new()
+		.layer(DeferLoadingLayer)
+		.service(mcp_service);
+
 	// Build the router.
 	let app = Router::new()
 		// Health endpoint.
@@ -91,8 +98,8 @@ pub async fn run(addr: SocketAddr, config: ServerConfig) -> Result<()> {
 		.route("/deploy/file", post(upload_file_handler))
 		// JSON-RPC endpoint for plain HTTP requests.
 		.route("/rpc", post(jsonrpc_handler))
-		// MCP endpoint via StreamableHttpService.
-		.nest_service("/mcp", mcp_service)
+		// MCP endpoint via StreamableHttpService with defer_loading injection.
+		.nest_service("/mcp", mcp_service_with_defer)
 		// Shared state.
 		.with_state(Arc::new(state))
 		// CORS configuration.

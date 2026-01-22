@@ -1,6 +1,6 @@
 //! Search tool definitions.
 
-use crate::util::make_tool;
+use crate::util::{make_tool_annotated, ToolHints};
 use rmcp::model::Tool;
 use serde_json::json;
 use std::sync::LazyLock;
@@ -8,10 +8,10 @@ use std::sync::LazyLock;
 /// Search tools for finding tools and resources.
 pub static SEARCH_TOOLS: LazyLock<Vec<Tool>> = LazyLock::new(|| {
 	vec![
-		make_tool(
+		make_tool_annotated(
 			"search_tools",
-			"Search available MCP tools by keyword. Returns matching tools with their names \
-			and descriptions. Use this to discover relevant tools for a task.",
+			"Search Tools",
+			"Search available MCP tools by keyword. Returns matching tools with names and descriptions.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -27,11 +27,12 @@ pub static SEARCH_TOOLS: LazyLock<Vec<Tool>> = LazyLock::new(|| {
 				},
 				"required": ["query"]
 			}),
+			ToolHints::query_idempotent(),
 		),
-		make_tool(
+		make_tool_annotated(
 			"search_resources",
-			"Search available documentation resources by keyword. Returns matching resources \
-			with their URIs and descriptions. Use this to find relevant CKB development documentation.",
+			"Search Resources",
+			"Search available documentation resources by keyword. Returns matching resources with URIs and descriptions.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -47,6 +48,7 @@ pub static SEARCH_TOOLS: LazyLock<Vec<Tool>> = LazyLock::new(|| {
 				},
 				"required": ["query"]
 			}),
+			ToolHints::query_idempotent(),
 		),
 	]
 });

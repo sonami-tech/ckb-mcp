@@ -15,6 +15,7 @@ mod capabilities;
 mod dev;
 mod docs;
 mod jsonrpc;
+mod middleware;
 mod prompts;
 mod rpc;
 mod search;
