@@ -11,6 +11,7 @@ use shared::ckb_client::CkbRpcClient;
 use std::sync::Arc;
 use tracing::{debug, info};
 
+use crate::ckb::{CkbHandlers, CKB_TOOLS};
 use crate::dev::{DevHandlers, DEV_TOOLS};
 use crate::docs::DocsHandlers;
 use crate::prompts::{PromptsHandlers, PROMPTS};
@@ -48,6 +49,7 @@ impl CkbMcpServerFactory {
 pub struct CkbMcpServer {
 	config: ServerConfig,
 	rpc_handlers: Option<Arc<RpcHandlers>>,
+	ckb_handlers: Option<Arc<CkbHandlers>>,
 	dev_handlers: Option<Arc<DevHandlers>>,
 	docs_handlers: Option<Arc<DocsHandlers>>,
 	search_handlers: SearchHandlers,
@@ -125,6 +127,22 @@ impl CkbMcpServer {
 			None
 		};
 
+		// Create CKB composite handlers if RPC or tools are enabled.
+		let ckb_handlers = if config.args.rpc_enabled() || config.args.tools_enabled() {
+			match CkbRpcClient::new(&config.args.ckb_rpc) {
+				Ok(client) => {
+					info!("CKB handlers created for {}", config.args.ckb_rpc);
+					Some(Arc::new(CkbHandlers::new(client)))
+				}
+				Err(e) => {
+					tracing::error!("Failed to create CKB client for CKB handlers: {}", e);
+					None
+				}
+			}
+		} else {
+			None
+		};
+
 		// Create search handlers (always enabled).
 		let search_handlers = SearchHandlers::new();
 
@@ -138,6 +156,7 @@ impl CkbMcpServer {
 		Self {
 			config,
 			rpc_handlers,
+			ckb_handlers,
 			dev_handlers,
 			docs_handlers,
 			search_handlers,
@@ -168,6 +187,11 @@ impl CkbMcpServer {
 
 		if self.config.args.tools_enabled() {
 			tools.extend(DEV_TOOLS.iter().cloned());
+		}
+
+		// CKB composite tools available when RPC or tools are enabled.
+		if self.config.args.rpc_enabled() || self.config.args.tools_enabled() {
+			tools.extend(CKB_TOOLS.iter().cloned());
 		}
 
 		if !tools.is_empty() || self.config.args.docs_enabled() {
@@ -213,6 +237,18 @@ impl CkbMcpServer {
 					None,
 				));
 			}
+		} else if CkbHandlers::is_ckb_tool(name) {
+			if !self.config.args.rpc_enabled() && !self.config.args.tools_enabled() {
+				return Err(ErrorData::invalid_params("CKB tools are disabled", None));
+			}
+			if let Some(ref handlers) = self.ckb_handlers {
+				handlers.handle(name, arguments).await
+			} else {
+				return Err(ErrorData::invalid_params(
+					"CKB handlers not initialized",
+					None,
+				));
+			}
 		} else if SearchHandlers::is_search_tool(name) {
 			let mut tools = Vec::new();
 			if self.config.args.rpc_enabled() {
@@ -220,6 +256,9 @@ impl CkbMcpServer {
 			}
 			if self.config.args.tools_enabled() {
 				tools.extend(DEV_TOOLS.iter().cloned());
+			}
+			if self.config.args.rpc_enabled() || self.config.args.tools_enabled() {
+				tools.extend(CKB_TOOLS.iter().cloned());
 			}
 			tools.extend(SEARCH_TOOLS.iter().cloned());
 

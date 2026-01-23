@@ -12,6 +12,7 @@ use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 mod capabilities;
+mod ckb;
 mod dev;
 mod docs;
 mod jsonrpc;
