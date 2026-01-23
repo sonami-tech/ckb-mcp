@@ -69,7 +69,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_block",
 			"Get Block",
-			"Get CKB block by hash. Returns header, transactions, proposals, and uncles.",
+			"[Read-only] Retrieve complete block with all transactions. For header only: rpc_get_header.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -88,7 +88,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_block_by_number",
 			"Get Block by Number",
-			"Get CKB block by number. Returns header, transactions, proposals, and uncles.",
+			"[Read-only] Retrieve complete block by number. For header only: rpc_get_header_by_number.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -107,7 +107,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_header",
 			"Get Header",
-			"Get CKB block header by hash.",
+			"[Read-only] Retrieve block header without transactions. For full block: rpc_get_block.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -126,7 +126,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_header_by_number",
 			"Get Header by Number",
-			"Get CKB block header by block number.",
+			"[Read-only] Retrieve block header by number. For full block: rpc_get_block_by_number.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -145,7 +145,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_transaction",
 			"Get Transaction",
-			"Get CKB transaction by hash. Returns transaction data and status.",
+			"[Read-only] Retrieve transaction data and status by hash. For pending txs: rpc_get_pool_tx_detail.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -165,7 +165,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_block_hash",
 			"Get Block Hash",
-			"Get CKB block hash by block number.",
+			"[Read-only] Convert block number to hash. For full block data: rpc_get_block_by_number.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -184,7 +184,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_tip_header",
 			"Get Tip Header",
-			"Get the latest block header from the CKB chain tip.",
+			"[Read-only] Get latest block header from chain tip. For block number only: rpc_get_tip_block_number.",
 			json!({
 				"type": "object",
 				"properties": {}
@@ -197,7 +197,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_tip_block_number",
 			"Get Tip Block Number",
-			"Get the current CKB chain tip block number (height).",
+			"[Read-only] Get current chain height. For full header: rpc_get_tip_header.",
 			json!({
 				"type": "object",
 				"properties": {}
@@ -210,7 +210,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_current_epoch",
 			"Get Current Epoch",
-			"Get current CKB epoch information including number, start, and length.",
+			"[Read-only] Get current epoch number, start block, and length. For historical: rpc_get_epoch_by_number.",
 			json!({
 				"type": "object",
 				"properties": {}
@@ -223,7 +223,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_epoch_by_number",
 			"Get Epoch by Number",
-			"Get CKB epoch information by epoch number.",
+			"[Read-only] Get historical epoch details. For current epoch: rpc_get_current_epoch.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -242,7 +242,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_live_cell",
 			"Get Live Cell",
-			"Get live cell by outpoint (tx_hash + index). Returns cell data and status.",
+			"[Read-only] Get single cell by outpoint. For bulk queries: rpc_search_cells.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -271,7 +271,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_fork_block",
 			"Get Fork Block",
-			"Get fork block information by hash. Used for chain reorganization analysis.",
+			"[Read-only] Get orphaned block from chain reorganization. For canonical blocks: rpc_get_block.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -296,7 +296,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_indexer_tip",
 			"Get Indexer Tip",
-			"Get CKB indexer sync tip. Shows indexer synchronization status.",
+			"[Read-only] Get indexer sync status. Check before using rpc_search_cells or rpc_search_transactions.",
 			json!({
 				"type": "object",
 				"properties": {}
@@ -309,7 +309,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_search_cells",
 			"Search Cells",
-			"Search for CKB cells by lock/type script criteria. Returns matching cells with pagination.",
+			"[Read-only] Search cells by script criteria with full filter control. For total capacity: rpc_get_cells_capacity.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -343,7 +343,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_search_transactions",
 			"Search Transactions",
-			"Search for CKB transactions by script criteria. Returns matching transactions.",
+			"[Read-only] Search transaction history by script. For single tx: rpc_get_transaction.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -382,7 +382,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_cells_capacity",
 			"Get Cells Capacity",
-			"Get total CKB capacity of cells matching search criteria.",
+			"[Read-only] Get total capacity of matching cells. For cell details: rpc_search_cells.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -403,7 +403,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_submit_transaction",
 			"Submit Transaction",
-			"Submit a CKB transaction to the network for inclusion in a block.",
+			"[Modifies state] Submit transaction to network for inclusion. Validate first with rpc_test_transaction.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -428,7 +428,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_test_transaction",
 			"Test Transaction",
-			"Test if a CKB transaction would be accepted without broadcasting. Dry-run validation.",
+			"[Read-only] Dry-run transaction validation without broadcasting. Use before rpc_submit_transaction.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -455,7 +455,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_node_info",
 			"Get Node Info",
-			"Get local CKB node information including version and protocols.",
+			"[Read-only] Get node version, protocols, and addresses. For sync status: rpc_get_sync_state.",
 			json!({
 				"type": "object",
 				"properties": {}
@@ -468,7 +468,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_sync_state",
 			"Get Sync State",
-			"Get CKB chain synchronization state. Shows sync progress.",
+			"[Read-only] Get chain sync progress and IBD status. For node info: rpc_get_node_info.",
 			json!({
 				"type": "object",
 				"properties": {}
@@ -481,7 +481,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_peers",
 			"Get Peers",
-			"Get connected CKB network peers information.",
+			"[Read-only] Get connected peer addresses and protocols. For node status: rpc_get_node_info.",
 			json!({
 				"type": "object",
 				"properties": {}
@@ -494,7 +494,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_pool_info",
 			"Get Pool Info",
-			"Get CKB transaction pool information including size and fees.",
+			"[Read-only] Get mempool size, limits, and fee statistics. For pending txs: rpc_get_pool_transactions.",
 			json!({
 				"type": "object",
 				"properties": {}
@@ -507,7 +507,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_pool_ready",
 			"Get Pool Ready",
-			"Check if CKB tx-pool service is ready to accept transactions.",
+			"[Read-only] Check if mempool is ready. Call before rpc_submit_transaction.",
 			json!({
 				"type": "object",
 				"properties": {}
@@ -520,7 +520,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_pool_transactions",
 			"Get Pool Transactions",
-			"Get all transaction IDs currently in the CKB tx pool.",
+			"[Read-only] List all pending transaction hashes. For tx details: rpc_get_pool_tx_detail.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -539,7 +539,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_pool_tx_detail",
 			"Get Pool TX Detail",
-			"Get detailed information about a specific transaction in the CKB pool.",
+			"[Read-only] Get pending transaction details including fee and ancestors. For committed: rpc_get_transaction.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -558,7 +558,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_blockchain_info",
 			"Get Blockchain Info",
-			"Get CKB blockchain information including chain type, difficulty, and median time.",
+			"[Read-only] Get chain type (mainnet/testnet), difficulty, and alerts. For consensus: rpc_get_consensus.",
 			json!({
 				"type": "object",
 				"properties": {}
@@ -571,7 +571,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_consensus",
 			"Get Consensus",
-			"Get CKB consensus parameters including block intervals and rewards.",
+			"[Read-only] Get consensus rules, block intervals, and reward parameters. For forks: rpc_get_deployments.",
 			json!({
 				"type": "object",
 				"properties": {}
@@ -585,7 +585,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_deployments",
 			"Get Deployments",
-			"Get CKB soft fork deployment information and activation status.",
+			"[Read-only] Get soft fork activation status and thresholds. For consensus params: rpc_get_consensus.",
 			json!({
 				"type": "object",
 				"properties": {}
@@ -600,7 +600,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_estimate_cycles",
 			"Estimate Cycles",
-			"Estimate CKB transaction execution cycles for fee calculation.",
+			"[Read-only] Estimate script execution cycles for fee calculation. For fee rate: rpc_estimate_fee_rate.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -619,7 +619,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_estimate_fee_rate",
 			"Estimate Fee Rate",
-			"Estimate CKB transaction fee rate in shannons per kilobyte.",
+			"[Read-only] Estimate fee rate in shannons/KB from recent blocks. For cycles: rpc_estimate_cycles.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -642,7 +642,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_calculate_dao_withdraw",
 			"Calculate DAO Withdraw",
-			"Calculate maximum CKB Nervos DAO withdrawal amount including interest.",
+			"[Read-only] Calculate DAO withdrawal amount with accumulated interest. For block economics: rpc_get_block_economics.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -669,7 +669,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_block_economics",
 			"Get Block Economics",
-			"Get CKB block issuance, miner rewards, and transaction fees breakdown.",
+			"[Read-only] Get block issuance, miner rewards, and fee breakdown. For DAO: rpc_calculate_dao_withdraw.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -688,7 +688,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_block_median_time",
 			"Get Block Median Time",
-			"Get median timestamp of 37 consecutive CKB blocks.",
+			"[Read-only] Get median time of 37 blocks for time-lock validation. For block header: rpc_get_header.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -707,7 +707,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_block_filter",
 			"Get Block Filter",
-			"Get BIP-157 block filter for CKB light client SPV verification.",
+			"[Read-only] Get BIP-157 block filter for light client SPV. For tx proof: rpc_get_transaction_proof.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -728,7 +728,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_get_transaction_proof",
 			"Get Transaction Proof",
-			"Generate Merkle proof for CKB transaction inclusion in a block.",
+			"[Read-only] Generate Merkle proof for tx inclusion. Verify with rpc_verify_transaction_proof.",
 			json!({
 				"type": "object",
 				"properties": {
@@ -752,7 +752,7 @@ impl RpcToolDefinitions {
 		make_tool_annotated(
 			"rpc_verify_transaction_proof",
 			"Verify Transaction Proof",
-			"Verify Merkle proof and return committed CKB transaction hashes.",
+			"[Read-only] Verify Merkle proof from rpc_get_transaction_proof. Returns verified tx hashes.",
 			json!({
 				"type": "object",
 				"properties": {
