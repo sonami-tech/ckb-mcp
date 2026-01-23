@@ -128,6 +128,9 @@ async fn health_handler() -> impl IntoResponse {
 	(StatusCode::OK, "OK")
 }
 
+/// Server version from Cargo.toml.
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 /// Stats endpoint with format query parameter.
 async fn stats_handler(
 	State(state): State<Arc<AppState>>,
@@ -136,9 +139,9 @@ async fn stats_handler(
 	let format = params.format.as_deref().unwrap_or("human");
 
 	let result = match format {
-		"json" => state.config.stats.format_json(),
-		"prometheus" => state.config.stats.format_prometheus(),
-		_ => state.config.stats.format_human(),
+		"json" => state.config.stats.format_json(Some(VERSION)),
+		"prometheus" => state.config.stats.format_prometheus(Some(VERSION)),
+		_ => state.config.stats.format_human(Some(VERSION)),
 	};
 
 	match result {

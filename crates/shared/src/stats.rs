@@ -28,6 +28,8 @@ pub struct StatsEntry {
 /// Snapshot of all statistics.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StatsSnapshot {
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub version: Option<String>,
 	pub uptime_seconds: u64,
 	pub start_time: u64,
 	pub total_tool_calls: u64,
@@ -269,6 +271,7 @@ impl Stats {
 		let uptime_seconds = now.saturating_sub(self.start_time);
 
 		Ok(StatsSnapshot {
+			version: None,
 			uptime_seconds,
 			start_time: self.start_time,
 			total_tool_calls,
@@ -280,13 +283,24 @@ impl Stats {
 	}
 
 	/// Format stats as human-readable text.
-	pub fn format_human(&self) -> Result<String> {
+	pub fn format_human(&self, version: Option<&str>) -> Result<String> {
 		let snapshot = self.get_snapshot()?;
 		let mut output = String::new();
 
 		// Header
-		output.push_str("CKB MCP Server Stats\n");
-		output.push_str("====================\n\n");
+		match version {
+			Some(v) => {
+				let header = format!("CKB MCP Server Stats (v{})", v);
+				output.push_str(&header);
+				output.push('\n');
+				output.push_str(&"=".repeat(header.len()));
+				output.push_str("\n\n");
+			}
+			None => {
+				output.push_str("CKB MCP Server Stats\n");
+				output.push_str("====================\n\n");
+			}
+		}
 
 		// Uptime
 		let days = snapshot.uptime_seconds / 86400;
@@ -330,16 +344,24 @@ impl Stats {
 	}
 
 	/// Format stats as JSON.
-	pub fn format_json(&self) -> Result<String> {
-		let snapshot = self.get_snapshot()?;
+	pub fn format_json(&self, version: Option<&str>) -> Result<String> {
+		let mut snapshot = self.get_snapshot()?;
+		snapshot.version = version.map(|v| v.to_string());
 		serde_json::to_string_pretty(&snapshot)
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to serialize stats: {}", e)))
 	}
 
 	/// Format stats as Prometheus metrics.
-	pub fn format_prometheus(&self) -> Result<String> {
+	pub fn format_prometheus(&self, version: Option<&str>) -> Result<String> {
 		let snapshot = self.get_snapshot()?;
 		let mut output = String::new();
+
+		// Server info (with version)
+		if let Some(v) = version {
+			output.push_str("# HELP ckb_mcp_info Server information\n");
+			output.push_str("# TYPE ckb_mcp_info gauge\n");
+			output.push_str(&format!("ckb_mcp_info{{version=\"{}\"}} 1\n\n", v));
+		}
 
 		// Tool calls
 		output.push_str("# HELP ckb_mcp_tool_calls_total Total tool calls by name\n");
@@ -452,17 +474,31 @@ mod tests {
 		let stats = Stats::open(&db_path).unwrap();
 		stats.record_tool_call("get_block");
 
-		// Test human format
-		let human = stats.format_human().unwrap();
+		// Test human format without version
+		let human = stats.format_human(None).unwrap();
 		assert!(human.contains("CKB MCP Server Stats"));
 		assert!(human.contains("get_block"));
 
-		// Test JSON format
-		let json = stats.format_json().unwrap();
-		assert!(json.contains("\"total_tool_calls\""));
+		// Test human format with version
+		let human_v = stats.format_human(Some("1.5.0")).unwrap();
+		assert!(human_v.contains("CKB MCP Server Stats (v1.5.0)"));
 
-		// Test Prometheus format
-		let prom = stats.format_prometheus().unwrap();
+		// Test JSON format without version
+		let json = stats.format_json(None).unwrap();
+		assert!(json.contains("\"total_tool_calls\""));
+		assert!(!json.contains("\"version\""));
+
+		// Test JSON format with version
+		let json_v = stats.format_json(Some("1.5.0")).unwrap();
+		assert!(json_v.contains("\"version\": \"1.5.0\""));
+
+		// Test Prometheus format without version
+		let prom = stats.format_prometheus(None).unwrap();
 		assert!(prom.contains("ckb_mcp_tool_calls_total"));
+		assert!(!prom.contains("ckb_mcp_info"));
+
+		// Test Prometheus format with version
+		let prom_v = stats.format_prometheus(Some("1.5.0")).unwrap();
+		assert!(prom_v.contains("ckb_mcp_info{version=\"1.5.0\"} 1"));
 	}
 }

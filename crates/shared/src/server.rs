@@ -150,7 +150,7 @@ where
 	let format = query.format.as_deref().unwrap_or("human");
 
 	match format {
-		"json" => match stats.format_json() {
+		"json" => match stats.format_json(None) {
 			Ok(json) => (
 				StatusCode::OK,
 				[("content-type", "application/json")],
@@ -159,7 +159,7 @@ where
 				.into_response(),
 			Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
 		},
-		"prometheus" => match stats.format_prometheus() {
+		"prometheus" => match stats.format_prometheus(None) {
 			Ok(prom) => (
 				StatusCode::OK,
 				[("content-type", "text/plain; version=0.0.4")],
@@ -168,7 +168,7 @@ where
 				.into_response(),
 			Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
 		},
-		_ => match stats.format_human() {
+		_ => match stats.format_human(None) {
 			Ok(human) => (StatusCode::OK, [("content-type", "text/plain")], human).into_response(),
 			Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
 		},
