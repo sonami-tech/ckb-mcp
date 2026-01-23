@@ -30,7 +30,7 @@ const DEFAULT_TEST_PRIVATE_KEY: &str =
 /// CKB AI MCP Server - Unified MCP server for CKB blockchain development.
 #[derive(Parser, Debug, Clone)]
 #[command(name = "ckb-ai-mcp")]
-#[command(version = "1.0.0")]
+#[command(version = env!("CARGO_PKG_VERSION"))]
 #[command(about = "Unified MCP server for CKB blockchain development")]
 pub struct Args {
 	/// Server port.
@@ -137,7 +137,7 @@ async fn main() -> Result<()> {
 		.with_target(true)
 		.init();
 
-	info!("Starting CKB AI MCP Server v1.0.0");
+	info!("Starting CKB AI MCP Server v{}", env!("CARGO_PKG_VERSION"));
 	info!("Port: {}", args.port);
 	info!("Host: {}", args.host);
 

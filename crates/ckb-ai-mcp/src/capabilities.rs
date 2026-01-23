@@ -456,7 +456,7 @@ impl ServerHandler for CkbMcpServer {
 			capabilities,
 			server_info: Implementation {
 				name: "ckb-ai-mcp".to_string(),
-				version: "1.0.0".to_string(),
+				version: env!("CARGO_PKG_VERSION").to_string(),
 				title: None,
 				website_url: None,
 				icons: None,
