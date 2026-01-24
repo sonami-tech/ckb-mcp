@@ -61,6 +61,18 @@ pub fn make_tool_annotated(
 	input_schema: serde_json::Value,
 	hints: ToolHints,
 ) -> Tool {
+	make_tool_with_output_schema(name, title, description, input_schema, hints, None)
+}
+
+/// Helper to create a tool definition with annotations and output schema.
+pub fn make_tool_with_output_schema(
+	name: &'static str,
+	title: &'static str,
+	description: &'static str,
+	input_schema: serde_json::Value,
+	hints: ToolHints,
+	output_schema: Option<serde_json::Value>,
+) -> Tool {
 	Tool {
 		name: name.into(),
 		description: Some(description.into()),
@@ -76,7 +88,12 @@ pub fn make_tool_annotated(
 				.idempotent(hints.idempotent)
 				.open_world(hints.open_world),
 		),
-		output_schema: None,
+		output_schema: output_schema.map(|s| {
+			s.as_object()
+				.expect("output_schema must be a JSON object")
+				.clone()
+				.into()
+		}),
 		title: Some(title.to_string()),
 		icons: None,
 		meta: None,

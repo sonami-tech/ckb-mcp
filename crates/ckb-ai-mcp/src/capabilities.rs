@@ -2,9 +2,10 @@
 
 use rmcp::handler::server::ServerHandler;
 use rmcp::model::{
-	CallToolResult, Content, ErrorData, GetPromptResult, Implementation, ListPromptsResult,
-	ListResourcesResult, ListToolsResult, PaginatedRequestParam, ProtocolVersion,
-	ReadResourceResult, ServerCapabilities, ServerInfo,
+	CallToolRequestParams, CallToolResult, Content, ErrorData, GetPromptRequestParams,
+	GetPromptResult, Implementation, ListPromptsResult, ListResourcesResult, ListToolsResult,
+	PaginatedRequestParams, ProtocolVersion, ReadResourceRequestParams, ReadResourceResult,
+	ServerCapabilities, ServerInfo,
 };
 use rmcp::service::RequestContext;
 use shared::ckb_client::CkbRpcClient;
@@ -452,7 +453,7 @@ impl ServerHandler for CkbMcpServer {
 		};
 
 		ServerInfo {
-			protocol_version: ProtocolVersion::V_2025_03_26,
+			protocol_version: ProtocolVersion::V_2025_06_18,
 			capabilities,
 			server_info: Implementation {
 				name: "ckb-ai-mcp".to_string(),
@@ -463,7 +464,10 @@ impl ServerHandler for CkbMcpServer {
 			},
 			instructions: Some(
 				"CKB blockchain development server providing RPC queries, development tools, \
-				 documentation, and guided workflows for building CKB smart contracts and applications."
+				 documentation, and guided workflows for building CKB smart contracts and applications.\n\n\
+				 Tool Discovery: This server uses deferred loading. The 'search_tools' and 'search_resources' \
+				 tools are always available. Use them to discover relevant tools before calling them. \
+				 Other tools are loaded on-demand when invoked."
 					.to_string(),
 			),
 		}
@@ -471,7 +475,7 @@ impl ServerHandler for CkbMcpServer {
 
 	async fn list_tools(
 		&self,
-		_request: Option<PaginatedRequestParam>,
+		_request: Option<PaginatedRequestParams>,
 		_context: RequestContext<rmcp::service::RoleServer>,
 	) -> Result<ListToolsResult, ErrorData> {
 		self.list_tools_internal()
@@ -479,7 +483,7 @@ impl ServerHandler for CkbMcpServer {
 
 	async fn call_tool(
 		&self,
-		request: rmcp::model::CallToolRequestParam,
+		request: CallToolRequestParams,
 		_context: RequestContext<rmcp::service::RoleServer>,
 	) -> Result<CallToolResult, ErrorData> {
 		let name: &str = &request.name;
@@ -489,7 +493,7 @@ impl ServerHandler for CkbMcpServer {
 
 	async fn list_resources(
 		&self,
-		_request: Option<PaginatedRequestParam>,
+		_request: Option<PaginatedRequestParams>,
 		_context: RequestContext<rmcp::service::RoleServer>,
 	) -> Result<ListResourcesResult, ErrorData> {
 		self.list_resources_internal()
@@ -497,7 +501,7 @@ impl ServerHandler for CkbMcpServer {
 
 	async fn read_resource(
 		&self,
-		request: rmcp::model::ReadResourceRequestParam,
+		request: ReadResourceRequestParams,
 		_context: RequestContext<rmcp::service::RoleServer>,
 	) -> Result<ReadResourceResult, ErrorData> {
 		self.read_resource_internal(&request.uri)
@@ -505,7 +509,7 @@ impl ServerHandler for CkbMcpServer {
 
 	async fn list_prompts(
 		&self,
-		_request: Option<PaginatedRequestParam>,
+		_request: Option<PaginatedRequestParams>,
 		_context: RequestContext<rmcp::service::RoleServer>,
 	) -> Result<ListPromptsResult, ErrorData> {
 		self.list_prompts_internal()
@@ -513,7 +517,7 @@ impl ServerHandler for CkbMcpServer {
 
 	async fn get_prompt(
 		&self,
-		request: rmcp::model::GetPromptRequestParam,
+		request: GetPromptRequestParams,
 		_context: RequestContext<rmcp::service::RoleServer>,
 	) -> Result<GetPromptResult, ErrorData> {
 		let args = request

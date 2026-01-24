@@ -3,7 +3,68 @@
 use rmcp::model::{CallToolResult, Content, Resource, Tool};
 use serde::{Deserialize, Serialize};
 use shared::error::{CkbMcpError, Result};
+use std::collections::HashMap;
+use std::sync::LazyLock;
 use tracing::debug;
+
+/// Domain-specific synonyms for CKB development.
+/// Maps keywords to their synonyms for improved search discoverability.
+/// Note: Bidirectional mappings are needed for proper search (e.g., utxo->cell and cell->utxo).
+static SYNONYMS: LazyLock<HashMap<&'static str, &'static [&'static str]>> = LazyLock::new(|| {
+	HashMap::from([
+		// Action synonyms
+		("deploy", &["submit", "upload", "publish", "send", "broadcast"][..]),
+		("submit", &["deploy", "send", "broadcast", "push"][..]),
+		("query", &["get", "fetch", "read", "retrieve", "search", "find"][..]),
+		("get", &["query", "fetch", "read", "retrieve"][..]),
+		("create", &["make", "build", "generate", "new", "mint"][..]),
+		("validate", &["verify", "check", "test"][..]),
+		("transfer", &["send", "move", "pay"][..]),
+		// CKB domain synonyms - bidirectional mappings
+		("cell", &["utxo", "output", "coin"][..]),
+		("cells", &["utxos", "outputs", "coins"][..]),
+		("utxo", &["cell", "output"][..]),
+		("utxos", &["cells", "outputs"][..]),
+		("output", &["cell", "utxo"][..]),
+		("lock", &["script", "guard", "owner"][..]),
+		("type", &["script", "validator", "contract"][..]),
+		("capacity", &["balance", "amount", "ckb", "value"][..]),
+		("balance", &["capacity", "amount", "funds"][..]),
+		("ckb", &["capacity", "balance", "nervos"][..]),
+		("transaction", &["tx", "transfer"][..]),
+		("tx", &["transaction", "transfer"][..]),
+		("address", &["account", "wallet"][..]),
+		("account", &["address", "wallet"][..]),
+		("wallet", &["address", "account"][..]),
+		("block", &["height"][..]),
+		("height", &["block"][..]),
+		("epoch", &["era", "period"][..]),
+		("dao", &["nervos dao", "deposit", "stake"][..]),
+		("deposit", &["dao", "stake"][..]),
+		("token", &["udt", "sudt", "xudt", "asset", "coin"][..]),
+		("udt", &["token", "sudt", "xudt", "asset"][..]),
+		("sudt", &["token", "udt", "asset"][..]),
+		("xudt", &["token", "udt", "asset"][..]),
+		("asset", &["token", "udt"][..]),
+		("script", &["contract", "program", "code"][..]),
+		("contract", &["script", "program"][..]),
+		("indexer", &["index", "search"][..]),
+		("pool", &["mempool", "pending"][..]),
+		("mempool", &["pool", "pending"][..]),
+		("fee", &["cost", "rate", "gas"][..]),
+		("gas", &["fee", "cost"][..]),
+		("proof", &["merkle", "verify"][..]),
+		// Protocol synonyms - bidirectional mappings
+		("omnilock", &["universal", "multi-sig", "ethereum"][..]),
+		("spore", &["nft", "digital object", "dob"][..]),
+		("nft", &["spore", "cota", "digital object"][..]),
+		("cota", &["nft", "compact"][..]),
+		("rgb", &["rgb++", "bitcoin"][..]),
+		("rgb++", &["rgb", "bitcoin"][..]),
+		("molecule", &["serialization", "encoding", "schema"][..]),
+		("serialization", &["molecule", "encoding"][..]),
+	])
+});
 
 /// Search result for tools.
 #[derive(Serialize, Deserialize, Debug)]
@@ -202,51 +263,87 @@ impl Default for SearchHandlers {
 	}
 }
 
+/// Expand keywords with their synonyms.
+/// Returns a vector of (keyword, is_original) tuples.
+fn expand_with_synonyms(keywords: &[&str]) -> Vec<(String, bool)> {
+	let mut expanded = Vec::new();
+	for keyword in keywords {
+		// Add original keyword.
+		expanded.push((keyword.to_string(), true));
+		// Add synonyms if they exist.
+		if let Some(synonyms) = SYNONYMS.get(*keyword) {
+			for synonym in *synonyms {
+				expanded.push((synonym.to_string(), false));
+			}
+		}
+	}
+	expanded
+}
+
 /// Calculate a match score for a search query.
 /// Higher scores indicate better matches.
+/// Uses synonym expansion to improve discoverability.
 fn calculate_match_score(name: &str, text: &str, keywords: &[&str]) -> f32 {
 	if keywords.is_empty() {
 		return 0.0;
 	}
 
-	let mut total_score: f32 = 0.0;
-	let mut matched_keywords = 0;
+	// Expand keywords with synonyms.
+	let expanded = expand_with_synonyms(keywords);
 
-	for keyword in keywords {
+	let mut total_score: f32 = 0.0;
+	let mut matched_original = 0;
+	let mut matched_synonym = 0;
+
+	for (keyword, is_original) in &expanded {
 		if keyword.is_empty() {
 			continue;
 		}
 
 		let mut keyword_score: f32 = 0.0;
 
+		// Weight: original keywords score higher than synonyms.
+		let weight = if *is_original { 1.0 } else { 0.5 };
+
 		// Exact match in name (highest weight).
-		if name.contains(keyword) {
-			keyword_score += 3.0;
+		if name.contains(keyword.as_str()) {
+			keyword_score += 3.0 * weight;
 			// Bonus for exact word match.
-			if name.split(|c: char| !c.is_alphanumeric() && c != '_')
-				.any(|word| word == *keyword)
+			if name
+				.split(|c: char| !c.is_alphanumeric() && c != '_')
+				.any(|word| word == keyword)
 			{
-				keyword_score += 2.0;
+				keyword_score += 2.0 * weight;
 			}
 		}
 
 		// Match in description/text.
-		if text.contains(keyword) {
-			keyword_score += 1.0;
+		if text.contains(keyword.as_str()) {
+			keyword_score += 1.0 * weight;
 		}
 
 		if keyword_score > 0.0 {
-			matched_keywords += 1;
+			if *is_original {
+				matched_original += 1;
+			} else {
+				matched_synonym += 1;
+			}
 			total_score += keyword_score;
 		}
 	}
 
-	// Require at least one keyword match.
-	if matched_keywords == 0 {
+	// Require at least one match (original or synonym).
+	if matched_original == 0 && matched_synonym == 0 {
 		return 0.0;
 	}
 
-	// Bonus for matching multiple keywords.
-	let coverage_bonus = matched_keywords as f32 / keywords.len() as f32;
+	// Coverage bonus based on original keywords matched.
+	let coverage_bonus = if matched_original > 0 {
+		matched_original as f32 / keywords.len() as f32
+	} else {
+		// Synonym-only matches get lower coverage bonus.
+		0.5 * (matched_synonym as f32 / keywords.len() as f32)
+	};
+
 	total_score * coverage_bonus
 }

@@ -128,7 +128,7 @@ async fn test_read_resource_ai_quick_reference() {
 	let ctx = TestContext::new();
 
 	let result = ctx
-		.read_resource("ckb://docs/ai-quick-reference")
+		.read_resource("ckb://docs/quickstart/ai-quick-reference")
 		.await
 		.expect("Should read ai-quick-reference");
 
@@ -163,7 +163,7 @@ async fn test_read_resource_token_creation() {
 	let ctx = TestContext::new();
 
 	let result = ctx
-		.read_resource("ckb://docs/patterns/token-creation-guide")
+		.read_resource("ckb://docs/tokens/token-creation")
 		.await
 		.expect("Should read token-creation");
 
@@ -199,7 +199,7 @@ async fn test_read_resource_wrong_scheme() {
 // =============================================================================
 
 #[tokio::test]
-async fn test_resources_include_api_reference() {
+async fn test_resources_include_sdk() {
 	let ctx = TestContext::new();
 
 	let result = ctx
@@ -208,11 +208,11 @@ async fn test_resources_include_api_reference() {
 		.expect("resources/list should succeed");
 
 	let resources = result["resources"].as_array().unwrap();
-	let has_api_ref = resources
+	let has_sdk = resources
 		.iter()
-		.any(|r| r["uri"].as_str().map(|u| u.contains("/api-reference/")).unwrap_or(false));
+		.any(|r| r["uri"].as_str().map(|u| u.contains("/sdk/")).unwrap_or(false));
 
-	assert!(has_api_ref, "Should have api-reference resources");
+	assert!(has_sdk, "Should have SDK resources");
 }
 
 #[tokio::test]
@@ -233,7 +233,7 @@ async fn test_resources_include_concepts() {
 }
 
 #[tokio::test]
-async fn test_resources_include_patterns() {
+async fn test_resources_include_scripts() {
 	let ctx = TestContext::new();
 
 	let result = ctx
@@ -242,11 +242,11 @@ async fn test_resources_include_patterns() {
 		.expect("resources/list should succeed");
 
 	let resources = result["resources"].as_array().unwrap();
-	let has_patterns = resources
+	let has_scripts = resources
 		.iter()
-		.any(|r| r["uri"].as_str().map(|u| u.contains("/patterns/")).unwrap_or(false));
+		.any(|r| r["uri"].as_str().map(|u| u.contains("/scripts/")).unwrap_or(false));
 
-	assert!(has_patterns, "Should have patterns resources");
+	assert!(has_scripts, "Should have scripts resources");
 }
 
 #[tokio::test]
