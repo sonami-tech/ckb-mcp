@@ -12,13 +12,13 @@ use shared::ckb_client::CkbRpcClient;
 use std::sync::Arc;
 use tracing::{debug, info};
 
-use crate::ckb::{CkbHandlers, CKB_TOOLS};
-use crate::dev::{DevHandlers, DEV_TOOLS};
-use crate::docs::DocsHandlers;
-use crate::prompts::{PromptsHandlers, PROMPTS};
-use crate::rpc::{RpcHandlers, RPC_TOOLS};
-use crate::search::{SearchHandlers, SEARCH_TOOLS};
 use crate::ServerConfig;
+use crate::ckb::{CKB_TOOLS, CkbHandlers};
+use crate::dev::{DEV_TOOLS, DevHandlers};
+use crate::docs::DocsHandlers;
+use crate::prompts::{PROMPTS, PromptsHandlers};
+use crate::rpc::{RPC_TOOLS, RpcHandlers};
+use crate::search::{SEARCH_TOOLS, SearchHandlers};
 
 /// Factory for creating CkbMcpServer instances with shared handlers.
 #[derive(Clone)]
@@ -60,10 +60,7 @@ pub struct CkbMcpServer {
 impl CkbMcpServer {
 	/// Create a new CKB MCP server instance with pre-built dev handlers.
 	/// This is the preferred constructor when dev handlers are shared (e.g., with HTTP endpoints).
-	pub fn new_with_handlers(
-		config: ServerConfig,
-		dev_handlers: Option<Arc<DevHandlers>>,
-	) -> Self {
+	pub fn new_with_handlers(config: ServerConfig, dev_handlers: Option<Arc<DevHandlers>>) -> Self {
 		info!("Creating new CKB MCP server instance");
 
 		// Create RPC handlers if RPC tools are enabled.
@@ -84,28 +81,26 @@ impl CkbMcpServer {
 
 		// Use provided dev handlers or create new ones if tools are enabled but none provided.
 		let dev_handlers = if config.args.tools_enabled() {
-			dev_handlers.or_else(|| {
-				match CkbRpcClient::new(&config.args.ckb_rpc) {
-					Ok(client) => {
-						match DevHandlers::new(
-							client,
-							config.args.ckb_rpc.clone(),
-							config.args.private_key.clone(),
-						) {
-							Ok(handlers) => {
-								info!("Dev handlers created for {}", config.args.ckb_rpc);
-								Some(Arc::new(handlers))
-							}
-							Err(e) => {
-								tracing::error!("Failed to create dev handlers: {}", e);
-								None
-							}
+			dev_handlers.or_else(|| match CkbRpcClient::new(&config.args.ckb_rpc) {
+				Ok(client) => {
+					match DevHandlers::new(
+						client,
+						config.args.ckb_rpc.clone(),
+						config.args.private_key.clone(),
+					) {
+						Ok(handlers) => {
+							info!("Dev handlers created for {}", config.args.ckb_rpc);
+							Some(Arc::new(handlers))
+						}
+						Err(e) => {
+							tracing::error!("Failed to create dev handlers: {}", e);
+							None
 						}
 					}
-					Err(e) => {
-						tracing::error!("Failed to create CKB client for dev handlers: {}", e);
-						None
-					}
+				}
+				Err(e) => {
+					tracing::error!("Failed to create CKB client for dev handlers: {}", e);
+					None
 				}
 			})
 		} else {
@@ -269,7 +264,8 @@ impl CkbMcpServer {
 				vec![]
 			};
 
-			self.search_handlers.handle(name, arguments, &tools, &resources)
+			self.search_handlers
+				.handle(name, arguments, &tools, &resources)
 		} else {
 			return Err(ErrorData::invalid_params(
 				format!("Unknown tool: {}", name),
@@ -386,7 +382,9 @@ impl CkbMcpServer {
 
 			match handlers.handle(name, &args) {
 				Ok(result) => {
-					self.config.stats.record_tool_call(&format!("prompt:{}", name));
+					self.config
+						.stats
+						.record_tool_call(&format!("prompt:{}", name));
 					Ok(result)
 				}
 				Err(e) => {

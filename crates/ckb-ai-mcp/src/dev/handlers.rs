@@ -3,26 +3,24 @@
 use ckb_hash::blake2b_256;
 
 /// Known genesis hashes for network detection.
-const MAINNET_GENESIS: &str =
-	"0x92b197aa1fba0f63633922c61c92375c9c074a93e85963554f5499fe1450d0e5";
-const TESTNET_GENESIS: &str =
-	"0x10639e0895502b5688a6be8cf69460d76541bfa4821629d86d62ba0aae3f9606";
+const MAINNET_GENESIS: &str = "0x92b197aa1fba0f63633922c61c92375c9c074a93e85963554f5499fe1450d0e5";
+const TESTNET_GENESIS: &str = "0x10639e0895502b5688a6be8cf69460d76541bfa4821629d86d62ba0aae3f9606";
 use ckb_sdk::{
+	Address, AddressPayload, CkbRpcClient as SdkCkbRpcClient, HumanCapacity, NetworkInfo,
 	rpc::ckb_indexer::{ScriptType, SearchKey, SearchKeyFilter},
 	transaction::{
+		TransactionBuilderConfiguration,
 		builder::{CkbTransactionBuilder, SimpleTransactionBuilder},
 		input::InputIterator,
 		signer::{SignContexts, TransactionSigner},
-		TransactionBuilderConfiguration,
 	},
-	Address, AddressPayload, CkbRpcClient as SdkCkbRpcClient, HumanCapacity, NetworkInfo,
 };
 use ckb_types::{
+	H256,
 	bytes::Bytes,
 	core::Capacity,
 	packed::{CellDep, CellOutput, OutPoint, Script},
 	prelude::*,
-	H256,
 };
 use rmcp::model::{CallToolResult, Content};
 use secp256k1::SecretKey;
@@ -197,8 +195,9 @@ impl DevHandlers {
 	/// Parse private key from hex string (with or without 0x prefix).
 	fn parse_private_key(&self) -> Result<SecretKey> {
 		let key_hex = self.private_key.trim_start_matches("0x");
-		let key_bytes = hex::decode(key_hex)
-			.map_err(|e| CkbMcpError::InvalidParameter(format!("Invalid private key hex: {}", e)))?;
+		let key_bytes = hex::decode(key_hex).map_err(|e| {
+			CkbMcpError::InvalidParameter(format!("Invalid private key hex: {}", e))
+		})?;
 
 		SecretKey::from_slice(&key_bytes)
 			.map_err(|e| CkbMcpError::InvalidParameter(format!("Invalid private key: {}", e)))
@@ -219,10 +218,7 @@ impl DevHandlers {
 
 	// Tool handlers.
 
-	async fn handle_deploy_cell_data(
-		&self,
-		args: &serde_json::Value,
-	) -> Result<CallToolResult> {
+	async fn handle_deploy_cell_data(&self, args: &serde_json::Value) -> Result<CallToolResult> {
 		let data_hex = args
 			.get("data")
 			.and_then(|v| v.as_str())
@@ -247,10 +243,7 @@ impl DevHandlers {
 		Ok(CallToolResult::success(vec![Content::text(json)]))
 	}
 
-	async fn handle_get_address_balance(
-		&self,
-		args: &serde_json::Value,
-	) -> Result<CallToolResult> {
+	async fn handle_get_address_balance(&self, args: &serde_json::Value) -> Result<CallToolResult> {
 		let address = args
 			.get("address")
 			.and_then(|v| v.as_str())
@@ -398,11 +391,12 @@ impl DevHandlers {
 
 		let ckb_client = SdkCkbRpcClient::new(&self.ckb_rpc_url);
 
-		let cells_capacity_total = ckb_client
-			.get_cells_capacity(search_key_total)
-			.map_err(|e| {
-				CkbMcpError::Internal(format!("Failed to query total cells capacity: {}", e))
-			})?;
+		let cells_capacity_total =
+			ckb_client
+				.get_cells_capacity(search_key_total)
+				.map_err(|e| {
+					CkbMcpError::Internal(format!("Failed to query total cells capacity: {}", e))
+				})?;
 
 		let cells_capacity_free = ckb_client
 			.get_cells_capacity(search_key_free)
@@ -443,12 +437,20 @@ impl DevHandlers {
 				)
 			}
 			None => {
-				let tip_header = ckb_client
-					.get_tip_header()
-					.map_err(|e| CkbMcpError::Internal(format!("Failed to get tip header: {}", e)))?;
+				let tip_header = ckb_client.get_tip_header().map_err(|e| {
+					CkbMcpError::Internal(format!("Failed to get tip header: {}", e))
+				})?;
 				let block_number = tip_header.inner.number.value();
 				let zero_ckb = HumanCapacity::from(0).to_string();
-				(0, zero_ckb.clone(), 0, zero_ckb.clone(), 0, zero_ckb, block_number)
+				(
+					0,
+					zero_ckb.clone(),
+					0,
+					zero_ckb.clone(),
+					0,
+					zero_ckb,
+					block_number,
+				)
 			}
 		};
 
@@ -475,8 +477,9 @@ impl DevHandlers {
 		let key_hex = private_key.unwrap_or_else(|| self.private_key.clone());
 		let key_hex = key_hex.trim_start_matches("0x");
 
-		let key_bytes = hex::decode(key_hex)
-			.map_err(|e| CkbMcpError::InvalidParameter(format!("Invalid private key hex: {}", e)))?;
+		let key_bytes = hex::decode(key_hex).map_err(|e| {
+			CkbMcpError::InvalidParameter(format!("Invalid private key hex: {}", e))
+		})?;
 		let secret_key = SecretKey::from_slice(&key_bytes)
 			.map_err(|e| CkbMcpError::InvalidParameter(format!("Invalid private key: {}", e)))?;
 
@@ -525,11 +528,13 @@ impl DevHandlers {
 		let payload = addr.payload();
 		let (address_testnet, address_mainnet) = match network_type {
 			ckb_sdk::NetworkType::Testnet => {
-				let mainnet_addr = Address::new(ckb_sdk::NetworkType::Mainnet, payload.clone(), true);
+				let mainnet_addr =
+					Address::new(ckb_sdk::NetworkType::Mainnet, payload.clone(), true);
 				(address.clone(), mainnet_addr.to_string())
 			}
 			ckb_sdk::NetworkType::Mainnet => {
-				let testnet_addr = Address::new(ckb_sdk::NetworkType::Testnet, payload.clone(), true);
+				let testnet_addr =
+					Address::new(ckb_sdk::NetworkType::Testnet, payload.clone(), true);
 				(testnet_addr.to_string(), address.clone())
 			}
 			_ => (address.clone(), address.clone()),
@@ -632,10 +637,12 @@ impl DevHandlers {
 		debug!("Sender address: {}", sender_address);
 
 		let network_info = NetworkInfo::new(self.network_type, self.ckb_rpc_url.clone());
-		let mut configuration =
-			TransactionBuilderConfiguration::new_with_network(network_info.clone()).map_err(
-				|e| CkbMcpError::Internal(format!("Failed to create transaction configuration: {}", e)),
-			)?;
+		let mut configuration = TransactionBuilderConfiguration::new_with_network(
+			network_info.clone(),
+		)
+		.map_err(|e| {
+			CkbMcpError::Internal(format!("Failed to create transaction configuration: {}", e))
+		})?;
 
 		// For devnet, override the sighash cell_dep with the one from actual genesis.
 		if let Some(ref custom_cell_dep) = self.sighash_cell_dep {
@@ -658,15 +665,17 @@ impl DevHandlers {
 			.lock(lock_script.clone())
 			.build();
 
-		let data_capacity = Capacity::bytes(data.len()).map_err(|e| {
-			CkbMcpError::InvalidParameter(format!("Data size too large: {}", e))
-		})?;
+		let data_capacity = Capacity::bytes(data.len())
+			.map_err(|e| CkbMcpError::InvalidParameter(format!("Data size too large: {}", e)))?;
 
 		let output_capacity = temp_output
 			.occupied_capacity(data_capacity)
 			.map_err(|e| CkbMcpError::Internal(format!("Capacity calculation error: {}", e)))?;
 
-		debug!("Output capacity needed: {} shannons", output_capacity.as_u64());
+		debug!(
+			"Output capacity needed: {} shannons",
+			output_capacity.as_u64()
+		);
 
 		let output = CellOutput::new_builder()
 			.capacity(output_capacity.pack())
@@ -685,14 +694,17 @@ impl DevHandlers {
 		let input_count = tx_with_groups.get_tx_view().inputs().len();
 		debug!("Transaction built successfully with {} inputs", input_count);
 
-		let private_keys = vec![H256::from_slice(secret_key.as_ref())
-			.map_err(|e| CkbMcpError::Internal(format!("Invalid private key format: {}", e)))?];
+		let private_keys =
+			vec![H256::from_slice(secret_key.as_ref()).map_err(|e| {
+				CkbMcpError::Internal(format!("Invalid private key format: {}", e))
+			})?];
 
 		TransactionSigner::new(&network_info)
 			.sign_transaction(
 				&mut tx_with_groups,
-				&SignContexts::new_sighash_h256(private_keys)
-					.map_err(|e| CkbMcpError::Internal(format!("Failed to create sign context: {}", e)))?,
+				&SignContexts::new_sighash_h256(private_keys).map_err(|e| {
+					CkbMcpError::Internal(format!("Failed to create sign context: {}", e))
+				})?,
 			)
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to sign transaction: {}", e)))?;
 

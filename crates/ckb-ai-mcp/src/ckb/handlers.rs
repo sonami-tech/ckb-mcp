@@ -3,7 +3,7 @@
 //! These handlers combine multiple RPC calls to provide high-level operations.
 
 use rmcp::model::{CallToolResult, Content};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use shared::ckb_client::CkbRpcClient;
 use shared::error::{CkbMcpError, Result};
 use shared::params::{extract_bool, extract_object, extract_str, extract_str_opt, extract_u64_opt};
@@ -96,11 +96,7 @@ impl CkbHandlers {
 
 		// Optionally include recent cells.
 		if include_cells {
-			let cells_params = json!([
-				search_key,
-				"desc",
-				format!("{:#x}", cell_limit)
-			]);
+			let cells_params = json!([search_key, "desc", format!("{:#x}", cell_limit)]);
 			let cells_result = self.client.call("get_cells", cells_params).await?;
 			result["cells"] = cells_result;
 		}
@@ -258,11 +254,7 @@ impl CkbHandlers {
 		});
 
 		// Query cells.
-		let cells_params = json!([
-			search_key,
-			order,
-			format!("{:#x}", limit)
-		]);
+		let cells_params = json!([search_key, order, format!("{:#x}", limit)]);
 		let cells_result = self.client.call("get_cells", cells_params).await?;
 
 		// Also get capacity summary.

@@ -1,9 +1,9 @@
-use rand::Rng;
-use reqwest::Client;
 use crate::{
 	error::{CkbMcpError, Result},
 	types::{JsonRpcRequest, JsonRpcResponse},
 };
+use rand::Rng;
+use reqwest::Client;
 use serde_json::Value;
 use tracing::{debug, error};
 
@@ -111,7 +111,8 @@ impl CkbRpcClient {
 
 	/// Get tip block number.
 	pub async fn get_tip_block_number(&self) -> Result<Value> {
-		self.call("get_tip_block_number", serde_json::json!([])).await
+		self.call("get_tip_block_number", serde_json::json!([]))
+			.await
 	}
 
 	/// Get tip header.

@@ -222,7 +222,10 @@ async fn test_dev_get_address_balance_default() {
 		serde_json::from_str(content).expect("Response should be valid JSON");
 
 	// Verify expected fields.
-	assert!(balance.get("address").is_some(), "Should have address field");
+	assert!(
+		balance.get("address").is_some(),
+		"Should have address field"
+	);
 	assert!(
 		balance.get("capacity_shannons").is_some(),
 		"Should have capacity_shannons field"

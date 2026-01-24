@@ -1,11 +1,6 @@
 //! JSON-RPC 2.0 request handler.
 
-use axum::{
-	extract::State,
-	http::StatusCode,
-	response::IntoResponse,
-	Json,
-};
+use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use serde_json::Value;
 use std::sync::Arc;
 use tracing::debug;
@@ -42,16 +37,16 @@ pub async fn jsonrpc_handler(
 	debug!("JSON-RPC request: method={}", request.method);
 
 	// Create CkbMcpServer instance for handling the request.
-	let server = CkbMcpServer::new_with_handlers(
-		state.config.clone(),
-		state.dev_handlers.clone(),
-	);
+	let server = CkbMcpServer::new_with_handlers(state.config.clone(), state.dev_handlers.clone());
 
 	// Route to appropriate handler.
 	let result = route_method(&server, &request.method, &request.params).await;
 
 	match result {
-		Ok(value) => (StatusCode::OK, Json(JsonRpcResponse::success(request.id, value))),
+		Ok(value) => (
+			StatusCode::OK,
+			Json(JsonRpcResponse::success(request.id, value)),
+		),
 		Err(err) => (StatusCode::OK, Json(err.into_response(request.id))),
 	}
 }

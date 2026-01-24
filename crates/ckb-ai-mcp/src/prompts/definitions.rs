@@ -44,9 +44,21 @@ pub static PROMPTS: LazyLock<Vec<Prompt>> = LazyLock::new(|| {
 			Provides step-by-step instructions for setting up a Rust-based CKB script project, \
 			including project structure, dependencies, and basic script logic.",
 			vec![
-				("script_type", "Type of script: 'lock' for asset custody or 'type' for state validation", true),
-				("script_name", "Name for the script project (e.g., 'my-token', 'simple-lock')", true),
-				("description", "Brief description of what the script should do", false),
+				(
+					"script_type",
+					"Type of script: 'lock' for asset custody or 'type' for state validation",
+					true,
+				),
+				(
+					"script_name",
+					"Name for the script project (e.g., 'my-token', 'simple-lock')",
+					true,
+				),
+				(
+					"description",
+					"Brief description of what the script should do",
+					false,
+				),
 			],
 		),
 		make_prompt(
@@ -54,8 +66,16 @@ pub static PROMPTS: LazyLock<Vec<Prompt>> = LazyLock::new(|| {
 			"Guided workflow for deploying a compiled CKB script to the blockchain. \
 			Covers building the script, creating a deployment transaction, and verifying the deployment.",
 			vec![
-				("binary_path", "Path to the compiled script binary (.so or RISC-V binary)", true),
-				("network", "Target network: 'devnet', 'testnet', or 'mainnet'", true),
+				(
+					"binary_path",
+					"Path to the compiled script binary (.so or RISC-V binary)",
+					true,
+				),
+				(
+					"network",
+					"Target network: 'devnet', 'testnet', or 'mainnet'",
+					true,
+				),
 			],
 		),
 		make_prompt(
@@ -63,8 +83,16 @@ pub static PROMPTS: LazyLock<Vec<Prompt>> = LazyLock::new(|| {
 			"Guided workflow for querying CKB blockchain data. \
 			Helps construct appropriate queries for cells, transactions, headers, and other chain data.",
 			vec![
-				("query_type", "Type of query: 'cell', 'transaction', 'block', 'header', or 'tip'", true),
-				("identifier", "Identifier for the query (hash, address, or search criteria)", false),
+				(
+					"query_type",
+					"Type of query: 'cell', 'transaction', 'block', 'header', or 'tip'",
+					true,
+				),
+				(
+					"identifier",
+					"Identifier for the query (hash, address, or search criteria)",
+					false,
+				),
 			],
 		),
 		make_prompt(
@@ -73,8 +101,16 @@ pub static PROMPTS: LazyLock<Vec<Prompt>> = LazyLock::new(|| {
 			Covers address validation, transaction construction, fee calculation, and signing.",
 			vec![
 				("to_address", "Destination CKB address", true),
-				("amount", "Amount to transfer in CKB (e.g., '100' for 100 CKB)", true),
-				("token_type", "Type of transfer: 'ckb' for native CKB or 'udt' for user-defined tokens", false),
+				(
+					"amount",
+					"Amount to transfer in CKB (e.g., '100' for 100 CKB)",
+					true,
+				),
+				(
+					"token_type",
+					"Type of transfer: 'ckb' for native CKB or 'udt' for user-defined tokens",
+					false,
+				),
 			],
 		),
 	]

@@ -1,6 +1,6 @@
 //! Development tool definitions.
 
-use crate::util::{make_tool_annotated, ToolHints};
+use crate::util::{ToolHints, make_tool_annotated};
 use rmcp::model::Tool;
 use serde_json::json;
 use std::sync::LazyLock;

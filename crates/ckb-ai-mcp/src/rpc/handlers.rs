@@ -1,7 +1,7 @@
 //! RPC tool handlers that execute CKB RPC calls.
 
 use rmcp::model::{CallToolResult, Content};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use shared::ckb_client::CkbRpcClient;
 use shared::error::{CkbMcpError, Result};
 use shared::params::{
@@ -303,7 +303,9 @@ impl RpcHandlers {
 			})?
 			.clone();
 		let params = json!([out_point, kind]);
-		self.client.call("calculate_dao_maximum_withdraw", params).await
+		self.client
+			.call("calculate_dao_maximum_withdraw", params)
+			.await
 	}
 
 	async fn get_block_economics(&self, args: &Value) -> Result<Value> {

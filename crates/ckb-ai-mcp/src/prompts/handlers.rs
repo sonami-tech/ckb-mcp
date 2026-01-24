@@ -61,8 +61,12 @@ impl PromptsHandlers {
 			.unwrap_or("A CKB script");
 
 		let type_explanation = match script_type {
-			"lock" => "Lock scripts control who can spend a cell. They define ownership and authorization rules.",
-			"type" => "Type scripts validate state transitions. They define what data can be stored and how it changes.",
+			"lock" => {
+				"Lock scripts control who can spend a cell. They define ownership and authorization rules."
+			}
+			"type" => {
+				"Type scripts validate state transitions. They define what data can be stored and how it changes."
+			}
 			_ => "Script type should be 'lock' or 'type'.",
 		};
 
@@ -143,9 +147,18 @@ After implementing your script, use the `deploy_script` prompt to deploy it to t
 			})?;
 
 		let network_info = match network {
-			"devnet" => ("Devnet", "Development network - fast confirmation, free CKB"),
-			"testnet" => ("Testnet (Aggron)", "Public test network - request faucet funds"),
-			"mainnet" => ("Mainnet (Lina)", "Production network - use real CKB with caution"),
+			"devnet" => (
+				"Devnet",
+				"Development network - fast confirmation, free CKB",
+			),
+			"testnet" => (
+				"Testnet (Aggron)",
+				"Public test network - request faucet funds",
+			),
+			"mainnet" => (
+				"Mainnet (Lina)",
+				"Production network - use real CKB with caution",
+			),
 			_ => ("Unknown", "Specify 'devnet', 'testnet', or 'mainnet'"),
 		};
 
@@ -409,7 +422,10 @@ Scripts are identified by:
 		);
 
 		Ok(GetPromptResult {
-			description: Some(format!("Workflow for querying {} data from CKB", query_type)),
+			description: Some(format!(
+				"Workflow for querying {} data from CKB",
+				query_type
+			)),
 			messages: vec![PromptMessage::new_text(PromptMessageRole::User, content)],
 		})
 	}
@@ -526,7 +542,10 @@ Monitor for confirmation using `rpc_get_transaction`.
 		);
 
 		Ok(GetPromptResult {
-			description: Some(format!("Workflow for transferring {} {}", amount, token_type)),
+			description: Some(format!(
+				"Workflow for transferring {} {}",
+				amount, token_type
+			)),
 			messages: vec![PromptMessage::new_text(PromptMessageRole::User, content)],
 		})
 	}

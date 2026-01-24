@@ -155,7 +155,10 @@ async fn test_read_resource_cell_model() {
 	let contents = result["contents"].as_array().expect("Should have contents");
 	let text = contents[0]["text"].as_str().expect("Should have text");
 
-	assert!(text.contains("cell") || text.contains("Cell"), "Should contain cell content");
+	assert!(
+		text.contains("cell") || text.contains("Cell"),
+		"Should contain cell content"
+	);
 }
 
 #[tokio::test]
@@ -208,9 +211,12 @@ async fn test_resources_include_sdk() {
 		.expect("resources/list should succeed");
 
 	let resources = result["resources"].as_array().unwrap();
-	let has_sdk = resources
-		.iter()
-		.any(|r| r["uri"].as_str().map(|u| u.contains("/sdk/")).unwrap_or(false));
+	let has_sdk = resources.iter().any(|r| {
+		r["uri"]
+			.as_str()
+			.map(|u| u.contains("/sdk/"))
+			.unwrap_or(false)
+	});
 
 	assert!(has_sdk, "Should have SDK resources");
 }
@@ -225,9 +231,12 @@ async fn test_resources_include_concepts() {
 		.expect("resources/list should succeed");
 
 	let resources = result["resources"].as_array().unwrap();
-	let has_concepts = resources
-		.iter()
-		.any(|r| r["uri"].as_str().map(|u| u.contains("/concepts/")).unwrap_or(false));
+	let has_concepts = resources.iter().any(|r| {
+		r["uri"]
+			.as_str()
+			.map(|u| u.contains("/concepts/"))
+			.unwrap_or(false)
+	});
 
 	assert!(has_concepts, "Should have concepts resources");
 }
@@ -242,9 +251,12 @@ async fn test_resources_include_scripts() {
 		.expect("resources/list should succeed");
 
 	let resources = result["resources"].as_array().unwrap();
-	let has_scripts = resources
-		.iter()
-		.any(|r| r["uri"].as_str().map(|u| u.contains("/scripts/")).unwrap_or(false));
+	let has_scripts = resources.iter().any(|r| {
+		r["uri"]
+			.as_str()
+			.map(|u| u.contains("/scripts/"))
+			.unwrap_or(false)
+	});
 
 	assert!(has_scripts, "Should have scripts resources");
 }
@@ -259,9 +271,12 @@ async fn test_resources_include_protocols() {
 		.expect("resources/list should succeed");
 
 	let resources = result["resources"].as_array().unwrap();
-	let has_protocols = resources
-		.iter()
-		.any(|r| r["uri"].as_str().map(|u| u.contains("/protocols/")).unwrap_or(false));
+	let has_protocols = resources.iter().any(|r| {
+		r["uri"]
+			.as_str()
+			.map(|u| u.contains("/protocols/"))
+			.unwrap_or(false)
+	});
 
 	assert!(has_protocols, "Should have protocols resources");
 }
@@ -276,9 +291,12 @@ async fn test_resources_include_troubleshooting() {
 		.expect("resources/list should succeed");
 
 	let resources = result["resources"].as_array().unwrap();
-	let has_troubleshooting = resources
-		.iter()
-		.any(|r| r["uri"].as_str().map(|u| u.contains("/troubleshooting/")).unwrap_or(false));
+	let has_troubleshooting = resources.iter().any(|r| {
+		r["uri"]
+			.as_str()
+			.map(|u| u.contains("/troubleshooting/"))
+			.unwrap_or(false)
+	});
 
 	assert!(has_troubleshooting, "Should have troubleshooting resources");
 }

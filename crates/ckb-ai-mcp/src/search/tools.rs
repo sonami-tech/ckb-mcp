@@ -1,6 +1,6 @@
 //! Search tool definitions.
 
-use crate::util::{make_tool_with_output_schema, ToolHints};
+use crate::util::{ToolHints, make_tool_with_output_schema};
 use rmcp::model::Tool;
 use serde_json::json;
 use std::sync::LazyLock;

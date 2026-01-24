@@ -99,7 +99,11 @@ impl JsonRpcResponse {
 
 	/// Create a method not found response.
 	pub fn method_not_found(id: Value, method: &str) -> Self {
-		Self::error(id, METHOD_NOT_FOUND, format!("Method not found: {}", method))
+		Self::error(
+			id,
+			METHOD_NOT_FOUND,
+			format!("Method not found: {}", method),
+		)
 	}
 
 	/// Create an invalid params response.
@@ -142,7 +146,8 @@ mod tests {
 
 	#[test]
 	fn test_success_response() {
-		let resp = JsonRpcResponse::success(Value::Number(1.into()), serde_json::json!({"tools": []}));
+		let resp =
+			JsonRpcResponse::success(Value::Number(1.into()), serde_json::json!({"tools": []}));
 		let json = serde_json::to_string(&resp).unwrap();
 		assert!(json.contains(r#""jsonrpc":"2.0""#));
 		assert!(json.contains(r#""id":1"#));

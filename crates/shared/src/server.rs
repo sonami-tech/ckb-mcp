@@ -133,10 +133,7 @@ pub struct StatsQuery {
 }
 
 /// Stats endpoint handler.
-async fn stats_handler<S>(
-	State(state): State<S>,
-	Query(query): Query<StatsQuery>,
-) -> Response
+async fn stats_handler<S>(State(state): State<S>, Query(query): Query<StatsQuery>) -> Response
 where
 	S: HasMcpHandler,
 {
@@ -151,12 +148,9 @@ where
 
 	match format {
 		"json" => match stats.format_json(None) {
-			Ok(json) => (
-				StatusCode::OK,
-				[("content-type", "application/json")],
-				json,
-			)
-				.into_response(),
+			Ok(json) => {
+				(StatusCode::OK, [("content-type", "application/json")], json).into_response()
+			}
 			Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
 		},
 		"prometheus" => match stats.format_prometheus(None) {

@@ -6,8 +6,8 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
 use rmcp::transport::streamable_http_server::StreamableHttpService;
+use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
 use serde::Serialize;
 use shared::ckb_client::CkbRpcClient;
 use std::net::SocketAddr;
@@ -17,11 +17,11 @@ use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{error, info};
 
+use crate::ServerConfig;
 use crate::capabilities::CkbMcpServerFactory;
 use crate::dev::DevHandlers;
 use crate::jsonrpc::jsonrpc_handler;
 use crate::middleware::DeferLoadingLayer;
-use crate::ServerConfig;
 
 /// Application state shared across handlers.
 #[derive(Clone)]
@@ -206,7 +206,9 @@ async fn upload_file_handler(
 		(
 			StatusCode::SERVICE_UNAVAILABLE,
 			Json(UploadError {
-				error: "Dev tools are not enabled. Use --tools-only or ensure tools are not disabled.".to_string(),
+				error:
+					"Dev tools are not enabled. Use --tools-only or ensure tools are not disabled."
+						.to_string(),
 			}),
 		)
 	})?;

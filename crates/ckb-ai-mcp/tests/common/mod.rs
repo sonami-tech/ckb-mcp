@@ -6,7 +6,7 @@
 #![allow(dead_code)] // Test utilities are used selectively by different test files.
 
 use reqwest::Client;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::env;
 use std::sync::OnceLock;
 
@@ -180,8 +180,11 @@ impl TestContext {
 
 	/// Call an MCP tool via JSON-RPC.
 	pub async fn call_tool(&self, name: &str, arguments: Value) -> Result<Value, String> {
-		self.rpc_call("tools/call", json!({ "name": name, "arguments": arguments }))
-			.await
+		self.rpc_call(
+			"tools/call",
+			json!({ "name": name, "arguments": arguments }),
+		)
+		.await
 	}
 
 	/// List all available tools.
@@ -267,9 +270,7 @@ impl TestContext {
 						return Ok(block_number);
 					}
 				}
-				return Err(
-					"Transaction confirmed but couldn't parse block number".to_string()
-				);
+				return Err("Transaction confirmed but couldn't parse block number".to_string());
 			}
 
 			tokio::time::sleep(std::time::Duration::from_secs(1)).await;

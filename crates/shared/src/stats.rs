@@ -51,8 +51,9 @@ impl Stats {
 		// Create parent directory if it doesn't exist
 		if let Some(parent) = path.as_ref().parent() {
 			if !parent.as_os_str().is_empty() {
-				std::fs::create_dir_all(parent)
-					.map_err(|e| CkbMcpError::Internal(format!("Failed to create stats directory: {}", e)))?;
+				std::fs::create_dir_all(parent).map_err(|e| {
+					CkbMcpError::Internal(format!("Failed to create stats directory: {}", e))
+				})?;
 			}
 		}
 
@@ -60,7 +61,8 @@ impl Stats {
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to open stats database: {}", e)))?;
 
 		// Initialize tables if they don't exist
-		let write_txn = db.begin_write()
+		let write_txn = db
+			.begin_write()
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to begin transaction: {}", e)))?;
 
 		{
@@ -72,7 +74,8 @@ impl Stats {
 			let _ = write_txn.open_table(METADATA);
 		}
 
-		write_txn.commit()
+		write_txn
+			.commit()
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to commit transaction: {}", e)))?;
 
 		let start_time = SystemTime::now()
@@ -101,29 +104,37 @@ impl Stats {
 	}
 
 	fn record_tool_call_inner(&self, name: &str) -> Result<()> {
-		let write_txn = self.db.begin_write()
+		let write_txn = self
+			.db
+			.begin_write()
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to begin transaction: {}", e)))?;
 
 		{
-			let mut table = write_txn.open_table(TOOL_CALLS)
+			let mut table = write_txn
+				.open_table(TOOL_CALLS)
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to open table: {}", e)))?;
 
-			let current = table.get(name)
+			let current = table
+				.get(name)
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to read: {}", e)))?
 				.map(|v| v.value())
 				.unwrap_or(0);
 
-			table.insert(name, current + 1)
+			table
+				.insert(name, current + 1)
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to insert: {}", e)))?;
 
-			let mut last_table = write_txn.open_table(TOOL_LAST_CALLED)
+			let mut last_table = write_txn
+				.open_table(TOOL_LAST_CALLED)
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to open table: {}", e)))?;
 
-			last_table.insert(name, Self::now())
+			last_table
+				.insert(name, Self::now())
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to insert: {}", e)))?;
 		}
 
-		write_txn.commit()
+		write_txn
+			.commit()
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to commit: {}", e)))?;
 
 		debug!("Recorded tool call: {}", name);
@@ -138,29 +149,37 @@ impl Stats {
 	}
 
 	fn record_resource_read_inner(&self, uri: &str) -> Result<()> {
-		let write_txn = self.db.begin_write()
+		let write_txn = self
+			.db
+			.begin_write()
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to begin transaction: {}", e)))?;
 
 		{
-			let mut table = write_txn.open_table(RESOURCE_READS)
+			let mut table = write_txn
+				.open_table(RESOURCE_READS)
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to open table: {}", e)))?;
 
-			let current = table.get(uri)
+			let current = table
+				.get(uri)
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to read: {}", e)))?
 				.map(|v| v.value())
 				.unwrap_or(0);
 
-			table.insert(uri, current + 1)
+			table
+				.insert(uri, current + 1)
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to insert: {}", e)))?;
 
-			let mut last_table = write_txn.open_table(RESOURCE_LAST_READ)
+			let mut last_table = write_txn
+				.open_table(RESOURCE_LAST_READ)
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to open table: {}", e)))?;
 
-			last_table.insert(uri, Self::now())
+			last_table
+				.insert(uri, Self::now())
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to insert: {}", e)))?;
 		}
 
-		write_txn.commit()
+		write_txn
+			.commit()
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to commit: {}", e)))?;
 
 		debug!("Recorded resource read: {}", uri);
@@ -175,23 +194,29 @@ impl Stats {
 	}
 
 	fn record_error_inner(&self) -> Result<()> {
-		let write_txn = self.db.begin_write()
+		let write_txn = self
+			.db
+			.begin_write()
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to begin transaction: {}", e)))?;
 
 		{
-			let mut table = write_txn.open_table(METADATA)
+			let mut table = write_txn
+				.open_table(METADATA)
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to open table: {}", e)))?;
 
-			let current = table.get("errors")
+			let current = table
+				.get("errors")
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to read: {}", e)))?
 				.map(|v| v.value())
 				.unwrap_or(0);
 
-			table.insert("errors", current + 1)
+			table
+				.insert("errors", current + 1)
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to insert: {}", e)))?;
 		}
 
-		write_txn.commit()
+		write_txn
+			.commit()
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to commit: {}", e)))?;
 
 		Ok(())
@@ -199,7 +224,9 @@ impl Stats {
 
 	/// Get a snapshot of all statistics.
 	pub fn get_snapshot(&self) -> Result<StatsSnapshot> {
-		let read_txn = self.db.begin_read()
+		let read_txn = self
+			.db
+			.begin_read()
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to begin transaction: {}", e)))?;
 
 		// Read tool calls
@@ -215,13 +242,18 @@ impl Stats {
 						let count = count.value();
 						total_tool_calls += count;
 
-						let last_called = last_table.get(name.as_str())
+						let last_called = last_table
+							.get(name.as_str())
 							.ok()
 							.flatten()
 							.map(|v| v.value())
 							.unwrap_or(0);
 
-						tool_calls.push(StatsEntry { name, count, last_called });
+						tool_calls.push(StatsEntry {
+							name,
+							count,
+							last_called,
+						});
 					}
 				}
 			}
@@ -240,13 +272,18 @@ impl Stats {
 						let count = count.value();
 						total_resource_reads += count;
 
-						let last_called = last_table.get(name.as_str())
+						let last_called = last_table
+							.get(name.as_str())
 							.ok()
 							.flatten()
 							.map(|v| v.value())
 							.unwrap_or(0);
 
-						resource_reads.push(StatsEntry { name, count, last_called });
+						resource_reads.push(StatsEntry {
+							name,
+							count,
+							last_called,
+						});
 					}
 				}
 			}
@@ -254,7 +291,8 @@ impl Stats {
 
 		// Read errors
 		let total_errors = if let Ok(table) = read_txn.open_table(METADATA) {
-			table.get("errors")
+			table
+				.get("errors")
 				.ok()
 				.flatten()
 				.map(|v| v.value())
@@ -307,8 +345,14 @@ impl Stats {
 		let hours = (snapshot.uptime_seconds % 86400) / 3600;
 		let minutes = (snapshot.uptime_seconds % 3600) / 60;
 		output.push_str(&format!("Uptime: {}d {}h {}m\n", days, hours, minutes));
-		output.push_str(&format!("Total Tool Calls: {}\n", snapshot.total_tool_calls));
-		output.push_str(&format!("Total Resource Reads: {}\n", snapshot.total_resource_reads));
+		output.push_str(&format!(
+			"Total Tool Calls: {}\n",
+			snapshot.total_tool_calls
+		));
+		output.push_str(&format!(
+			"Total Resource Reads: {}\n",
+			snapshot.total_resource_reads
+		));
 		output.push_str(&format!("Total Errors: {}\n\n", snapshot.total_errors));
 
 		// Top tools
@@ -319,7 +363,10 @@ impl Stats {
 				let ago = Self::format_ago(now.saturating_sub(entry.last_called));
 				output.push_str(&format!(
 					"  {}. {} - {} calls (last: {})\n",
-					i + 1, entry.name, entry.count, ago
+					i + 1,
+					entry.name,
+					entry.count,
+					ago
 				));
 			}
 			output.push('\n');
@@ -335,7 +382,10 @@ impl Stats {
 				let name = entry.name.replace("ckb-dev-context://", "");
 				output.push_str(&format!(
 					"  {}. {} - {} reads (last: {})\n",
-					i + 1, name, entry.count, ago
+					i + 1,
+					name,
+					entry.count,
+					ago
 				));
 			}
 		}
@@ -390,12 +440,18 @@ impl Stats {
 		// Errors
 		output.push_str("# HELP ckb_mcp_errors_total Total errors\n");
 		output.push_str("# TYPE ckb_mcp_errors_total counter\n");
-		output.push_str(&format!("ckb_mcp_errors_total {}\n\n", snapshot.total_errors));
+		output.push_str(&format!(
+			"ckb_mcp_errors_total {}\n\n",
+			snapshot.total_errors
+		));
 
 		// Uptime
 		output.push_str("# HELP ckb_mcp_uptime_seconds Server uptime in seconds\n");
 		output.push_str("# TYPE ckb_mcp_uptime_seconds gauge\n");
-		output.push_str(&format!("ckb_mcp_uptime_seconds {}\n", snapshot.uptime_seconds));
+		output.push_str(&format!(
+			"ckb_mcp_uptime_seconds {}\n",
+			snapshot.uptime_seconds
+		));
 
 		Ok(output)
 	}

@@ -335,7 +335,10 @@ async fn test_rpc_get_indexer_tip() {
 		tip.get("block_number").is_some(),
 		"Tip should have block_number"
 	);
-	assert!(tip.get("block_hash").is_some(), "Tip should have block_hash");
+	assert!(
+		tip.get("block_hash").is_some(),
+		"Tip should have block_hash"
+	);
 }
 
 // =============================================================================
@@ -381,5 +384,8 @@ async fn test_rpc_get_block_economics_genesis() {
 		serde_json::from_str(content).expect("Response should be valid JSON");
 
 	// Genesis block returns null for economic state.
-	assert!(state.is_null(), "Genesis block should have null economic state");
+	assert!(
+		state.is_null(),
+		"Genesis block should have null economic state"
+	);
 }

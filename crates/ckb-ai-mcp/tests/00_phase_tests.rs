@@ -8,7 +8,7 @@
 
 mod common;
 
-use common::{get_ckb_rpc_url, SharedTestData, TestContext};
+use common::{SharedTestData, TestContext, get_ckb_rpc_url};
 use serde_json::json;
 
 /// Phase 1: Verify MCP server is running.
@@ -59,7 +59,10 @@ async fn test_02_collect_shared_data() {
 
 	let data = SharedTestData::get().expect("Shared data should be initialized");
 
-	assert!(!data.chain_type.is_empty(), "Chain type should not be empty");
+	assert!(
+		!data.chain_type.is_empty(),
+		"Chain type should not be empty"
+	);
 	assert!(
 		data.genesis_hash.starts_with("0x"),
 		"Genesis hash should be hex format"
@@ -82,21 +85,30 @@ async fn test_03_tools_list() {
 	assert!(!tools.is_empty(), "Should have at least one tool");
 
 	// Verify we have RPC tools (rpc_* prefix).
-	let has_rpc_tools = tools
-		.iter()
-		.any(|t| t["name"].as_str().map(|n| n.starts_with("rpc_")).unwrap_or(false));
+	let has_rpc_tools = tools.iter().any(|t| {
+		t["name"]
+			.as_str()
+			.map(|n| n.starts_with("rpc_"))
+			.unwrap_or(false)
+	});
 	assert!(has_rpc_tools, "Should have RPC tools");
 
 	// Verify we have dev tools (dev_* prefix).
-	let has_dev_tools = tools
-		.iter()
-		.any(|t| t["name"].as_str().map(|n| n.starts_with("dev_")).unwrap_or(false));
+	let has_dev_tools = tools.iter().any(|t| {
+		t["name"]
+			.as_str()
+			.map(|n| n.starts_with("dev_"))
+			.unwrap_or(false)
+	});
 	assert!(has_dev_tools, "Should have dev tools");
 
 	// Verify we have search tools.
-	let has_search_tools = tools
-		.iter()
-		.any(|t| t["name"].as_str().map(|n| n.starts_with("search_")).unwrap_or(false));
+	let has_search_tools = tools.iter().any(|t| {
+		t["name"]
+			.as_str()
+			.map(|n| n.starts_with("search_"))
+			.unwrap_or(false)
+	});
 	assert!(has_search_tools, "Should have search tools");
 }
 
@@ -140,10 +152,7 @@ async fn test_05_prompts_list() {
 	assert!(!prompts.is_empty(), "Should have workflow prompts");
 
 	// Verify expected prompts exist.
-	let prompt_names: Vec<&str> = prompts
-		.iter()
-		.filter_map(|p| p["name"].as_str())
-		.collect();
+	let prompt_names: Vec<&str> = prompts.iter().filter_map(|p| p["name"].as_str()).collect();
 
 	assert!(
 		prompt_names.contains(&"create_script"),

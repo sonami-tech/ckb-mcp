@@ -88,10 +88,7 @@ async fn test_prompts_list_expected_prompts_exist() {
 		.expect("prompts/list should succeed");
 
 	let prompts = result["prompts"].as_array().unwrap();
-	let prompt_names: Vec<&str> = prompts
-		.iter()
-		.filter_map(|p| p["name"].as_str())
-		.collect();
+	let prompt_names: Vec<&str> = prompts.iter().filter_map(|p| p["name"].as_str()).collect();
 
 	assert!(
 		prompt_names.contains(&"create_script"),

@@ -3,7 +3,7 @@
 //! Tools are renamed from the original CKB RPC names to follow the pattern:
 //! `rpc_{action}_{target}`
 
-use crate::util::{make_tool_annotated, ToolHints};
+use crate::util::{ToolHints, make_tool_annotated};
 use rmcp::model::Tool;
 use serde_json::json;
 use std::sync::LazyLock;

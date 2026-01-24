@@ -13,9 +13,15 @@ use tracing::debug;
 static SYNONYMS: LazyLock<HashMap<&'static str, &'static [&'static str]>> = LazyLock::new(|| {
 	HashMap::from([
 		// Action synonyms
-		("deploy", &["submit", "upload", "publish", "send", "broadcast"][..]),
+		(
+			"deploy",
+			&["submit", "upload", "publish", "send", "broadcast"][..],
+		),
 		("submit", &["deploy", "send", "broadcast", "push"][..]),
-		("query", &["get", "fetch", "read", "retrieve", "search", "find"][..]),
+		(
+			"query",
+			&["get", "fetch", "read", "retrieve", "search", "find"][..],
+		),
 		("get", &["query", "fetch", "read", "retrieve"][..]),
 		("create", &["make", "build", "generate", "new", "mint"][..]),
 		("validate", &["verify", "check", "test"][..]),
@@ -170,7 +176,11 @@ impl SearchHandlers {
 			.collect();
 
 		// Sort by score descending.
-		results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+		results.sort_by(|a, b| {
+			b.score
+				.partial_cmp(&a.score)
+				.unwrap_or(std::cmp::Ordering::Equal)
+		});
 
 		let total_matches = results.len();
 		results.truncate(limit);
@@ -227,11 +237,7 @@ impl SearchHandlers {
 					Some(ResourceSearchResult {
 						uri: resource.raw.uri.clone(),
 						name: resource.raw.name.clone(),
-						description: resource
-							.raw
-							.description
-							.clone()
-							.unwrap_or_default(),
+						description: resource.raw.description.clone().unwrap_or_default(),
 						score,
 					})
 				} else {
@@ -241,7 +247,11 @@ impl SearchHandlers {
 			.collect();
 
 		// Sort by score descending.
-		results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+		results.sort_by(|a, b| {
+			b.score
+				.partial_cmp(&a.score)
+				.unwrap_or(std::cmp::Ordering::Equal)
+		});
 
 		let total_matches = results.len();
 		results.truncate(limit);

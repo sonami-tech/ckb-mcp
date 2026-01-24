@@ -25,7 +25,10 @@ async fn test_search_tools_basic() {
 	let search_result: serde_json::Value =
 		serde_json::from_str(content).expect("Response should be valid JSON");
 
-	assert!(search_result.get("query").is_some(), "Should have query field");
+	assert!(
+		search_result.get("query").is_some(),
+		"Should have query field"
+	);
 	assert!(
 		search_result.get("total_matches").is_some(),
 		"Should have total_matches field"
@@ -52,9 +55,12 @@ async fn test_search_tools_finds_rpc_tools() {
 	let results = search_result["results"].as_array().unwrap();
 
 	// Should find block-related RPC tools.
-	let has_block_tool = results
-		.iter()
-		.any(|r| r["name"].as_str().map(|n| n.contains("block")).unwrap_or(false));
+	let has_block_tool = results.iter().any(|r| {
+		r["name"]
+			.as_str()
+			.map(|n| n.contains("block"))
+			.unwrap_or(false)
+	});
 
 	assert!(has_block_tool, "Should find block-related tools");
 }
@@ -75,9 +81,12 @@ async fn test_search_tools_finds_dev_tools() {
 	let results = search_result["results"].as_array().unwrap();
 
 	// Should find deployment tool.
-	let has_deploy_tool = results
-		.iter()
-		.any(|r| r["name"].as_str().map(|n| n.contains("deploy")).unwrap_or(false));
+	let has_deploy_tool = results.iter().any(|r| {
+		r["name"]
+			.as_str()
+			.map(|n| n.contains("deploy"))
+			.unwrap_or(false)
+	});
 
 	assert!(has_deploy_tool, "Should find deploy tool");
 }
@@ -133,10 +142,7 @@ async fn test_search_tools_no_results() {
 	let ctx = TestContext::new();
 
 	let result = ctx
-		.call_tool(
-			"search_tools",
-			json!({"query": "xyznonexistentquery123"}),
-		)
+		.call_tool("search_tools", json!({"query": "xyznonexistentquery123"}))
 		.await
 		.expect("search_tools should succeed");
 
@@ -145,7 +151,10 @@ async fn test_search_tools_no_results() {
 		serde_json::from_str(content).expect("Response should be valid JSON");
 
 	let total_matches = search_result["total_matches"].as_u64().unwrap();
-	assert_eq!(total_matches, 0, "Should have zero matches for nonsense query");
+	assert_eq!(
+		total_matches, 0,
+		"Should have zero matches for nonsense query"
+	);
 }
 
 // =============================================================================
@@ -165,7 +174,10 @@ async fn test_search_resources_basic() {
 	let search_result: serde_json::Value =
 		serde_json::from_str(content).expect("Response should be valid JSON");
 
-	assert!(search_result.get("query").is_some(), "Should have query field");
+	assert!(
+		search_result.get("query").is_some(),
+		"Should have query field"
+	);
 	assert!(
 		search_result.get("total_matches").is_some(),
 		"Should have total_matches field"
@@ -192,9 +204,12 @@ async fn test_search_resources_finds_cell_model() {
 	let results = search_result["results"].as_array().unwrap();
 
 	// Should find cell-model resource.
-	let has_cell_model = results
-		.iter()
-		.any(|r| r["uri"].as_str().map(|u| u.contains("cell-model")).unwrap_or(false));
+	let has_cell_model = results.iter().any(|r| {
+		r["uri"]
+			.as_str()
+			.map(|u| u.contains("cell-model"))
+			.unwrap_or(false)
+	});
 
 	assert!(has_cell_model, "Should find cell-model resource");
 }
@@ -215,9 +230,12 @@ async fn test_search_resources_finds_token_docs() {
 	let results = search_result["results"].as_array().unwrap();
 
 	// Should find token-related resources.
-	let has_token_doc = results
-		.iter()
-		.any(|r| r["uri"].as_str().map(|u| u.contains("token")).unwrap_or(false));
+	let has_token_doc = results.iter().any(|r| {
+		r["uri"]
+			.as_str()
+			.map(|u| u.contains("token"))
+			.unwrap_or(false)
+	});
 
 	assert!(has_token_doc, "Should find token-related documentation");
 }
@@ -280,9 +298,12 @@ async fn test_search_resources_finds_protocol_docs() {
 	let results = search_result["results"].as_array().unwrap();
 
 	// Should find spore protocol resource.
-	let has_spore = results
-		.iter()
-		.any(|r| r["uri"].as_str().map(|u| u.contains("spore")).unwrap_or(false));
+	let has_spore = results.iter().any(|r| {
+		r["uri"]
+			.as_str()
+			.map(|u| u.contains("spore"))
+			.unwrap_or(false)
+	});
 
 	assert!(has_spore, "Should find spore-related documentation");
 }
@@ -304,7 +325,10 @@ async fn test_search_resources_no_results() {
 		serde_json::from_str(content).expect("Response should be valid JSON");
 
 	let total_matches = search_result["total_matches"].as_u64().unwrap();
-	assert_eq!(total_matches, 0, "Should have zero matches for nonsense query");
+	assert_eq!(
+		total_matches, 0,
+		"Should have zero matches for nonsense query"
+	);
 }
 
 // =============================================================================

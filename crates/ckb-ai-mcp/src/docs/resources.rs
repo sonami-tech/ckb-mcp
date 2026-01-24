@@ -272,11 +272,7 @@ impl DocResourceDefinitions {
 				"Spore Digital Objects",
 				"spore/digital-objects.md",
 			),
-			make_resource(
-				"ckb://docs/spore/errors",
-				"Spore Errors",
-				"spore/errors.md",
-			),
+			make_resource("ckb://docs/spore/errors", "Spore Errors", "spore/errors.md"),
 			make_resource(
 				"ckb://docs/spore/protocol",
 				"Spore Protocol",
@@ -382,26 +378,14 @@ impl DocResourceDefinitions {
 			// =================================================================
 			// sdk/ - 10 files
 			// =================================================================
-			make_resource(
-				"ckb://docs/sdk/ccc-api",
-				"CCC API",
-				"sdk/ccc-api.md",
-			),
+			make_resource("ckb://docs/sdk/ccc-api", "CCC API", "sdk/ccc-api.md"),
 			make_resource(
 				"ckb://docs/sdk/ccc-cross-chain",
 				"CCC Cross-Chain",
 				"sdk/ccc-cross-chain.md",
 			),
-			make_resource(
-				"ckb://docs/sdk/ccc-ssri",
-				"CCC SSRI",
-				"sdk/ccc-ssri.md",
-			),
-			make_resource(
-				"ckb://docs/sdk/ickb-sdk",
-				"iCKB SDK",
-				"sdk/ickb-sdk.md",
-			),
+			make_resource("ckb://docs/sdk/ccc-ssri", "CCC SSRI", "sdk/ccc-ssri.md"),
+			make_resource("ckb://docs/sdk/ickb-sdk", "iCKB SDK", "sdk/ickb-sdk.md"),
 			make_resource(
 				"ckb://docs/sdk/lumos-patterns",
 				"Lumos Patterns",
