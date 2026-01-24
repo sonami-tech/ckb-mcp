@@ -20,9 +20,10 @@ ckb-mcp/
 The server combines all functionality in a single process using MCP protocol 2025-03-26 with Streamable HTTP transport:
 
 - **36 RPC Tools** (`rpc_*`): Query blockchain data, transactions, cells, headers, blocks
+- **5 CKB Tools** (`ckb_*`): High-level composite operations combining multiple RPC calls
 - **8 Dev Tools** (`dev_*`): Deploy cells, manage addresses, request faucet funds
 - **2 Search Tools**: Search available tools and documentation resources
-- **86 Documentation Resources**: CKB concepts, patterns, API references
+- **93 Documentation Resources**: CKB concepts, patterns, API references
 - **4 Workflow Prompts**: Guided workflows for script creation, deployment, queries, transfers
 - **File Upload Endpoint**: POST /deploy/file for large binary deployments
 

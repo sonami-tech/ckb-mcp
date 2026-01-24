@@ -1,6 +1,6 @@
 //! Documentation resource tests for ckb-ai-mcp unified server.
 //!
-//! Tests the 86 documentation resources served via resources/list and resources/read.
+//! Tests the 93 documentation resources served via resources/list and resources/read.
 
 mod common;
 
@@ -37,8 +37,8 @@ async fn test_resources_list_not_empty() {
 	let resources = result["resources"].as_array().unwrap();
 	assert!(!resources.is_empty(), "Should have documentation resources");
 	assert!(
-		resources.len() >= 80,
-		"Should have at least 80 resources (currently 86)"
+		resources.len() >= 90,
+		"Should have at least 90 resources (currently 93)"
 	);
 }
 
@@ -316,7 +316,7 @@ async fn test_all_resources_are_readable() {
 
 	let resources = list_result["resources"].as_array().unwrap();
 
-	// Test a sample of resources (testing all 86 would be slow).
+	// Test a sample of resources (testing all 93 would be slow).
 	let sample_uris: Vec<&str> = resources
 		.iter()
 		.filter_map(|r| r["uri"].as_str())
