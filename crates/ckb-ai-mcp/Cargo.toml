@@ -53,4 +53,3 @@ shared = { path = "../shared" }
 
 [dev-dependencies]
 tokio-test = "0.4"
-test-common = { path = "../test-common" }

@@ -438,7 +438,6 @@ dependencies = [
  "serde",
  "serde_json",
  "shared",
- "test-common",
  "thiserror 2.0.18",
  "tokio",
  "tokio-test",
@@ -3371,15 +3370,6 @@ dependencies = [
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "test-common"
-version = "0.1.0"
-dependencies = [
- "reqwest 0.12.23",
- "serde_json",
- "tokio",
 ]
 
 [[package]]

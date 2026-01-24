@@ -38,22 +38,6 @@ pub fn extract_u64_opt(args: &Value, field: &str) -> Option<u64> {
 	args.get(field).and_then(|v| v.as_u64())
 }
 
-/// Extract a required i64 parameter.
-///
-/// Returns an error if the field is missing or not a valid i64.
-pub fn extract_i64(args: &Value, field: &str) -> Result<i64> {
-	args.get(field)
-		.and_then(|v| v.as_i64())
-		.ok_or_else(|| CkbMcpError::InvalidParameter(format!("Missing required field: {}", field)))
-}
-
-/// Extract an optional i64 parameter.
-///
-/// Returns `None` if the field is missing or not a valid i64.
-pub fn extract_i64_opt(args: &Value, field: &str) -> Option<i64> {
-	args.get(field).and_then(|v| v.as_i64())
-}
-
 /// Extract a boolean parameter with a default value.
 ///
 /// Returns the default if the field is missing or not a boolean.
@@ -70,13 +54,6 @@ pub fn extract_object<'a>(args: &'a Value, field: &str) -> Result<&'a Value> {
 		.ok_or_else(|| CkbMcpError::InvalidParameter(format!("Missing required object: {}", field)))
 }
 
-/// Extract an optional object parameter.
-///
-/// Returns `None` if the field is missing or not an object.
-pub fn extract_object_opt<'a>(args: &'a Value, field: &str) -> Option<&'a Value> {
-	args.get(field).filter(|v| v.is_object())
-}
-
 /// Extract a required array parameter.
 ///
 /// Returns an error if the field is missing or not an array.
@@ -84,13 +61,6 @@ pub fn extract_array<'a>(args: &'a Value, field: &str) -> Result<&'a Vec<Value>>
 	args.get(field)
 		.and_then(|v| v.as_array())
 		.ok_or_else(|| CkbMcpError::InvalidParameter(format!("Missing required array: {}", field)))
-}
-
-/// Extract an optional array parameter.
-///
-/// Returns `None` if the field is missing or not an array.
-pub fn extract_array_opt<'a>(args: &'a Value, field: &str) -> Option<&'a Vec<Value>> {
-	args.get(field).and_then(|v| v.as_array())
 }
 
 #[cfg(test)]

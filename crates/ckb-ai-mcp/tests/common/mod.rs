@@ -238,47 +238,38 @@ impl TestContext {
 				return Err(format!("RPC error: {}", error));
 			}
 
-			if let Some(result) = body.get("result") {
-				if let Some(tx_status) = result.get("tx_status") {
-					if let Some(status) = tx_status.get("status").and_then(|s| s.as_str()) {
-						if status == "committed" {
-							if let Some(block_hash) =
-								tx_status.get("block_hash").and_then(|h| h.as_str())
-							{
-								let block_response = client
-									.post(&ckb_rpc_url)
-									.json(&json!({
-										"jsonrpc": "2.0",
-										"id": 2,
-										"method": "get_header",
-										"params": [block_hash]
-									}))
-									.send()
-									.await
-									.map_err(|e| e.to_string())?;
+			if let Some(result) = body.get("result")
+				&& let Some(tx_status) = result.get("tx_status")
+				&& let Some(status) = tx_status.get("status").and_then(|s| s.as_str())
+				&& status == "committed"
+			{
+				if let Some(block_hash) = tx_status.get("block_hash").and_then(|h| h.as_str()) {
+					let block_response = client
+						.post(&ckb_rpc_url)
+						.json(&json!({
+							"jsonrpc": "2.0",
+							"id": 2,
+							"method": "get_header",
+							"params": [block_hash]
+						}))
+						.send()
+						.await
+						.map_err(|e| e.to_string())?;
 
-								let block_body: Value =
-									block_response.json().await.map_err(|e| e.to_string())?;
+					let block_body: Value =
+						block_response.json().await.map_err(|e| e.to_string())?;
 
-								if let Some(header) = block_body.get("result") {
-									if let Some(number_hex) =
-										header.get("number").and_then(|n| n.as_str())
-									{
-										if let Ok(block_number) = u64::from_str_radix(
-											number_hex.trim_start_matches("0x"),
-											16,
-										) {
-											return Ok(block_number);
-										}
-									}
-								}
-							}
-							return Err(
-								"Transaction confirmed but couldn't parse block number".to_string()
-							);
-						}
+					if let Some(header) = block_body.get("result")
+						&& let Some(number_hex) = header.get("number").and_then(|n| n.as_str())
+						&& let Ok(block_number) =
+							u64::from_str_radix(number_hex.trim_start_matches("0x"), 16)
+					{
+						return Ok(block_number);
 					}
 				}
+				return Err(
+					"Transaction confirmed but couldn't parse block number".to_string()
+				);
 			}
 
 			tokio::time::sleep(std::time::Duration::from_secs(1)).await;
@@ -312,16 +303,13 @@ impl TestContext {
 				return Err(format!("RPC error: {}", error));
 			}
 
-			if let Some(result) = body.get("result") {
-				if let Some(block_num_hex) = result.get("block_number").and_then(|v| v.as_str()) {
-					if let Ok(indexer_tip) =
-						u64::from_str_radix(block_num_hex.trim_start_matches("0x"), 16)
-					{
-						if indexer_tip >= target_block {
-							return Ok(());
-						}
-					}
-				}
+			if let Some(result) = body.get("result")
+				&& let Some(block_num_hex) = result.get("block_number").and_then(|v| v.as_str())
+				&& let Ok(indexer_tip) =
+					u64::from_str_radix(block_num_hex.trim_start_matches("0x"), 16)
+				&& indexer_tip >= target_block
+			{
+				return Ok(());
 			}
 
 			tokio::time::sleep(std::time::Duration::from_millis(500)).await;

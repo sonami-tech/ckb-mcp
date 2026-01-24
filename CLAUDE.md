@@ -10,7 +10,6 @@ This is a Rust workspace providing a unified Model Context Protocol (MCP) server
 ckb-mcp/
 ├── crates/
 │   ├── shared/              # Common types, errors, and utilities
-│   ├── test-common/         # Test utilities
 │   └── ckb-ai-mcp/          # Unified MCP server (port 3112)
 ├── docs/                    # CKB development documentation
 └── Cargo.toml              # Workspace configuration

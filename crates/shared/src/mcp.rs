@@ -84,26 +84,3 @@ pub struct PromptsCapability {
 	#[serde(rename = "listChanged")]
 	pub list_changed: Option<bool>,
 }
-
-/// Utility functions for MCP responses
-pub fn create_success_response(id: Option<serde_json::Value>, result: serde_json::Value) -> McpResponse {
-	McpResponse {
-		jsonrpc: "2.0".to_string(),
-		result: Some(result),
-		error: None,
-		id,
-	}
-}
-
-pub fn create_error_response(id: Option<serde_json::Value>, code: i32, message: String) -> McpResponse {
-	McpResponse {
-		jsonrpc: "2.0".to_string(),
-		result: None,
-		error: Some(McpError {
-			code,
-			message,
-			data: None,
-		}),
-		id,
-	}
-}

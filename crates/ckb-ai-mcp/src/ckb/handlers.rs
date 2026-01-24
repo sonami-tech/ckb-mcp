@@ -142,37 +142,37 @@ impl CkbHandlers {
 		// Extract inputs and resolve them.
 		let mut resolved_inputs = Vec::new();
 
-		if let Some(tx) = tx_result.get("transaction") {
-			if let Some(inputs) = tx.get("inputs").and_then(|i| i.as_array()) {
-				for input in inputs {
-					if let Some(previous_output) = input.get("previous_output") {
-						let prev_tx_hash = previous_output.get("tx_hash").and_then(|h| h.as_str());
-						let prev_index = previous_output.get("index").and_then(|i| i.as_str());
+		if let Some(tx) = tx_result.get("transaction")
+			&& let Some(inputs) = tx.get("inputs").and_then(|i| i.as_array())
+		{
+			for input in inputs {
+				if let Some(previous_output) = input.get("previous_output") {
+					let prev_tx_hash = previous_output.get("tx_hash").and_then(|h| h.as_str());
+					let prev_index = previous_output.get("index").and_then(|i| i.as_str());
 
-						if let (Some(prev_tx_hash), Some(prev_index)) = (prev_tx_hash, prev_index) {
-							// Try to get the live cell (may fail if already consumed).
-							let out_point = json!({
-								"tx_hash": prev_tx_hash,
-								"index": prev_index
-							});
-							let cell_params = json!([out_point, true]);
+					if let (Some(prev_tx_hash), Some(prev_index)) = (prev_tx_hash, prev_index) {
+						// Try to get the live cell (may fail if already consumed).
+						let out_point = json!({
+							"tx_hash": prev_tx_hash,
+							"index": prev_index
+						});
+						let cell_params = json!([out_point, true]);
 
-							// Attempt to resolve the cell.
-							match self.client.call("get_live_cell", cell_params).await {
-								Ok(cell_result) => {
-									resolved_inputs.push(json!({
-										"previous_output": previous_output,
-										"cell": cell_result
-									}));
-								}
-								Err(_) => {
-									// Cell is consumed or unavailable.
-									resolved_inputs.push(json!({
-										"previous_output": previous_output,
-										"cell": null,
-										"note": "Cell consumed or unavailable"
-									}));
-								}
+						// Attempt to resolve the cell.
+						match self.client.call("get_live_cell", cell_params).await {
+							Ok(cell_result) => {
+								resolved_inputs.push(json!({
+									"previous_output": previous_output,
+									"cell": cell_result
+								}));
+							}
+							Err(_) => {
+								// Cell is consumed or unavailable.
+								resolved_inputs.push(json!({
+									"previous_output": previous_output,
+									"cell": null,
+									"note": "Cell consumed or unavailable"
+								}));
 							}
 						}
 					}

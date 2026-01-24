@@ -249,28 +249,27 @@ async fn test_ckb_query_transaction_genesis_tx() {
 
 	// Get a transaction hash from genesis block.
 	let genesis_txs = shared_data.genesis_block["transactions"].as_array();
-	if let Some(txs) = genesis_txs {
-		if let Some(first_tx) = txs.first() {
-			if let Some(tx_hash) = first_tx["hash"].as_str() {
-				let result = ctx
-					.call_tool("ckb_query_transaction", json!({"tx_hash": tx_hash}))
-					.await
-					.expect("ckb_query_transaction should succeed");
+	if let Some(txs) = genesis_txs
+		&& let Some(first_tx) = txs.first()
+		&& let Some(tx_hash) = first_tx["hash"].as_str()
+	{
+		let result = ctx
+			.call_tool("ckb_query_transaction", json!({"tx_hash": tx_hash}))
+			.await
+			.expect("ckb_query_transaction should succeed");
 
-				let content = result["content"][0]["text"].as_str().unwrap();
-				let query_result: serde_json::Value =
-					serde_json::from_str(content).expect("Response should be valid JSON");
+		let content = result["content"][0]["text"].as_str().unwrap();
+		let query_result: serde_json::Value =
+			serde_json::from_str(content).expect("Response should be valid JSON");
 
-				assert!(
-					query_result.get("transaction").is_some(),
-					"Should have transaction field"
-				);
-				assert!(
-					query_result.get("resolved_inputs").is_some(),
-					"Should have resolved_inputs field"
-				);
-			}
-		}
+		assert!(
+			query_result.get("transaction").is_some(),
+			"Should have transaction field"
+		);
+		assert!(
+			query_result.get("resolved_inputs").is_some(),
+			"Should have resolved_inputs field"
+		);
 	}
 }
 
