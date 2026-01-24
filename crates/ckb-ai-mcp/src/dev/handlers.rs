@@ -158,7 +158,13 @@ impl DevHandlers {
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to fetch genesis block: {}", e)))?
 			.ok_or_else(|| CkbMcpError::Internal("Genesis block not found".to_string()))?;
 
-		let genesis_hash = genesis_block.header.hash.to_string();
+		let raw_hash = genesis_block.header.hash.to_string();
+		// Normalize hash to have 0x prefix for comparison with constants.
+		let genesis_hash = if raw_hash.starts_with("0x") {
+			raw_hash
+		} else {
+			format!("0x{}", raw_hash)
+		};
 
 		match genesis_hash.as_str() {
 			MAINNET_GENESIS => Ok((ckb_sdk::NetworkType::Mainnet, None)),
