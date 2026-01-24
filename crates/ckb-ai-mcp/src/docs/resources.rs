@@ -1,6 +1,6 @@
 //! Documentation resource definitions.
 //!
-//! This module defines all 85 documentation resources with the new URI scheme:
+//! This module defines all 93 documentation resources with the new URI scheme:
 //! `ckb://docs/` instead of `ckb-dev-context://`
 
 use rmcp::model::{Annotated, RawResource, Resource};
