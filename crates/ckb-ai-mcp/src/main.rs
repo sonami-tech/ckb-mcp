@@ -1,6 +1,6 @@
 //! CKB AI MCP Server - Unified MCP server for CKB blockchain development.
 //!
-//! This server implements MCP protocol version 2025-11-25 with Streamable HTTP transport,
+//! This server implements MCP protocol version 2025-06-18 with Streamable HTTP transport,
 //! providing tools, resources, and prompts for CKB development.
 
 use anyhow::Result;
