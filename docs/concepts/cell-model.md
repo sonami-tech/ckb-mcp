@@ -1,8 +1,8 @@
+# Cell Model
+
 ## Description
 
-CKB Cell Model: foundational data structure of the Nervos CKB blockchain. CKB generalizes Bitcoin's UTXO model to enable flexible smart contract programming through cells containing capacity, lock scripts, type scripts, and arbitrary data. Covers cell structure, state management, transaction model, conservation rules, and programming patterns. Includes parallel processing, deterministic execution, tokens, DeFi applications, and deposit-based storage economics where 1 CKB equals 1 byte of storage.
-
-The CKB Cell Model is a generalized version of Bitcoin's UTXO model enabling flexible programming patterns and state management.
+A Cell is a single piece of state stored on the blockchain, governed by scripts (smart contracts) that dictate the rules under which it can be changed. This mechanism is the foundation of all programmable functionality on CKB, including things such as tokens, NFTs, and DeFi. CKB generalizes Bitcoin's UTXO model with cells containing capacity, lock scripts, type scripts, and arbitrary data. Covers cell structure, state management, transaction model, conservation rules, programming patterns, parallel processing, deterministic execution, and deposit-based storage economics where 1 CKB equals 1 byte of storage.
 
 ## Basic Cell Structure
 
