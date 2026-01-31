@@ -89,7 +89,7 @@ impl CkbRpcClient {
 		Ok(rpc_response.result.unwrap_or(Value::Null))
 	}
 
-	// Common RPC methods used by multiple servers
+	// Common RPC methods
 
 	/// Get transaction by hash.
 	pub async fn get_transaction(&self, tx_hash: &str) -> Result<Value> {

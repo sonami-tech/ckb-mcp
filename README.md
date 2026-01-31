@@ -6,7 +6,7 @@ A unified Model Context Protocol (MCP) server for Nervos CKB development.
 
 | Server | Status | Description |
 |--------|--------|-------------|
-| **ckb-ai-mcp** | **Alpha** | Unified MCP server with 36 RPC tools, 8 dev tools, 86 docs resources, and 4 workflow prompts. |
+| **ckb-ai-mcp** | **Alpha** | Unified MCP server with 36 RPC tools, 8 dev tools, 94 docs resources, and 4 workflow prompts. |
 
 ⚠️ **Note**: This server is under active development. Expect breaking changes and incomplete functionality.
 
@@ -16,18 +16,17 @@ This workspace provides a unified MCP server to help AI assistants build Nervos 
 
 - **RPC Tools**: Query CKB blockchain data (blocks, transactions, cells, epochs).
 - **Dev Tools**: Deploy cells, manage addresses, request faucet funds.
-- **Documentation**: Access 86 CKB development resources and guides.
+- **Documentation**: Access 94 CKB development resources and guides.
 - **Workflow Prompts**: Guided workflows for script creation, deployment, and transfers.
 
 ## Architecture
 
-The server runs as an HTTP server with Streamable HTTP transport (MCP protocol 2025-03-26), compatible with Claude Code and other MCP clients.
+The server runs as an HTTP server with Streamable HTTP transport (MCP protocol 2025-06-18), compatible with Claude Code and other MCP clients.
 
 ```
 ckb-mcp/
 ├── crates/
 │   ├── shared/              # Common types and utilities
-│   ├── test-common/         # Test utilities
 │   └── ckb-ai-mcp/          # Unified MCP server (port 3112)
 ├── docs/                    # CKB development documentation
 ├── resources/               # External resource references
@@ -148,7 +147,7 @@ Deploy and manage cells:
 - `RequestTestnetFunds` - Request testnet funds from faucet.
 - `GetDefaultAccountInfo` - Get configured account details and balance.
 
-### Documentation Resources (86 resources)
+### Documentation Resources (94 resources)
 
 Served via `ckb://docs/` URI scheme:
 
@@ -207,7 +206,6 @@ curl -X POST http://localhost:3112/deploy/file \
 ### Project Structure
 
 - **shared/**: Common types, error handling, and MCP utilities.
-- **test-common/**: Shared test utilities and fixtures.
 - **ckb-ai-mcp/**: Unified MCP server implementation.
 
 ### Adding New Tools

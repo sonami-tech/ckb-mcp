@@ -17,13 +17,13 @@ ckb-mcp/
 
 ### ckb-ai-mcp (Unified Server)
 
-The server combines all functionality in a single process using MCP protocol 2025-03-26 with Streamable HTTP transport:
+The server combines all functionality in a single process using MCP protocol 2025-06-18 with Streamable HTTP transport:
 
 - **36 RPC Tools** (`rpc_*`): Query blockchain data, transactions, cells, headers, blocks
 - **5 CKB Tools** (`ckb_*`): High-level composite operations combining multiple RPC calls
 - **8 Dev Tools** (`dev_*`): Deploy cells, manage addresses, request faucet funds
 - **2 Search Tools**: Search available tools and documentation resources
-- **93 Documentation Resources**: CKB concepts, patterns, API references
+- **94 Documentation Resources**: CKB concepts, patterns, API references
 - **4 Workflow Prompts**: Guided workflows for script creation, deployment, queries, transfers
 - **File Upload Endpoint**: POST /deploy/file for large binary deployments
 
@@ -175,7 +175,7 @@ cargo run --bin ckb-ai-mcp -- --help
 
 - Server runs on port 3112 (default).
 - Use `RUST_LOG=debug` for detailed logging.
-- Server uses Streamable HTTP transport (MCP 2025-03-26).
+- Server uses Streamable HTTP transport (MCP 2025-06-18).
 - Test endpoints manually with curl or use MCP client tools.
 
 ## Dependencies
