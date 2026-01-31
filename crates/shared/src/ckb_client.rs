@@ -46,7 +46,7 @@ impl CkbRpcClient {
 	/// - Response parsing
 	pub async fn call(&self, method: &str, params: Value) -> Result<Value> {
 		// Use random u32 for request IDs to avoid collisions when cloning clients
-		let id = rand::thread_rng().gen::<u32>() as u64;
+		let id = rand::rng().random::<u32>() as u64;
 
 		let request = JsonRpcRequest {
 			jsonrpc: "2.0".to_string(),

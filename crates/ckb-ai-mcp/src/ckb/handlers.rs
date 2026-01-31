@@ -293,13 +293,7 @@ impl CkbHandlers {
 
 		Ok(json!({
 			"code_hash": format!("{:#x}", lock_script.code_hash()),
-			"hash_type": match lock_script.hash_type().try_into() {
-				Ok(ckb_types::core::ScriptHashType::Type) => "type",
-				Ok(ckb_types::core::ScriptHashType::Data) => "data",
-				Ok(ckb_types::core::ScriptHashType::Data1) => "data1",
-				Ok(ckb_types::core::ScriptHashType::Data2) => "data2",
-				Err(_) => "unknown"
-			},
+			"hash_type": crate::util::hash_type_to_string(lock_script.hash_type()),
 			"args": format!("0x{}", hex::encode(lock_script.args().raw_data()))
 		}))
 	}

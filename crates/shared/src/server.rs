@@ -32,9 +32,11 @@ pub trait HasMcpHandler: Clone + Send + Sync + 'static {
 }
 
 /// Trait for MCP request handlers.
-#[axum::async_trait]
 pub trait McpHandlerTrait: Send + Sync {
-	async fn handle_request(&self, request: McpRequest) -> Result<McpResponse>;
+	fn handle_request(
+		&self,
+		request: McpRequest,
+	) -> impl std::future::Future<Output = Result<McpResponse>> + Send;
 }
 
 /// Configuration for starting an MCP server.

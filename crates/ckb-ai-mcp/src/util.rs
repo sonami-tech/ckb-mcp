@@ -1,6 +1,31 @@
 //! Utility functions shared across modules.
 
+use ckb_types::packed::Byte;
 use rmcp::model::{Tool, ToolAnnotations};
+
+/// Convert a CKB script hash_type byte to its string representation.
+///
+/// The hash type encoding in CKB uses:
+/// - Low bit 1 = "type" (matches by type script hash)
+/// - Low bit 0 = "data" variant (matches by data hash)
+///
+/// For data variants, the high 7 bits encode the VM version:
+/// - 0x00 = "data" (v0 CKB VM)
+/// - 0x02 = "data1" (v1 CKB VM)
+/// - 0x04 = "data2" (v2 CKB VM)
+/// - ...up to 0xFE = "data127" (v127 CKB VM)
+pub fn hash_type_to_string(hash_type: Byte) -> String {
+	let byte_value: u8 = hash_type.into();
+	if byte_value == 1 {
+		"type".to_string()
+	} else if byte_value == 0 {
+		"data".to_string()
+	} else {
+		// Data variants: byte value = version * 2, so version = byte / 2
+		let version = byte_value / 2;
+		format!("data{}", version)
+	}
+}
 
 /// Tool annotation hints for different tool categories.
 #[derive(Debug, Clone, Copy)]

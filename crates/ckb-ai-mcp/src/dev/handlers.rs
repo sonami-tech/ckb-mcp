@@ -178,12 +178,12 @@ impl DevHandlers {
 				// Sighash dep_group is at output index 0 of transaction 1.
 				let out_point = OutPoint::new_builder()
 					.tx_hash(dep_group_tx_hash.pack())
-					.index(0u32.pack())
+					.index(0u32)
 					.build();
 
 				let cell_dep = CellDep::new_builder()
 					.out_point(out_point)
-					.dep_type(ckb_types::core::DepType::DepGroup.into())
+					.dep_type(ckb_types::core::DepType::DepGroup)
 					.build();
 
 				// Use Testnet as the network type since devnet has same structure.
@@ -505,7 +505,7 @@ impl DevHandlers {
 			lock_arg: format!("0x{}", hex::encode(&pubkey_hash)),
 			lock_script: LockScriptInfo {
 				code_hash: format!("{:#x}", lock_script.code_hash()),
-				hash_type: format!("{:?}", lock_script.hash_type()),
+				hash_type: crate::util::hash_type_to_string(lock_script.hash_type()),
 				args: format!("0x{}", hex::encode(lock_script.args().raw_data())),
 			},
 			lock_hash: format!("{:#x}", lock_hash_bytes),
@@ -546,7 +546,7 @@ impl DevHandlers {
 			lock_arg: format!("0x{}", hex::encode(&lock_arg)),
 			lock_script: LockScriptInfo {
 				code_hash: format!("{:#x}", lock_script.code_hash()),
-				hash_type: format!("{:?}", lock_script.hash_type()),
+				hash_type: crate::util::hash_type_to_string(lock_script.hash_type()),
 				args: format!("0x{}", hex::encode(lock_script.args().raw_data())),
 			},
 			lock_hash: format!("{:#x}", lock_hash_bytes),

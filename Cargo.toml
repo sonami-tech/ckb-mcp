@@ -7,10 +7,10 @@ members = [
 
 [workspace.dependencies]
 # Async runtime and HTTP server
-tokio = { version = "1.0", features = ["full"] }
-axum = { version = "0.7", features = ["tower-log", "multipart"] }
-tower = "0.4"
-tower-http = { version = "0.5", features = ["cors", "trace"] }
+tokio = { version = "1.44", features = ["full"] }
+axum = { version = "0.8", features = ["multipart"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -18,32 +18,29 @@ serde_json = "1.0"
 
 # Error handling
 anyhow = "1.0"
-thiserror = "1.0"
+thiserror = "2.0"
 
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # CLI
-clap = { version = "4.0", features = ["derive"] }
+clap = { version = "4.5", features = ["derive"] }
 
 # HTTP client for CKB RPC
-reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.12", features = ["json"] }
 
 # Async streams
 tokio-stream = { version = "0.1", features = ["sync"] }
 
 # Random number generation
-rand = "0.8"
+rand = "0.9"
 
 # Embedded key-value database for stats persistence
-redb = "2.0"
+redb = "2.4"
 
 # Testing utilities
-tempfile = "3.14"
-
-# MCP protocol (using rust-mcp-sdk as placeholder - may need to adjust based on actual crate)
-# rust-mcp-sdk = "0.1"
+tempfile = "3.17"
 
 # Workspace crates
 shared = { path = "crates/shared" }
