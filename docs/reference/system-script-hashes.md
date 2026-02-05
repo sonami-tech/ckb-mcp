@@ -2,7 +2,7 @@
 
 ## Description
 
-Code hashes, type IDs, and cell dependencies for CKB system scripts on mainnet and testnet. Genesis block transactions, SECP256K1/blake160 lock script, SECP256K1/blake160 multisig lock script, and NervosDAO type script. Deployment transaction hashes and output indices for each script.
+Code hashes, type IDs, and cell dependencies for CKB system scripts on mainnet and testnet. Genesis block transactions, SECP256K1/blake160 lock script, SECP256K1/blake160 multisig lock script, NervosDAO type script, and quantum-resistant lock script. Deployment transaction hashes and output indices for each script.
 
 ## Script Structure Overview
 
@@ -132,6 +132,30 @@ Contains the same system scripts at identical indices. Testnet uses separate dep
 
 **Source**: [RFC 0024: CKB Genesis Script List](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0024-ckb-genesis-script-list/0024-ckb-genesis-script-list.md)
 
+## Quantum-Resistant Lock Script
+
+Post-quantum cryptography lock script using SPHINCS+ signature algorithm, resistant to attacks from quantum computers.
+
+**Mainnet**
+- **Code Hash**: `0x302d35982f865ebcbedb9a9360e40530ed32adb8e10b42fbbe70d8312ff7cedf`
+- **Hash Type**: `type`
+
+**Cell Dependency (Mainnet)**
+- **TX Hash**: `0x4598d00df2f3dc8bc40eee38689a539c94f6cc3720b7a2a6746736daa60f500a`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+**Testnet**
+- **Code Hash**: `0x147ecbb5c5127d982ee1362d2c2bb4267803da2eb006d150e88af6caaa0a7eaf`
+- **Hash Type**: `data1`
+
+**Cell Dependency (Testnet)**
+- **TX Hash**: `0x631d9a6049fb1fc3790e89d9daf35abe535b5e754cd8c3404319319710f0b106`
+- **Index**: `0x0`
+- **Dep Type**: `code`
+
+**Source**: [Quantum-Resistant Lock Script](https://github.com/cryptape/quantum-resistant-lock-script)
+
 ## Hash Type Values
 
 - `type`: Upgradable smart contract using type script verification (most commonly Type ID system).
@@ -142,5 +166,6 @@ Contains the same system scripts at identical indices. Testnet uses separate dep
 ## References
 
 - [RFC 0024: CKB Genesis Script List](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0024-ckb-genesis-script-list/0024-ckb-genesis-script-list.md) - SECP256K1, Multisig, DAO, Type ID
+- [Quantum-Resistant Lock Script](https://github.com/cryptape/quantum-resistant-lock-script) - Post-quantum SPHINCS+ lock script
 - [CCC SDK Mainnet Config](https://github.com/ckb-ecofund/ccc/blob/master/packages/core/src/client/clientPublicMainnet.advanced.ts) - Mainnet script configurations
 - [CCC SDK Testnet Config](https://github.com/ckb-ecofund/ccc/blob/master/packages/core/src/client/clientPublicTestnet.advanced.ts) - Testnet script configurations
