@@ -12,6 +12,7 @@ ckb-mcp/
 │   ├── shared/              # Common types, errors, and utilities
 │   └── ckb-ai-mcp/          # Unified MCP server (port 3112)
 ├── docs/                    # CKB development documentation
+├── resources/               # External resource references
 └── Cargo.toml              # Workspace configuration
 ```
 
@@ -19,12 +20,12 @@ ckb-mcp/
 
 The server combines all functionality in a single process using MCP protocol 2025-06-18 with Streamable HTTP transport:
 
-- **36 RPC Tools** (`rpc_*`): Query blockchain data, transactions, cells, headers, blocks
-- **5 CKB Tools** (`ckb_*`): High-level composite operations combining multiple RPC calls
-- **8 Dev Tools** (`dev_*`): Deploy cells, manage addresses, request faucet funds
-- **2 Search Tools**: Search available tools and documentation resources
-- **94 Documentation Resources**: CKB concepts, patterns, API references
-- **4 Workflow Prompts**: Guided workflows for script creation, deployment, queries, transfers
+- **RPC Tools** (`rpc_*`): Query blockchain data, transactions, cells, headers, blocks
+- **CKB Tools** (`ckb_*`): High-level composite operations combining multiple RPC calls
+- **Dev Tools** (`dev_*`): Deploy cells, manage addresses, request faucet funds
+- **Search Tools**: Search available tools and documentation resources
+- **Documentation Resources**: CKB concepts, patterns, API references
+- **Workflow Prompts**: Guided workflows for script creation, deployment, queries, transfers
 - **File Upload Endpoint**: POST /deploy/file for large binary deployments
 
 ## Development Guidelines
@@ -197,33 +198,9 @@ cargo run --bin ckb-ai-mcp -- --help
 
 ## Documentation Integration
 
-The `docs/` directory contains comprehensive CKB development documentation:
+The `docs/` directory contains CKB development documentation organized by topic (concepts, patterns, protocols, API references, troubleshooting, and more). Browse the `docs/` subdirectories for the current structure.
 
-- **concepts/**: Core CKB concepts.
-  - Cell Model fundamentals and advanced patterns.
-  - Transaction structure and lifecycle.
-  - Molecule serialization type system.
-- **patterns/**: Development patterns and best practices.
-  - Lock and type script development.
-  - Token creation (UDT/sUDT/xUDT patterns).
-  - Omnilock cross-chain integration.
-  - Molecule schema development patterns.
-  - CoTA NFT development patterns.
-  - Cell lifecycle and operation detection.
-- **api-reference/**: API examples and quick references.
-  - CKB syscalls reference.
-  - CCC SDK integration patterns.
-  - Molecule API examples and usage.
-  - Omnilock API reference and examples.
-  - CoTA SDK examples.
-- **protocols/**: Protocol specifications.
-  - CoTA NFT protocol.
-  - Omnilock universal lock protocol.
-  - Spore digital objects protocol.
-  - RGB++ asset protocol.
-- **troubleshooting/**: Common errors and debugging guides.
-
-Documentation is served via the ckb-ai-mcp server with URI scheme `ckb://docs/`
+Documentation is served via the ckb-ai-mcp server with URI scheme `ckb://docs/`. Use the MCP `resources/list` endpoint or the `search_resources` tool to see all available resources.
 
 ### Documentation Format Requirements
 
@@ -387,23 +364,7 @@ This script ensures all documentation files maintain the required Description fo
 
 ## Adding to Claude Code
 
-To add this MCP server to Claude Code, first start the server, then use:
-
-```bash
-claude mcp add --transport http ckb-ai-mcp http://localhost:3112/mcp
-```
-
-Verify it's configured:
-
-```bash
-claude mcp list
-```
-
-Remove if needed:
-
-```bash
-claude mcp remove ckb-ai-mcp
-```
+See the [MCP Integration section in README.md](README.md#mcp-integration) for setup instructions.
 
 ## Resources
 

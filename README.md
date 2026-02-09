@@ -6,7 +6,7 @@ A unified Model Context Protocol (MCP) server for Nervos CKB development.
 
 | Server | Status | Description |
 |--------|--------|-------------|
-| **ckb-ai-mcp** | **Alpha** | Unified MCP server with 36 RPC tools, 8 dev tools, 94 docs resources, and 4 workflow prompts. |
+| **ckb-ai-mcp** | **Alpha** | Unified MCP server with RPC tools, CKB tools, dev tools, documentation resources, and workflow prompts. |
 
 ⚠️ **Note**: This server is under active development. Expect breaking changes and incomplete functionality.
 
@@ -16,7 +16,7 @@ This workspace provides a unified MCP server to help AI assistants build Nervos 
 
 - **RPC Tools**: Query CKB blockchain data (blocks, transactions, cells, epochs).
 - **Dev Tools**: Deploy cells, manage addresses, request faucet funds.
-- **Documentation**: Access 94 CKB development resources and guides.
+- **Documentation**: Access CKB development resources and guides.
 - **Workflow Prompts**: Guided workflows for script creation, deployment, and transfers.
 
 ## Architecture
@@ -126,28 +126,45 @@ The server provides context-aware assistance for CKB development workflows.
 
 ## Server Features
 
-### RPC Tools (36 tools)
+### RPC Tools
 
 Query CKB blockchain data:
 
 - **Chain Methods**: `get_block`, `get_block_by_number`, `get_header`, `get_transaction`, `get_tip_header`, `get_tip_block_number`, `get_current_epoch`, etc.
 - **Indexer Methods**: `get_indexer_tip`, `get_cells`, `get_transactions`, `get_cells_capacity`.
-- **Network Methods**: `local_node_info`.
+- **Network/Pool Methods**: `local_node_info`, `get_peers`, `get_sync_state`, `get_pool_info`, etc.
+- **Transaction Methods**: `submit_transaction`, `test_transaction`.
+- **Calculation Methods**: `estimate_cycles`, `estimate_fee_rate`, `calculate_dao_withdraw`, etc.
 
-### Dev Tools (8 tools)
+### Dev Tools
 
 Deploy and manage cells:
 
-- `DeployCellData` - Deploy a cell with hex-encoded data.
-- `GetAddressBalance` - Get CKB balance for an address.
-- `GetChainType` - Get chain type (mainnet/testnet/devnet).
-- `GetGenesisHash` - Get genesis block hash.
-- `GenerateLockInfo` - Generate lock script info from private key.
-- `GetLockInfoFromAddress` - Extract lock info from CKB address.
-- `RequestTestnetFunds` - Request testnet funds from faucet.
-- `GetDefaultAccountInfo` - Get configured account details and balance.
+- `dev_deploy_cell_data` - Deploy a cell with hex-encoded data.
+- `dev_get_address_balance` - Get CKB balance for an address.
+- `dev_get_chain_type` - Get chain type (mainnet/testnet/devnet).
+- `dev_get_genesis_hash` - Get genesis block hash.
+- `dev_generate_lock_info` - Generate lock script info from private key.
+- `dev_get_lock_info_from_address` - Extract lock info from CKB address.
+- `dev_request_testnet_funds` - Request testnet funds from faucet.
+- `dev_get_default_account_info` - Get configured account details and balance.
 
-### Documentation Resources (94 resources)
+### CKB Tools
+
+High-level composite operations combining multiple RPC calls:
+
+- `ckb_query_address` - Get complete address state (balance, cells, lock info).
+- `ckb_query_chain_status` - Get chain health snapshot (tip, sync state, indexer, mempool).
+- `ckb_query_transaction` - Get transaction with resolved input cells.
+- `ckb_validate_transaction` - Pre-submission validation with dry-run and fee estimation.
+- `ckb_query_script_cells` - Find cells by lock/type script with simplified parameters.
+
+### Search Tools
+
+- `search_tools` - Search available MCP tools by keyword.
+- `search_resources` - Search available documentation resources by keyword.
+
+### Documentation Resources
 
 Served via `ckb://docs/` URI scheme:
 
@@ -182,7 +199,7 @@ Served via `ckb://docs/` URI scheme:
 - Framework-specific error guides (Omnilock, xUDT, Spore, iCKB).
 - Transaction building errors.
 
-### Workflow Prompts (4 prompts)
+### Workflow Prompts
 
 Guided workflows for common tasks:
 
