@@ -5,6 +5,7 @@
 mod common;
 
 use common::TestContext;
+use std::collections::HashSet;
 
 // =============================================================================
 // Resource Listing Tests
@@ -119,6 +120,31 @@ async fn test_resources_list_all_have_names() {
 	}
 }
 
+#[tokio::test]
+async fn test_resources_list_uris_are_unique() {
+	let ctx = TestContext::new();
+
+	let result = ctx
+		.list_resources()
+		.await
+		.expect("resources/list should succeed");
+
+	let resources = result["resources"].as_array().unwrap();
+
+	let uris: Vec<&str> = resources
+		.iter()
+		.filter_map(|r| r["uri"].as_str())
+		.collect();
+
+	let unique: HashSet<&str> = uris.iter().copied().collect();
+	assert_eq!(
+		uris.len(),
+		unique.len(),
+		"All resource URIs should be unique (found {} duplicates)",
+		uris.len() - unique.len()
+	);
+}
+
 // =============================================================================
 // Resource Reading Tests
 // =============================================================================
@@ -180,6 +206,60 @@ async fn test_read_resource_token_creation() {
 }
 
 #[tokio::test]
+async fn test_read_resource_programming_model() {
+	let ctx = TestContext::new();
+
+	let result = ctx
+		.read_resource("ckb://docs/concepts/programming-model")
+		.await
+		.expect("Should read programming-model");
+
+	let contents = result["contents"].as_array().expect("Should have contents");
+	let text = contents[0]["text"].as_str().expect("Should have text");
+
+	assert!(
+		text.contains("UTXO") || text.contains("cell") || text.contains("transaction"),
+		"Should contain CKB programming model content"
+	);
+}
+
+#[tokio::test]
+async fn test_read_resource_patterns() {
+	let ctx = TestContext::new();
+
+	let result = ctx
+		.read_resource("ckb://docs/scripts/patterns")
+		.await
+		.expect("Should read patterns");
+
+	let contents = result["contents"].as_array().expect("Should have contents");
+	let text = contents[0]["text"].as_str().expect("Should have text");
+
+	assert!(
+		text.contains("script") || text.contains("Script") || text.contains("pattern"),
+		"Should contain script pattern content"
+	);
+}
+
+#[tokio::test]
+async fn test_read_resource_getting_started() {
+	let ctx = TestContext::new();
+
+	let result = ctx
+		.read_resource("ckb://docs/quickstart/getting-started")
+		.await
+		.expect("Should read getting-started");
+
+	let contents = result["contents"].as_array().expect("Should have contents");
+	let text = contents[0]["text"].as_str().expect("Should have text");
+
+	assert!(
+		text.contains("CCC") || text.contains("SDK") || text.contains("Rust"),
+		"Should contain getting-started content"
+	);
+}
+
+#[tokio::test]
 async fn test_read_resource_invalid_uri() {
 	let ctx = TestContext::new();
 
@@ -201,8 +281,9 @@ async fn test_read_resource_wrong_scheme() {
 // Category Coverage Tests
 // =============================================================================
 
+/// Verify all expected resource categories are present.
 #[tokio::test]
-async fn test_resources_include_sdk() {
+async fn test_resources_include_all_categories() {
 	let ctx = TestContext::new();
 
 	let result = ctx
@@ -211,100 +292,54 @@ async fn test_resources_include_sdk() {
 		.expect("resources/list should succeed");
 
 	let resources = result["resources"].as_array().unwrap();
-	let has_sdk = resources.iter().any(|r| {
-		r["uri"]
-			.as_str()
-			.map(|u| u.contains("/sdk/"))
-			.unwrap_or(false)
-	});
 
-	assert!(has_sdk, "Should have SDK resources");
-}
+	let expected_categories = [
+		("quickstart", 2),
+		("concepts", 11),
+		("scripts", 11),
+		("tokens", 5),
+		("omnilock", 6),
+		("spore", 5),
+		("cota", 4),
+		("dao", 2),
+		("ickb", 4),
+		("protocols", 5),
+		("sdk", 9),
+		("transactions", 5),
+		("reference", 5),
+		("troubleshooting", 4),
+		("tools", 5),
+		("ecosystem", 3),
+		("examples", 3),
+	];
 
-#[tokio::test]
-async fn test_resources_include_concepts() {
-	let ctx = TestContext::new();
+	for (category, min_count) in &expected_categories {
+		let pattern = format!("/{}/", category);
+		let count = resources
+			.iter()
+			.filter(|r| {
+				r["uri"]
+					.as_str()
+					.map(|u| u.contains(&pattern))
+					.unwrap_or(false)
+			})
+			.count();
 
-	let result = ctx
-		.list_resources()
-		.await
-		.expect("resources/list should succeed");
-
-	let resources = result["resources"].as_array().unwrap();
-	let has_concepts = resources.iter().any(|r| {
-		r["uri"]
-			.as_str()
-			.map(|u| u.contains("/concepts/"))
-			.unwrap_or(false)
-	});
-
-	assert!(has_concepts, "Should have concepts resources");
-}
-
-#[tokio::test]
-async fn test_resources_include_scripts() {
-	let ctx = TestContext::new();
-
-	let result = ctx
-		.list_resources()
-		.await
-		.expect("resources/list should succeed");
-
-	let resources = result["resources"].as_array().unwrap();
-	let has_scripts = resources.iter().any(|r| {
-		r["uri"]
-			.as_str()
-			.map(|u| u.contains("/scripts/"))
-			.unwrap_or(false)
-	});
-
-	assert!(has_scripts, "Should have scripts resources");
-}
-
-#[tokio::test]
-async fn test_resources_include_protocols() {
-	let ctx = TestContext::new();
-
-	let result = ctx
-		.list_resources()
-		.await
-		.expect("resources/list should succeed");
-
-	let resources = result["resources"].as_array().unwrap();
-	let has_protocols = resources.iter().any(|r| {
-		r["uri"]
-			.as_str()
-			.map(|u| u.contains("/protocols/"))
-			.unwrap_or(false)
-	});
-
-	assert!(has_protocols, "Should have protocols resources");
-}
-
-#[tokio::test]
-async fn test_resources_include_troubleshooting() {
-	let ctx = TestContext::new();
-
-	let result = ctx
-		.list_resources()
-		.await
-		.expect("resources/list should succeed");
-
-	let resources = result["resources"].as_array().unwrap();
-	let has_troubleshooting = resources.iter().any(|r| {
-		r["uri"]
-			.as_str()
-			.map(|u| u.contains("/troubleshooting/"))
-			.unwrap_or(false)
-	});
-
-	assert!(has_troubleshooting, "Should have troubleshooting resources");
+		assert!(
+			count >= *min_count,
+			"Category '{}' should have at least {} resources, found {}",
+			category,
+			min_count,
+			count
+		);
+	}
 }
 
 // =============================================================================
 // All Resources Readable Test
 // =============================================================================
 
+/// Verify every registered resource can be read with non-empty content.
 #[tokio::test]
 async fn test_all_resources_are_readable() {
 	let ctx = TestContext::new();
@@ -316,28 +351,184 @@ async fn test_all_resources_are_readable() {
 
 	let resources = list_result["resources"].as_array().unwrap();
 
-	// Test a sample of resources (testing all 89 would be slow).
-	let sample_uris: Vec<&str> = resources
+	let all_uris: Vec<&str> = resources
 		.iter()
 		.filter_map(|r| r["uri"].as_str())
-		.take(10)
 		.collect();
 
-	for uri in sample_uris {
-		let result = ctx.read_resource(uri).await;
-		assert!(
-			result.is_ok(),
-			"Resource {} should be readable: {:?}",
-			uri,
-			result.err()
-		);
+	assert!(
+		all_uris.len() >= 85,
+		"Should have at least 85 URIs to test"
+	);
 
-		let value = result.unwrap();
-		let contents = value["contents"].as_array();
-		assert!(
-			contents.is_some() && !contents.unwrap().is_empty(),
-			"Resource {} should have non-empty contents",
-			uri
-		);
+	let mut failures: Vec<String> = Vec::new();
+
+	for uri in &all_uris {
+		match ctx.read_resource(uri).await {
+			Ok(value) => {
+				let contents = value["contents"].as_array();
+				if contents.is_none() || contents.unwrap().is_empty() {
+					failures.push(format!("{}: empty contents", uri));
+				} else {
+					let text = contents.unwrap()[0]["text"].as_str().unwrap_or("");
+					if text.is_empty() {
+						failures.push(format!("{}: empty text", uri));
+					}
+				}
+			}
+			Err(e) => {
+				failures.push(format!("{}: read failed: {}", uri, e));
+			}
+		}
 	}
+
+	assert!(
+		failures.is_empty(),
+		"Failed resources ({}/{}):\n  {}",
+		failures.len(),
+		all_uris.len(),
+		failures.join("\n  ")
+	);
+}
+
+/// Verify every resource has a description that contains meaningful words.
+///
+/// Descriptions are the primary search vector for AI discovery. They should
+/// contain substantive keywords, not just boilerplate.
+#[tokio::test]
+async fn test_all_descriptions_contain_substantive_keywords() {
+	let ctx = TestContext::new();
+
+	let result = ctx
+		.list_resources()
+		.await
+		.expect("resources/list should succeed");
+
+	let resources = result["resources"].as_array().unwrap();
+
+	let mut failures: Vec<String> = Vec::new();
+
+	for resource in resources {
+		let uri = resource["uri"].as_str().unwrap_or("unknown");
+		let description = resource["description"].as_str().unwrap_or("");
+
+		// Description should have at least 10 words for meaningful search matching.
+		let word_count = description.split_whitespace().count();
+		if word_count < 10 {
+			failures.push(format!(
+				"{}: description has only {} words (minimum 10)",
+				uri, word_count
+			));
+		}
+	}
+
+	assert!(
+		failures.is_empty(),
+		"Resources with insufficient descriptions ({}):\n  {}",
+		failures.len(),
+		failures.join("\n  ")
+	);
+}
+
+/// Verify all resource content contains CKB-relevant keywords.
+///
+/// Every documentation resource should contain at least one domain-relevant
+/// keyword to ensure it has substantive CKB development content.
+#[tokio::test]
+async fn test_all_resources_have_relevant_content() {
+	let ctx = TestContext::new();
+
+	let list_result = ctx
+		.list_resources()
+		.await
+		.expect("resources/list should succeed");
+
+	let resources = list_result["resources"].as_array().unwrap();
+
+	// Domain-relevant keywords that should appear in any CKB documentation.
+	let domain_keywords = [
+		"CKB", "ckb", "cell", "Cell", "script", "Script", "transaction", "Transaction",
+		"token", "Token", "lock", "Lock", "type", "capacity", "Nervos", "blockchain",
+		"UTXO", "hash", "block", "witness", "deploy", "Rust", "SDK", "UDT", "xUDT",
+		"sUDT", "Spore", "Omnilock", "DAO", "iCKB", "CoTA", "RGB", "SSRI", "CoBuild",
+		"molecule", "Molecule", "RISC-V", "syscall", "args", "code_hash", "hash_type",
+		"def ", "import ", "class ",  // Python file markers
+	];
+
+	let mut failures: Vec<String> = Vec::new();
+
+	for resource in resources {
+		let uri = resource["uri"].as_str().unwrap_or("unknown");
+
+		if let Ok(value) = ctx.read_resource(uri).await {
+			if let Some(contents) = value["contents"].as_array() {
+				if let Some(text) = contents.first().and_then(|c| c["text"].as_str()) {
+					let has_keyword = domain_keywords
+						.iter()
+						.any(|kw| text.contains(kw));
+
+					if !has_keyword {
+						failures.push(format!(
+							"{}: no CKB-relevant keywords found (first 100 chars: {:?})",
+							uri,
+							&text[..text.len().min(100)]
+						));
+					}
+				}
+			}
+		}
+	}
+
+	assert!(
+		failures.is_empty(),
+		"Resources without CKB-relevant content ({}):\n  {}",
+		failures.len(),
+		failures.join("\n  ")
+	);
+}
+
+/// Verify all resource content starts with a Description section.
+#[tokio::test]
+async fn test_all_resources_start_with_description() {
+	let ctx = TestContext::new();
+
+	let list_result = ctx
+		.list_resources()
+		.await
+		.expect("resources/list should succeed");
+
+	let resources = list_result["resources"].as_array().unwrap();
+
+	let mut failures: Vec<String> = Vec::new();
+
+	for resource in resources {
+		let uri = resource["uri"].as_str().unwrap_or("unknown");
+
+		// Skip Python files — they don't follow markdown format.
+		if uri.contains("/examples/calculate_file_hashes")
+			|| uri.contains("/examples/consolidate_cells")
+		{
+			continue;
+		}
+
+		if let Ok(value) = ctx.read_resource(uri).await {
+			if let Some(contents) = value["contents"].as_array() {
+				if let Some(text) = contents.first().and_then(|c| c["text"].as_str()) {
+					if !text.trim_start().starts_with("## Description") {
+						failures.push(format!(
+							"{}: does not start with '## Description'",
+							uri
+						));
+					}
+				}
+			}
+		}
+	}
+
+	assert!(
+		failures.is_empty(),
+		"Resources missing '## Description' header ({}):\n  {}",
+		failures.len(),
+		failures.join("\n  ")
+	);
 }

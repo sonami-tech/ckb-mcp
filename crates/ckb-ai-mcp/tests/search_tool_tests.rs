@@ -512,6 +512,150 @@ async fn test_search_resources_synonym_nft_finds_spore() {
 }
 
 // =============================================================================
+// New Resource Discovery Tests
+// =============================================================================
+
+#[tokio::test]
+async fn test_search_resources_finds_programming_model() {
+	let ctx = TestContext::new();
+
+	let result = ctx
+		.call_tool(
+			"search_resources",
+			json!({"query": "programming model"}),
+		)
+		.await
+		.expect("search_resources should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let search_result: serde_json::Value =
+		serde_json::from_str(content).expect("Response should be valid JSON");
+
+	let results = search_result["results"].as_array().unwrap();
+
+	let has_programming_model = results.iter().any(|r| {
+		r["uri"]
+			.as_str()
+			.map(|u| u.contains("programming-model"))
+			.unwrap_or(false)
+	});
+
+	assert!(
+		has_programming_model,
+		"Should find programming-model resource"
+	);
+}
+
+#[tokio::test]
+async fn test_search_resources_finds_patterns() {
+	let ctx = TestContext::new();
+
+	let result = ctx
+		.call_tool("search_resources", json!({"query": "script patterns"}))
+		.await
+		.expect("search_resources should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let search_result: serde_json::Value =
+		serde_json::from_str(content).expect("Response should be valid JSON");
+
+	let results = search_result["results"].as_array().unwrap();
+
+	let has_patterns = results.iter().any(|r| {
+		r["uri"]
+			.as_str()
+			.map(|u| u.contains("scripts/patterns"))
+			.unwrap_or(false)
+	});
+
+	assert!(has_patterns, "Should find scripts/patterns resource");
+}
+
+#[tokio::test]
+async fn test_search_resources_finds_getting_started() {
+	let ctx = TestContext::new();
+
+	let result = ctx
+		.call_tool(
+			"search_resources",
+			json!({"query": "getting started"}),
+		)
+		.await
+		.expect("search_resources should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let search_result: serde_json::Value =
+		serde_json::from_str(content).expect("Response should be valid JSON");
+
+	let results = search_result["results"].as_array().unwrap();
+
+	let has_getting_started = results.iter().any(|r| {
+		r["uri"]
+			.as_str()
+			.map(|u| u.contains("getting-started"))
+			.unwrap_or(false)
+	});
+
+	assert!(
+		has_getting_started,
+		"Should find getting-started resource"
+	);
+}
+
+#[tokio::test]
+async fn test_search_resources_finds_dao() {
+	let ctx = TestContext::new();
+
+	let result = ctx
+		.call_tool("search_resources", json!({"query": "dao deposit"}))
+		.await
+		.expect("search_resources should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let search_result: serde_json::Value =
+		serde_json::from_str(content).expect("Response should be valid JSON");
+
+	let results = search_result["results"].as_array().unwrap();
+
+	let has_dao = results.iter().any(|r| {
+		r["uri"]
+			.as_str()
+			.map(|u| u.contains("/dao/"))
+			.unwrap_or(false)
+	});
+
+	assert!(has_dao, "Should find DAO resources");
+}
+
+#[tokio::test]
+async fn test_search_resources_finds_reference() {
+	let ctx = TestContext::new();
+
+	let result = ctx
+		.call_tool(
+			"search_resources",
+			json!({"query": "script hashes"}),
+		)
+		.await
+		.expect("search_resources should succeed");
+
+	let content = result["content"][0]["text"].as_str().unwrap();
+	let search_result: serde_json::Value =
+		serde_json::from_str(content).expect("Response should be valid JSON");
+
+	let results = search_result["results"].as_array().unwrap();
+
+	let has_reference = results.iter().any(|r| {
+		r["uri"]
+			.as_str()
+			.map(|u| u.contains("/reference/"))
+			.unwrap_or(false)
+	});
+
+	assert!(has_reference, "Should find reference resources");
+}
+
+// =============================================================================
 // Edge Case Tests
 // =============================================================================
 
