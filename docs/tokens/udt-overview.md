@@ -1,6 +1,6 @@
 ## Description
 
-Comprehensive guide to User Defined Tokens on CKB, covering Simple UDT (sUDT) and Extensible UDT (xUDT) standards. Includes cell structures, transfer/minting operations, extension scripts, regulatory compliance patterns, multi-signature tokens, deployment information, and development guidelines for choosing between UDT standards.
+User Defined Token standards on CKB: Simple UDT (sUDT) and eXtensible UDT (xUDT). Cell structures, transfer/minting operations, xUDT flag-based extension system, standard extensions (supply cap, metadata, oracle), validation rules, extension script architecture, regulatory compliance patterns, multi-signature tokens, sUDT-to-xUDT migration, security considerations, deployment info, and development guidelines.
 
 ## Overview
 
@@ -170,6 +170,13 @@ type: {
 lock: <user_defined_lock>
 ```
 
+### xUDT Type Script Reference
+```
+code_hash: 0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95
+hash_type: data1
+args: <owner_lock_hash(32 bytes)> + <xudt_flags(4 bytes)> + <extension_data>
+```
+
 ### xUDT Args Structure
 
 ```rust
@@ -181,9 +188,20 @@ struct XudtArgs {
 
 // Flags determine extension data format:
 // flags & 0x1FFFFFFF == 0x0: No extensions
-// flags & 0x1FFFFFFF == 0x1: Raw extension scripts  
+// flags & 0x1FFFFFFF == 0x1: Raw extension scripts
 // flags & 0x1FFFFFFF == 0x2: Hash of extension scripts (P2SH style)
 ```
+
+### xUDT Flags (32-bit)
+
+| Flag         | Meaning                              |
+|--------------|--------------------------------------|
+| `0x00000000` | Basic sUDT compatibility mode.       |
+| `0x00000001` | Reserved.                            |
+| `0x00000002` | Reserved.                            |
+| `0x20000000` | Extension data in input cell.        |
+| `0x40000000` | Extension data in output cell.       |
+| `0x80000000` | Extension data in witness.           |
 
 ### Extension Scripts
 
@@ -205,6 +223,36 @@ extern "C" {
 // - Transfer limits and time locks
 // - Multi-signature requirements
 // - Custom business logic
+```
+
+### Standard Extensions
+
+Extension scripts add modular validation logic to xUDT tokens.
+
+```rust
+struct ExtensionScript {
+    code_hash: Byte32,
+    hash_type: u8,
+    args: Bytes,
+}
+```
+
+**1. Supply Cap Extension**
+```
+code_hash: SUPPLY_CAP_CODE_HASH
+args: max_supply (u128, 16 bytes)
+```
+
+**2. Metadata Extension**
+```
+code_hash: METADATA_CODE_HASH
+args: metadata_cell_type_id (32 bytes)
+```
+
+**3. Oracle Extension**
+```
+code_hash: ORACLE_CODE_HASH
+args: oracle_cell_lock_hash (32 bytes)
 ```
 
 ### Owner Mode Extensions
@@ -310,6 +358,77 @@ if transfer_amount > min_amount_for_multisig {
 }
 ```
 
+## xUDT Validation Rules
+
+### Amount Rules
+1. Total input amount >= total output amount (conservation).
+2. Owner mode: if any input uses owner lock, skip amount validation.
+3. Amount stored as little-endian u128.
+
+### Extension Validation
+1. Parse extension scripts from args based on flags.
+2. Execute each extension script in order.
+3. Extension scripts access data via `CKB_SOURCE_GROUP_INPUT/OUTPUT`.
+4. All extensions must return success (0).
+
+### Backwards Compatibility
+- With no flags set, xUDT behaves identically to sUDT.
+- Existing sUDT cells can migrate by appending 4 zero bytes for flags.
+
+## xUDT Extension Discovery
+
+```rust
+fn parse_xudt_args(args: &[u8]) -> Result<(H256, u32, Vec<ExtensionScript>)> {
+    let owner_lock_hash = H256::from_slice(&args[0..32])?;
+    let flags = u32::from_le_bytes(args[32..36].try_into()?);
+
+    let mut extensions = vec![];
+    let mut offset = 36;
+
+    while offset < args.len() {
+        let code_hash = H256::from_slice(&args[offset..offset+32])?;
+        let hash_type = args[offset+32];
+        let args_len = u32::from_le_bytes(args[offset+33..offset+37].try_into()?);
+        let ext_args = args[offset+37..offset+37+args_len as usize].to_vec();
+
+        extensions.push(ExtensionScript {
+            code_hash,
+            hash_type,
+            args: ext_args,
+        });
+
+        offset += 37 + args_len as usize;
+    }
+
+    Ok((owner_lock_hash, flags, extensions))
+}
+```
+
+## Migration from sUDT to xUDT
+
+```rust
+// Old sUDT args: owner_lock_hash (32 bytes)
+let sudt_args = owner_lock_hash.as_bytes();
+
+// New xUDT args: owner_lock_hash + flags (4 zero bytes = sUDT-compatible mode)
+let xudt_args = [sudt_args, &0u32.to_le_bytes()].concat();
+
+// Update type script to xUDT code hash
+let xudt_type = Script::new_builder()
+    .code_hash(XUDT_CODE_HASH.pack())
+    .hash_type(ScriptHashType::Data1.into())
+    .args(xudt_args.pack())
+    .build();
+```
+
+## Security Considerations
+
+1. **Extension Trust**: Only use verified extension scripts.
+2. **Flag Validation**: Ensure flags match actual data locations.
+3. **Owner Key**: Protect owner lock private key for issuance control.
+4. **Amount Overflow**: Validate u128 arithmetic operations.
+5. **Extension Order**: Extensions execute sequentially; order matters.
+
 ## Deployment Information
 
 ### Simple UDT
@@ -387,5 +506,10 @@ fn create_sudt_type_script(owner_lock_hash: [u8; 32]) -> Script {
         .build()
 }
 ```
+
+## Reference Implementation
+
+- Molecule schemas: `resources/omnilock/c/xudt_rce.mol`
+- Rust implementation: `resources/ckb-production-scripts/rust/xudt`
 
 User Defined Tokens provide a powerful foundation for creating custom digital assets on CKB, from simple utility tokens to complex regulated financial instruments. The choice between Simple UDT and Extensible UDT depends on your specific requirements for functionality, compliance, and future extensibility.

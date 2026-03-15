@@ -1,6 +1,6 @@
 //! Documentation resource definitions.
 //!
-//! This module defines all 93 documentation resources with the new URI scheme:
+//! This module defines all 89 documentation resources with the new URI scheme:
 //! `ckb://docs/` instead of `ckb-dev-context://`
 
 use rmcp::model::{Annotated, RawResource, Resource};
@@ -60,7 +60,7 @@ impl DocResourceDefinitions {
 	pub fn all() -> Vec<DocResource> {
 		vec![
 			// =================================================================
-			// quickstart/ - 3 files
+			// quickstart/ - 2 files
 			// =================================================================
 			make_resource(
 				"ckb://docs/quickstart/ai-quick-reference",
@@ -68,23 +68,13 @@ impl DocResourceDefinitions {
 				"quickstart/ai-quick-reference.md",
 			),
 			make_resource(
-				"ckb://docs/quickstart/developer-resources",
-				"Developer Resources",
-				"quickstart/developer-resources.md",
-			),
-			make_resource(
-				"ckb://docs/quickstart/tool-recommendations",
-				"Tool Recommendations",
-				"quickstart/tool-recommendations.md",
+				"ckb://docs/quickstart/getting-started",
+				"Getting Started",
+				"quickstart/getting-started.md",
 			),
 			// =================================================================
 			// concepts/ - 11 files
 			// =================================================================
-			make_resource(
-				"ckb://docs/concepts/advanced-cells",
-				"Advanced Cell Concepts",
-				"concepts/advanced-cells.md",
-			),
 			make_resource(
 				"ckb://docs/concepts/cell-lifecycle",
 				"Cell Lifecycle",
@@ -116,6 +106,11 @@ impl DocResourceDefinitions {
 				"concepts/network-history.md",
 			),
 			make_resource(
+				"ckb://docs/concepts/programming-model",
+				"CKB Programming Model",
+				"concepts/programming-model.md",
+			),
+			make_resource(
 				"ckb://docs/concepts/script-groups",
 				"Script Groups",
 				"concepts/script-groups.md",
@@ -136,17 +131,12 @@ impl DocResourceDefinitions {
 				"concepts/transaction-structure.md",
 			),
 			// =================================================================
-			// scripts/ - 12 files
+			// scripts/ - 11 files
 			// =================================================================
 			make_resource(
 				"ckb://docs/scripts/c-migration",
 				"C to Rust Migration",
 				"scripts/c-migration.md",
-			),
-			make_resource(
-				"ckb://docs/scripts/development-patterns",
-				"Script Development Patterns",
-				"scripts/development-patterns.md",
 			),
 			make_resource(
 				"ckb://docs/scripts/lock-script-minimal",
@@ -159,9 +149,9 @@ impl DocResourceDefinitions {
 				"scripts/operation-detection.md",
 			),
 			make_resource(
-				"ckb://docs/scripts/rust-patterns",
-				"Rust Script Patterns",
-				"scripts/rust-patterns.md",
+				"ckb://docs/scripts/patterns",
+				"Script Development Patterns",
+				"scripts/patterns.md",
 			),
 			make_resource(
 				"ckb://docs/scripts/rust-testing",
@@ -343,7 +333,7 @@ impl DocResourceDefinitions {
 				"ickb/protocol.md",
 			),
 			// =================================================================
-			// protocols/ - 6 files
+			// protocols/ - 5 files
 			// =================================================================
 			make_resource(
 				"ckb://docs/protocols/ckbfs",
@@ -370,13 +360,8 @@ impl DocResourceDefinitions {
 				"SSRI Protocol",
 				"protocols/ssri.md",
 			),
-			make_resource(
-				"ckb://docs/protocols/xudt",
-				"xUDT Protocol",
-				"protocols/xudt.md",
-			),
 			// =================================================================
-			// sdk/ - 10 files
+			// sdk/ - 9 files
 			// =================================================================
 			make_resource("ckb://docs/sdk/ccc-api", "CCC API", "sdk/ccc-api.md"),
 			make_resource(
@@ -410,11 +395,6 @@ impl DocResourceDefinitions {
 				"ckb://docs/sdk/rust-sdk-basic",
 				"Rust SDK Basic",
 				"sdk/rust-sdk-basic.md",
-			),
-			make_resource(
-				"ckb://docs/sdk/rust-sdk-patterns",
-				"Rust SDK Patterns",
-				"sdk/rust-sdk-patterns.md",
 			),
 			// =================================================================
 			// transactions/ - 5 files

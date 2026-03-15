@@ -1,6 +1,6 @@
 ## Description
 
-Rust patterns for CKB script development. Project structure, Cargo.toml configuration for RISC-V targets, entry point macros, error handling with granular error codes. UDT (User Defined Token) implementation with owner mode and conservation rules. State machine pattern for counter contracts. Lock script signature verification with secp256k1. JSON cell data validation. Multi-cell aggregation with nonce ordering. Advanced witness parsing, versioned script arguments, time-based logic with since fields, and Molecule serialization integration.
+Rust patterns for CKB script development. Project structure, Cargo.toml configuration for RISC-V targets, entry point macros, error handling with granular error codes. UDT token implementation with owner mode and conservation rules. State machine pattern for counter contracts. Lock script signature verification. Composable locks (OR/AND logic), HTLC contracts, open transactions, dual-mode scripts. Cryptographic primitives: secp256k1, secp256r1, RSA, BLS signature aggregation. JSON cell data validation, multi-cell aggregation with nonce ordering, witness parsing, versioned script arguments, time-based logic with since fields, and Molecule serialization. Cross-compilation setup and Docker-based reproducible builds.
 
 ## Project Structure and Setup
 
@@ -47,18 +47,18 @@ secp256k1 = { version = "0.24.0", default-features = false, features = ["hashes"
 
 [profile.release]
 overflow-checks = true
-opt-level = "s"           # Optimize for size
-lto = true               # Link-time optimization
-codegen-units = 1        # Single codegen unit for size
-panic = "abort"          # Smaller binary size
-strip = true            # Strip symbols
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
 
 # Target for CKB-VM (RISC-V)
 [build]
 target = "riscv64imac-unknown-none-elf"
 ```
 
-### Main Entry Point Pattern
+### Main Entry Point
 
 ```rust
 // src/main.rs
@@ -68,7 +68,6 @@ target = "riscv64imac-unknown-none-elf"
 #[cfg(any(feature = "library", test))]
 extern crate alloc;
 
-// Import error types
 mod error;
 mod entry;
 
@@ -88,7 +87,9 @@ pub fn program_entry() -> i8 {
 }
 ```
 
-### Error Handling Pattern
+## Error Handling
+
+### Standard Error Enum
 
 ```rust
 // src/error.rs
@@ -131,86 +132,26 @@ impl From<ckb_std::error::SysError> for Error {
 }
 ```
 
-### Granular Error Code Pattern
+### Granular Error Codes
 
-Smart contracts often use generic error codes that mask the true cause of failures, making debugging extremely difficult. When multiple distinct failure conditions return the same error code, developers must manually trace through complex contract logic to determine which specific condition triggered the error.
+Generic error codes mask failure causes, making debugging difficult. Use granular codes for a one-to-one mapping between each failure condition and its error code.
 
-Implementing granular error codes creates a one-to-one mapping between each error condition and its specific error code, dramatically improving debugging efficiency.
-
-#### Before: Generic Error Codes
-
+Before (generic):
 ```rust
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Error {
-    IndexOutOfBound = 1,
-    ItemMissing = 2,
-    InvalidData = 3,
-    InvalidTransaction = 4,  // Too generic!
-    InvalidArgs = 5,         // Too generic!
-    Unauthorized = 6,        // Too generic!
-}
-
 pub fn validate() -> Result<(), Error> {
-    // Multiple different conditions all return the same error
     if input_count() > 1 {
-        return Err(Error::InvalidTransaction);  // Could be many things
+        return Err(Error::InvalidTransaction);  // Ambiguous
     }
     if output_count() != 1 {
-        return Err(Error::InvalidTransaction);  // Same error code!
-    }
-    if required_output_missing() {
-        return Err(Error::InvalidTransaction);  // Same error code!
+        return Err(Error::InvalidTransaction);  // Same code!
     }
     Ok(())
 }
 ```
 
-#### After: Granular Error Codes
-
+After (granular):
 ```rust
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Error {
-    // Syscall errors
-    IndexOutOfBound = 1,
-    ItemMissing = 2,
-    LengthNotEnough = 3,
-
-    // Specific transaction structure errors
-    MultipleInputsNotAllowed = 10,
-    RequiredOutputMissing = 11,
-    IncorrectOutputCount = 12,
-    UnexpectedExtraOutput = 13,
-
-    // Specific argument errors
-    InvalidOwnerLockHash = 20,
-    ArgumentLengthIncorrect = 21,
-    MissingRequiredArgument = 22,
-
-    // Specific authorization errors
-    OwnerSignatureMissing = 30,
-    InvalidOwnerMode = 31,
-    UnauthorizedMintingAttempt = 32,
-}
-
-pub fn validate() -> Result<(), Error> {
-    // Each condition has a specific, descriptive error
-    if input_count() > 1 {
-        return Err(Error::MultipleInputsNotAllowed);
-    }
-    if output_count() != 1 {
-        return Err(Error::IncorrectOutputCount);
-    }
-    if required_output_missing() {
-        return Err(Error::RequiredOutputMissing);
-    }
-    Ok(())
-}
-```
-
-#### Error Code Organization Strategy
-
-```rust
-// Group related errors by category using number ranges
 pub enum Error {
     // Syscall errors (1-9)
     IndexOutOfBound = 1,
@@ -221,6 +162,7 @@ pub enum Error {
     MultipleInputsNotAllowed = 10,
     RequiredOutputMissing = 11,
     IncorrectOutputCount = 12,
+    UnexpectedExtraOutput = 13,
 
     // Token amount errors (20-29)
     TokenAmountOverflow = 20,
@@ -237,13 +179,26 @@ pub enum Error {
     MalformedWitness = 41,
     CorruptedCellData = 42,
 }
+
+pub fn validate() -> Result<(), Error> {
+    if input_count() > 1 {
+        return Err(Error::MultipleInputsNotAllowed);
+    }
+    if output_count() != 1 {
+        return Err(Error::IncorrectOutputCount);
+    }
+    if required_output_missing() {
+        return Err(Error::RequiredOutputMissing);
+    }
+    Ok(())
+}
 ```
 
-## Core Development Patterns
+## Core Patterns
 
-### 1. Simple UDT (User Defined Token) Pattern
+### 1. Simple UDT (User Defined Token)
 
-A production-quality token implementation with owner privileges and conservation rules:
+Token implementation with owner privileges and conservation rules:
 
 ```rust
 // src/entry.rs
@@ -262,14 +217,11 @@ pub fn main() -> Result<(), Error> {
     let script = load_script()?;
     let args: Bytes = script.args().unpack();
 
-    // Check owner mode (allows minting/burning)
     if check_owner_mode(&args)? {
         return Ok(());
     }
 
-    // Validate token conservation
     validate_token_conservation()?;
-
     Ok(())
 }
 
@@ -278,7 +230,6 @@ fn check_owner_mode(args: &Bytes) -> Result<bool, Error> {
         return Err(Error::InvalidArgs);
     }
 
-    // Check if any input cell has lock hash matching owner
     let is_owner = QueryIter::new(load_cell_lock_hash, Source::Input)
         .any(|lock_hash| args[..] == lock_hash[..]);
 
@@ -289,7 +240,6 @@ fn validate_token_conservation() -> Result<(), Error> {
     let input_amount = calculate_token_amount(Source::GroupInput)?;
     let output_amount = calculate_token_amount(Source::GroupOutput)?;
 
-    // Prevent token inflation (allow burning)
     if output_amount > input_amount {
         return Err(Error::InvalidAmount);
     }
@@ -317,9 +267,7 @@ fn calculate_token_amount(source: Source) -> Result<u128, Error> {
 }
 ```
 
-### 2. State Machine Pattern
-
-Implementing a simple counter with state validation:
+### 2. State Machine (Counter)
 
 ```rust
 use ckb_std::{
@@ -331,16 +279,12 @@ use crate::error::Error;
 const STATE_DATA_LEN: usize = 8;
 
 pub fn main() -> Result<(), Error> {
-    // Validate 1:1 state transition
     validate_state_structure()?;
 
-    // Load current and next state
     let current_state = load_state(Source::GroupInput)?;
     let next_state = load_state(Source::GroupOutput)?;
 
-    // Validate state transition
     validate_state_transition(current_state, next_state)?;
-
     Ok(())
 }
 
@@ -348,12 +292,10 @@ fn validate_state_structure() -> Result<(), Error> {
     let input_count = QueryIter::new(load_cell_data, Source::GroupInput).count();
     let output_count = QueryIter::new(load_cell_data, Source::GroupOutput).count();
 
-    // Skip validation if no inputs (creation case)
     if input_count == 0 {
         return Ok(());
     }
 
-    // Require exactly 1:1 state transition
     if input_count != 1 || output_count != 1 {
         return Err(Error::InvalidTransaction);
     }
@@ -374,7 +316,6 @@ fn load_state(source: Source) -> Result<u64, Error> {
 }
 
 fn validate_state_transition(current: u64, next: u64) -> Result<(), Error> {
-    // Counter can only increment by 1
     if next != current + 1 {
         return Err(Error::InvalidState);
     }
@@ -383,7 +324,7 @@ fn validate_state_transition(current: u64, next: u64) -> Result<(), Error> {
 }
 ```
 
-### 3. Lock Script Pattern (Signature Verification)
+### 3. Lock Script (Signature Verification)
 
 ```rust
 use ckb_std::{
@@ -397,7 +338,6 @@ const SECP256K1_PUBKEY_SIZE: usize = 33;
 const SECP256K1_SIGNATURE_SIZE: usize = 65;
 
 pub fn main() -> Result<(), Error> {
-    // Load script arguments (public key hash)
     let script = load_script()?;
     let args = script.args().raw_data();
 
@@ -405,7 +345,6 @@ pub fn main() -> Result<(), Error> {
         return Err(Error::InvalidArgs);
     }
 
-    // Load signature from witness
     let witness_args = load_witness_args(0, Source::GroupInput)?;
     let signature = witness_args.lock().to_opt()
         .ok_or(Error::InvalidWitness)?
@@ -415,12 +354,8 @@ pub fn main() -> Result<(), Error> {
         return Err(Error::InvalidWitness);
     }
 
-    // Load transaction hash
     let tx_hash = load_tx_hash()?;
-
-    // Verify signature
     verify_secp256k1_signature(&signature, &tx_hash, &args)?;
-
     Ok(())
 }
 
@@ -429,13 +364,9 @@ fn verify_secp256k1_signature(
     message: &[u8],
     pubkey_hash: &[u8]
 ) -> Result<(), Error> {
-    // Recover public key from signature
     let pubkey = recover_secp256k1_pubkey(signature, message)?;
-
-    // Hash recovered public key
     let recovered_hash = blake2b_hash(&pubkey);
 
-    // Compare with expected hash
     if recovered_hash[0..20] != pubkey_hash[..] {
         return Err(Error::Unauthorized);
     }
@@ -463,9 +394,6 @@ fn recover_secp256k1_pubkey(signature: &[u8], message: &[u8]) -> Result<[u8; SEC
 }
 
 fn blake2b_hash(data: &[u8]) -> [u8; 32] {
-    use ckb_std::ckb_types::packed::Byte32;
-    use ckb_std::ckb_types::prelude::*;
-
     let mut hasher = ckb_hash::Blake2bBuilder::new(32).build();
     hasher.update(data);
 
@@ -475,9 +403,271 @@ fn blake2b_hash(data: &[u8]) -> [u8; 32] {
 }
 ```
 
-### 4. Data Validation Pattern (JSON Cell)
+## Advanced Patterns
 
-Validating structured data in cells:
+### 1. Composable Lock Scripts (OR/AND Logic)
+
+**OR Lock** -- any one of the provided lock scripts can unlock:
+```rust
+use ckb_std::dynamic_loading::{CKBDLContext, Symbol};
+
+fn or_lock_main() -> Result<(), Error> {
+    let lock_scripts = load_lock_scripts_from_args()?;
+
+    for lock_script in lock_scripts {
+        match validate_lock_script(&lock_script) {
+            Ok(()) => return Ok(()),
+            Err(_) => continue,
+        }
+    }
+
+    Err(Error::AllLocksFailed)
+}
+```
+
+**AND Lock** -- all provided lock scripts must pass:
+```rust
+fn and_lock_main() -> Result<(), Error> {
+    let lock_scripts = load_lock_scripts_from_args()?;
+
+    for lock_script in lock_scripts {
+        validate_lock_script(&lock_script)?;
+    }
+
+    Ok(())
+}
+```
+
+**Reference:** `resources/ckb-miscellaneous-scripts/rust/composable_locks`
+
+### 2. Hash Time Locked Contracts (HTLC)
+
+```rust
+use ckb_std::{since::Since, high_level::*};
+use blake2b_rs::Blake2bBuilder;
+
+fn htlc_main() -> Result<(), Error> {
+    let since = load_input_since(0, Source::GroupInput)?;
+    let since_value = Since::new(since);
+
+    // Timelock expired: refund path
+    if since_value.is_absolute() && since_value.extract_lock_value()? >= timeout_timestamp {
+        return validate_timeout_unlock();
+    }
+
+    // Hash preimage path
+    let preimage = load_witness_args(0, Source::GroupInput)?
+        .lock()
+        .to_opt()
+        .ok_or(Error::InvalidWitness)?
+        .raw_data();
+
+    let mut hasher = Blake2bBuilder::new(32)
+        .personal(b"ckb-default-hash")
+        .build();
+    hasher.update(&preimage);
+    let mut hash = [0u8; 32];
+    hasher.finalize(&mut hash);
+
+    if hash == expected_hash {
+        Ok(())
+    } else {
+        Err(Error::InvalidPreimage)
+    }
+}
+```
+
+**Reference:** `resources/ckb-miscellaneous-scripts/rust/htlc`
+
+### 3. Open Transaction Pattern
+
+Validates transaction structure rather than specific values, enabling transaction templates:
+
+```rust
+fn open_transaction_main() -> Result<(), Error> {
+    let input_count = QueryIter::new(load_input, Source::Input).count();
+    let output_count = QueryIter::new(load_cell, Source::Output).count();
+
+    if input_count < min_inputs {
+        return Err(Error::InsufficientInputs);
+    }
+    if output_count < min_outputs {
+        return Err(Error::InsufficientOutputs);
+    }
+
+    for required_type in &required_types {
+        if !find_cell_with_type(required_type)? {
+            return Err(Error::RequiredTypeMissing);
+        }
+    }
+
+    Ok(())
+}
+```
+
+**Reference:** `resources/ckb-miscellaneous-scripts/rust/open_transaction`
+
+### 4. Dual-Mode Scripts
+
+Scripts that work both as standalone validators and as dynamically-loaded libraries:
+
+```rust
+#[cfg(feature = "dual-mode")]
+use ckb_std::dynamic_loading_c_impl;
+
+// Library mode: export functions for other scripts
+#[cfg(feature = "dual-mode")]
+#[no_mangle]
+pub extern "C" fn verify_signature(
+    message: *const u8,
+    signature: *const u8,
+    pubkey: *const u8,
+) -> i32 {
+    unsafe {
+        let msg = slice::from_raw_parts(message, 32);
+        let sig = slice::from_raw_parts(signature, 64);
+        let pk = slice::from_raw_parts(pubkey, 33);
+
+        match secp256k1_verify(msg, sig, pk) {
+            Ok(true) => 0,
+            _ => -1,
+        }
+    }
+}
+
+// Main entry point
+fn main() -> i8 {
+    #[cfg(feature = "dual-mode")]
+    return 0; // Library mode always succeeds
+
+    #[cfg(not(feature = "dual-mode"))]
+    match verify_transaction() {
+        Ok(()) => 0,
+        Err(e) => e as i8,
+    }
+}
+```
+
+**Reference:** `resources/ckb-miscellaneous-scripts/rust/dual_mode_secp256k1`
+
+## Cryptographic Patterns
+
+### 1. Alternative Elliptic Curves (secp256r1)
+
+```rust
+use p256::{ecdsa::{Signature, VerifyingKey}, PublicKey};
+
+fn secp256r1_verify() -> Result<(), Error> {
+    let message = load_tx_hash()?;
+
+    let witness_args = load_witness_args(0, Source::GroupInput)?;
+    let signature_data = witness_args
+        .lock()
+        .to_opt()
+        .ok_or(Error::InvalidWitness)?
+        .raw_data();
+
+    let lock_args = load_script()?.args().raw_data();
+
+    let signature = Signature::from_slice(&signature_data[0..64])
+        .map_err(|_| Error::InvalidSignature)?;
+
+    let pubkey = PublicKey::from_sec1_bytes(&lock_args[0..65])
+        .map_err(|_| Error::InvalidPublicKey)?;
+
+    let verifying_key = VerifyingKey::from(&pubkey);
+
+    verifying_key
+        .verify(&message, &signature)
+        .map_err(|_| Error::SignatureVerificationFailed)?;
+
+    Ok(())
+}
+```
+
+**Reference:** `resources/ckb-miscellaneous-scripts/rust/secp256r1_lock`
+
+### 2. RSA Signature Support
+
+```rust
+use rsa::{PublicKey, RsaPublicKey, PaddingScheme};
+use sha2::{Sha256, Digest};
+
+fn rsa_verify() -> Result<(), Error> {
+    let lock_args = load_script()?.args().raw_data();
+    let n = &lock_args[0..256];  // Modulus (2048-bit)
+    let e = &[0x01, 0x00, 0x01]; // Public exponent (65537)
+
+    let witness_args = load_witness_args(0, Source::GroupInput)?;
+    let signature = witness_args
+        .lock()
+        .to_opt()
+        .ok_or(Error::InvalidWitness)?
+        .raw_data();
+
+    let public_key = RsaPublicKey::new(
+        BigUint::from_bytes_be(n),
+        BigUint::from_bytes_be(e),
+    ).map_err(|_| Error::InvalidPublicKey)?;
+
+    let message = load_tx_hash()?;
+    let padding = PaddingScheme::new_pkcs1v15_sign(Some(rsa::Hash::SHA2_256));
+
+    public_key
+        .verify(padding, &message, &signature)
+        .map_err(|_| Error::SignatureVerificationFailed)?;
+
+    Ok(())
+}
+```
+
+**Reference:** `resources/ckb-miscellaneous-scripts/rust/rsa_lock`
+
+### 3. BLS Signature Aggregation
+
+```rust
+use bls12_381::{G1Affine, G2Affine, Scalar};
+use group::Curve;
+
+fn bls_verify() -> Result<(), Error> {
+    let witness_args = load_witness_args(0, Source::GroupInput)?;
+    let sig_data = witness_args
+        .lock()
+        .to_opt()
+        .ok_or(Error::InvalidWitness)?
+        .raw_data();
+
+    let aggregated_signature = G2Affine::from_compressed(&sig_data[0..96].try_into()?)
+        .ok_or(Error::InvalidSignature)?;
+
+    let mut public_keys = Vec::new();
+    let mut messages = Vec::new();
+
+    for i in 0..QueryIter::new(load_cell, Source::GroupInput).count() {
+        let lock_args = load_cell_lock(i, Source::GroupInput)?.args().raw_data();
+        let pubkey = G1Affine::from_compressed(&lock_args[0..48].try_into()?)
+            .ok_or(Error::InvalidPublicKey)?;
+        public_keys.push(pubkey);
+
+        let message = load_tx_hash()?;
+        messages.push(message);
+    }
+
+    verify_aggregate_signature(
+        &aggregated_signature,
+        &public_keys,
+        &messages,
+    ).map_err(|_| Error::SignatureVerificationFailed)?;
+
+    Ok(())
+}
+```
+
+**Reference:** `resources/ckb-miscellaneous-scripts/rust/bls_lock`
+
+## Data Patterns
+
+### 1. JSON Cell Data Validation
 
 ```rust
 use ckb_std::{
@@ -489,7 +679,6 @@ use core::str;
 use crate::error::Error;
 
 pub fn main() -> Result<(), Error> {
-    // Validate all output cells contain valid JSON
     for (index, data) in QueryIter::new(load_cell_data, Source::GroupOutput).enumerate() {
         validate_json_data(&data)
             .map_err(|_| Error::InvalidData)?;
@@ -499,11 +688,9 @@ pub fn main() -> Result<(), Error> {
 }
 
 fn validate_json_data(data: &[u8]) -> Result<(), Error> {
-    // Parse as UTF-8 string
     let json_str = str::from_utf8(data)
         .map_err(|_| Error::Utf8Error)?;
 
-    // Validate JSON syntax
     parse_json(json_str)
         .map_err(|_| Error::JsonError)?;
 
@@ -511,9 +698,7 @@ fn validate_json_data(data: &[u8]) -> Result<(), Error> {
 }
 ```
 
-### 5. Multi-Cell Aggregation Pattern
-
-Handling multiple inputs or outputs efficiently:
+### 2. Multi-Cell Aggregation with Nonce Ordering
 
 ```rust
 use ckb_std::{
@@ -527,20 +712,7 @@ pub fn main() -> Result<(), Error> {
     let outputs = collect_aggregation_data(Source::GroupOutput)?;
 
     validate_aggregation(&inputs, &outputs)?;
-
     Ok(())
-}
-
-fn collect_aggregation_data(source: Source) -> Result<Vec<AggregationData>, Error> {
-    let mut data_vec = Vec::new();
-
-    for (index, data) in QueryIter::new(load_cell_data, source).enumerate() {
-        let parsed_data = parse_aggregation_data(&data)
-            .map_err(|_| Error::InvalidData)?;
-        data_vec.push(parsed_data);
-    }
-
-    Ok(data_vec)
 }
 
 #[derive(Debug, Clone)]
@@ -548,6 +720,17 @@ struct AggregationData {
     amount: u128,
     nonce: u64,
     metadata: Vec<u8>,
+}
+
+fn collect_aggregation_data(source: Source) -> Result<Vec<AggregationData>, Error> {
+    let mut data_vec = Vec::new();
+
+    for (index, data) in QueryIter::new(load_cell_data, source).enumerate() {
+        let parsed_data = parse_aggregation_data(&data)?;
+        data_vec.push(parsed_data);
+    }
+
+    Ok(data_vec)
 }
 
 fn parse_aggregation_data(data: &[u8]) -> Result<AggregationData, Error> {
@@ -559,15 +742,10 @@ fn parse_aggregation_data(data: &[u8]) -> Result<AggregationData, Error> {
     let nonce = u64::from_le_bytes(data[16..24].try_into().unwrap());
     let metadata = data[24..].to_vec();
 
-    Ok(AggregationData {
-        amount,
-        nonce,
-        metadata,
-    })
+    Ok(AggregationData { amount, nonce, metadata })
 }
 
 fn validate_aggregation(inputs: &[AggregationData], outputs: &[AggregationData]) -> Result<(), Error> {
-    // Calculate totals
     let input_total: u128 = inputs.iter()
         .map(|d| d.amount)
         .try_fold(0u128, |acc, x| acc.checked_add(x))
@@ -578,27 +756,17 @@ fn validate_aggregation(inputs: &[AggregationData], outputs: &[AggregationData])
         .try_fold(0u128, |acc, x| acc.checked_add(x))
         .ok_or(Error::InvalidAmount)?;
 
-    // Validate conservation
     if output_total > input_total {
         return Err(Error::InvalidAmount);
     }
 
-    // Validate nonce ordering (prevent replay)
     validate_nonce_ordering(inputs, outputs)?;
-
     Ok(())
 }
 
 fn validate_nonce_ordering(inputs: &[AggregationData], outputs: &[AggregationData]) -> Result<(), Error> {
-    let max_input_nonce = inputs.iter()
-        .map(|d| d.nonce)
-        .max()
-        .unwrap_or(0);
-
-    let min_output_nonce = outputs.iter()
-        .map(|d| d.nonce)
-        .min()
-        .unwrap_or(0);
+    let max_input_nonce = inputs.iter().map(|d| d.nonce).max().unwrap_or(0);
+    let min_output_nonce = outputs.iter().map(|d| d.nonce).min().unwrap_or(0);
 
     if min_output_nonce <= max_input_nonce {
         return Err(Error::InvalidState);
@@ -608,11 +776,7 @@ fn validate_nonce_ordering(inputs: &[AggregationData], outputs: &[AggregationDat
 }
 ```
 
-## Advanced Patterns
-
-### 1. Witness Data Parsing
-
-Handling complex witness structures:
+### 3. Witness Data Parsing
 
 ```rust
 use ckb_std::{
@@ -622,19 +786,23 @@ use ckb_std::{
 };
 use crate::error::Error;
 
+#[derive(Debug)]
+struct ComplexWitness {
+    signature: Vec<u8>,
+    proof: Option<Vec<u8>>,
+    state: Option<Vec<u8>>,
+}
+
 pub fn parse_complex_witness() -> Result<ComplexWitness, Error> {
     let witness_args = load_witness_args(0, Source::GroupInput)?;
 
-    // Parse lock witness (signature)
     let lock_witness = witness_args.lock().to_opt()
         .ok_or(Error::InvalidWitness)?
         .raw_data();
 
-    // Parse input type witness (proof data)
     let input_type_witness = witness_args.input_type().to_opt()
         .map(|w| w.raw_data());
 
-    // Parse output type witness (new state)
     let output_type_witness = witness_args.output_type().to_opt()
         .map(|w| w.raw_data());
 
@@ -644,18 +812,48 @@ pub fn parse_complex_witness() -> Result<ComplexWitness, Error> {
         state: output_type_witness.map(|w| w.to_vec()),
     })
 }
+```
 
-#[derive(Debug)]
-struct ComplexWitness {
-    signature: Vec<u8>,
-    proof: Option<Vec<u8>>,
-    state: Option<Vec<u8>>,
+### 4. Molecule Serialization Integration
+
+```rust
+// Define schema in schemas/types.mol:
+// struct TokenInfo {
+//     name: Bytes,
+//     symbol: Bytes,
+//     decimals: byte,
+//     total_supply: Uint128,
+// }
+
+use molecule::prelude::*;
+include!(concat!(env!("OUT_DIR"), "/types.rs"));
+
+use crate::error::Error;
+
+pub fn parse_token_info(data: &[u8]) -> Result<TokenInfo, Error> {
+    TokenInfoReader::from_slice(data)
+        .map_err(|_| Error::MoleculeError)?
+        .to_entity()
+}
+
+pub fn create_token_info(
+    name: &str,
+    symbol: &str,
+    decimals: u8,
+    total_supply: u128,
+) -> TokenInfo {
+    TokenInfo::new_builder()
+        .name(Bytes::from(name.as_bytes().to_vec()).pack())
+        .symbol(Bytes::from(symbol.as_bytes().to_vec()).pack())
+        .decimals(decimals.into())
+        .total_supply(Uint128::from_slice(&total_supply.to_le_bytes()).unwrap())
+        .build()
 }
 ```
 
-### 2. Script Arguments Parsing
+## Time and Arguments
 
-Flexible argument parsing with versioning:
+### 1. Script Arguments with Versioning
 
 ```rust
 use ckb_std::{high_level::load_script, ckb_types::prelude::*};
@@ -685,9 +883,7 @@ pub fn parse_script_config() -> Result<ScriptConfig, Error> {
 }
 ```
 
-### 3. Time-Based Logic
-
-Implementing time locks using since field:
+### 2. Time-Based Logic (Since Field)
 
 ```rust
 use ckb_std::{ckb_constants::Source, high_level::load_input_since};
@@ -698,7 +894,6 @@ const SINCE_TYPE_ABSOLUTE_TIMESTAMP: u64 = 0x4000000000000000;
 pub fn validate_timelock(unlock_timestamp: u64) -> Result<(), Error> {
     let since = load_input_since(0, Source::GroupInput)?;
 
-    // Check if since uses absolute timestamp
     if since & SINCE_TYPE_ABSOLUTE_TIMESTAMP == 0 {
         return Err(Error::InvalidTransaction);
     }
@@ -712,44 +907,61 @@ pub fn validate_timelock(unlock_timestamp: u64) -> Result<(), Error> {
 }
 ```
 
-### 4. Molecule Serialization Integration
+## Build System
 
-Using Molecule for type-safe serialization:
+### Cross-Compilation
+
+```makefile
+# Build for CKB-VM RISC-V target
+build:
+	cargo build --release --target riscv64imac-unknown-none-elf
+	cp target/riscv64imac-unknown-none-elf/release/contract contract
+	riscv64-unknown-elf-strip contract
+```
+
+### Reproducible Builds (Docker)
+
+```bash
+FROM nervos/ckb-riscv-gnu-toolchain:jammy-20230214
+
+# Deterministic build environment
+ENV SOURCE_DATE_EPOCH=1234567890
+ENV BUILD_DATE=2024-01-01
+ENV TZ=UTC
+
+RUN make clean && make all \
+    CC_VERSION_CHECK=false \
+    SECP256K1_CUSTOM_FUNCS=1
+```
+
+### Testing Framework Integration
 
 ```rust
-// First, define schema in schemas/types.mol
-/*
-struct TokenInfo {
-    name: Bytes,
-    symbol: Bytes,
-    decimals: byte,
-    total_supply: Uint128,
-}
-*/
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ckb_tool::ckb_types::{
+        core::{TransactionBuilder, TransactionView},
+        packed::*,
+        prelude::*,
+    };
 
-use molecule::prelude::*;
-// Include generated code
-include!(concat!(env!("OUT_DIR"), "/types.rs"));
+    #[test]
+    fn test_contract_validation() {
+        let mut context = Context::default();
 
-use crate::error::Error;
+        let contract_bin = Loader::default().load_binary("contract");
+        let contract_out_point = context.deploy_cell(contract_bin);
 
-pub fn parse_token_info(data: &[u8]) -> Result<TokenInfo, Error> {
-    TokenInfoReader::from_slice(data)
-        .map_err(|_| Error::MoleculeError)?
-        .to_entity()
-}
+        let tx = TransactionBuilder::default()
+            .input(input_cell)
+            .output(output_cell)
+            .build();
 
-pub fn create_token_info(
-    name: &str,
-    symbol: &str,
-    decimals: u8,
-    total_supply: u128,
-) -> TokenInfo {
-    TokenInfo::new_builder()
-        .name(Bytes::from(name.as_bytes().to_vec()).pack())
-        .symbol(Bytes::from(symbol.as_bytes().to_vec()).pack())
-        .decimals(decimals.into())
-        .total_supply(Uint128::from_slice(&total_supply.to_le_bytes()).unwrap())
-        .build()
+        let cycles = context.verify_tx(&tx, MAX_CYCLES).expect("pass");
+        println!("cycles: {}", cycles);
+    }
 }
 ```
+
+**Reference:** `resources/ckb-script-templates/contract/src/main.rs`

@@ -281,3 +281,9 @@ fn test_script() {
 4. **Owner mode**: Verify lock hash matches.
 5. **Use granular error codes**: Return specific error codes like `MultipleInputsNotAllowed` instead of generic `InvalidTransaction`.
 6. **Test thoroughly**: Use OffCKB for local testing.
+
+## Further Reading
+
+- [CKB Programming Model](ckb://docs/concepts/programming-model) - Complete mental model for CKB development from first principles
+- [Script Patterns](ckb://docs/scripts/patterns) - Production-ready Rust patterns for lock/type scripts
+- [Getting Started](ckb://docs/quickstart/getting-started) - Tool selection, SDK recommendations, development workflow

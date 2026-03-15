@@ -1,6 +1,6 @@
 ## Description
 
-CKB-VM syscalls for script development, covering transaction data access, source enumeration, and programming patterns. Complete syscall reference matrix, high-level vs low-level API comparisons, security patterns, error handling, and performance optimization for CKB smart contract development with practical examples in Rust and C.
+CKB-VM syscall reference for script development. Complete syscall matrix mapping CKB-STD high-level functions, low-level syscalls, and C equivalents. Source enumeration (Input, Output, CellDep, HeaderDep, GroupInput, GroupOutput), group source behavior for lock vs type scripts, script argument parsing, cell data validation, error handling patterns, and performance optimization. Rust and C API comparisons.
 
 ## Overview
 
@@ -194,126 +194,31 @@ fn validate_cell_data(data: &[u8]) -> Result<(), Error> {
 
 ### 3. Token Conservation Checking
 
-```rust
-pub fn verify_token_conservation() -> Result<(), Error> {
-    let mut input_sum = 0u128;
-    let mut output_sum = 0u128;
-    
-    // Sum input tokens
-    for data in QueryIter::new(load_cell_data, Source::GroupInput) {
-        let amount = parse_token_amount(&data)?;
-        input_sum = input_sum.checked_add(amount)
-            .ok_or(Error::Overflow)?;
-    }
-    
-    // Sum output tokens
-    for data in QueryIter::new(load_cell_data, Source::GroupOutput) {
-        let amount = parse_token_amount(&data)?;
-        output_sum = output_sum.checked_add(amount)
-            .ok_or(Error::Overflow)?;
-    }
-    
-    // Validate conservation (allow burning, prevent minting)
-    if output_sum > input_sum {
-        return Err(Error::TokenMinted);
-    }
-    
-    Ok(())
-}
-
-fn parse_token_amount(data: &[u8]) -> Result<u128, Error> {
-    if data.len() < 16 {
-        return Err(Error::InvalidTokenData);
-    }
-    Ok(u128::from_le_bytes(data[0..16].try_into()?))
-}
-```
+Token conservation uses `QueryIter` with `Source::GroupInput` and `Source::GroupOutput` to sum token amounts across cells and verify no tokens are created without authorization. For complete UDT token conservation patterns, see [Script Patterns](ckb://docs/scripts/patterns) and [Token Creation](ckb://docs/tokens/token-creation).
 
 ### 4. Signature Verification Pattern
 
-```rust
-pub fn verify_signature() -> Result<(), Error> {
-    // Load witness containing signature
-    let witness_args = load_witness_args(0, Source::GroupInput)?;
-    let signature = witness_args.lock().to_opt()
-        .ok_or(Error::MissingSignature)?
-        .raw_data();
-    
-    if signature.len() != 65 {
-        return Err(Error::InvalidSignatureLength);
-    }
-    
-    // Load transaction hash
-    let tx_hash = load_tx_hash()?;
-    
-    // Load public key from script args
-    let script = load_script()?;
-    let args = script.args().raw_data();
-    if args.len() != 20 {
-        return Err(Error::InvalidPubkeyHash);
-    }
-    
-    // Verify signature (implementation depends on signature scheme)
-    verify_secp256k1_signature(&signature, &tx_hash, &args)?;
-    
-    Ok(())
-}
-```
+Signature verification combines `load_witness_args`, `load_tx_hash`, and `load_script` to extract signature data, the signing message, and the expected public key hash. For complete secp256k1 and other signature verification implementations, see [Script Patterns](ckb://docs/scripts/patterns).
 
 ### 5. Header-Based Time Validation
 
+Accessing header dependencies via `load_header` enables time-based logic:
+
 ```rust
-pub fn validate_timelock() -> Result<(), Error> {
-    let script = load_script()?;
-    let args = script.args().raw_data();
-    
-    if args.len() < 8 {
-        return Err(Error::InvalidTimelockArgs);
-    }
-    
-    let unlock_time = u64::from_le_bytes(args[0..8].try_into()?);
-    
-    // Load current block header
-    let header = load_header(0, Source::HeaderDep)?;
-    let current_time = header.timestamp();
-    
-    if current_time < unlock_time {
-        return Err(Error::TimelockNotExpired);
-    }
-    
-    Ok(())
-}
+// Core syscall usage: accessing header deps for timestamp
+let header = load_header(0, Source::HeaderDep)?;
+let current_time = header.timestamp();
+
+// Compare against unlock time from script args
+let script = load_script()?;
+let unlock_time = u64::from_le_bytes(script.args().raw_data()[0..8].try_into()?);
 ```
+
+For complete time-based validation patterns including since-field logic, see [Script Patterns](ckb://docs/scripts/patterns).
 
 ### 6. Multi-Cell State Validation
 
-```rust
-pub fn validate_state_machine() -> Result<(), Error> {
-    let inputs = load_state_cells(Source::GroupInput)?;
-    let outputs = load_state_cells(Source::GroupOutput)?;
-    
-    // State machine must have exactly one input and one output
-    if inputs.len() != 1 || outputs.len() != 1 {
-        return Err(Error::InvalidStateTransition);
-    }
-    
-    let old_state = parse_state(&inputs[0])?;
-    let new_state = parse_state(&outputs[0])?;
-    
-    // Validate state transition
-    validate_transition(&old_state, &new_state)?;
-    
-    Ok(())
-}
-
-fn load_state_cells(source: Source) -> Result<Vec<Vec<u8>>, Error> {
-    let mut cells = Vec::new();
-    for data in QueryIter::new(load_cell_data, source) {
-        cells.push(data.to_vec());
-    }
-    Ok(cells)
-}
-```
+State machine patterns use `QueryIter` to collect cells from `Source::GroupInput` and `Source::GroupOutput`, then validate that state transitions follow allowed rules. For complete state machine implementations, see [Script Patterns](ckb://docs/scripts/patterns).
 
 ## Error Handling Best Practices
 
@@ -402,23 +307,6 @@ for i in 0.. {
 }
 ```
 
-### Batch Operations
-
-```rust
-// Load multiple fields efficiently using lower-level syscalls when needed
-pub fn load_cell_summary(index: usize, source: Source) -> Result<CellSummary, Error> {
-    let cell = load_cell(index, source)?;
-    let data = load_cell_data(index, source)?;
-    
-    Ok(CellSummary {
-        capacity: cell.capacity().unpack(),
-        lock_hash: cell.lock().calc_script_hash(),
-        type_hash: cell.type_().to_opt().map(|s| s.calc_script_hash()),
-        data_len: data.len(),
-    })
-}
-```
-
 ## Debugging and Development
 
 ### Debug Output
@@ -427,80 +315,31 @@ pub fn load_cell_summary(index: usize, source: Source) -> Result<CellSummary, Er
 use ckb_std::syscalls;
 
 // Debug output (only works in ckb-debugger)
-pub fn debug_cell_info(index: usize, source: Source) {
-    match load_cell(index, source) {
-        Ok(cell) => {
-            syscalls::debug(format!("Cell {}: capacity={}, lock_hash={:?}", 
-                index, 
-                cell.capacity().unpack(),
-                cell.lock().calc_script_hash()
-            ).as_bytes());
-        },
-        Err(e) => {
-            syscalls::debug(format!("Failed to load cell {}: {:?}", index, e).as_bytes());
-        }
-    }
-}
+syscalls::debug(format!("Cell {}: capacity={}", index, cell.capacity().unpack()).as_bytes());
 ```
 
-### Testing Patterns
-
-```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use ckb_tool::ckb_types::core::TransactionBuilder;
-    
-    #[test]
-    fn test_token_conservation() {
-        let mut context = Context::default();
-        
-        // Build test transaction
-        let tx = TransactionBuilder::default()
-            .input(build_token_input(100))
-            .output(build_token_output(80))
-            .output(build_token_output(20))
-            .build();
-        
-        // Verify script passes
-        let cycles = context.verify_tx(&tx, MAX_CYCLES).expect("pass");
-        println!("Consumed cycles: {}", cycles);
-    }
-}
-```
+For testing patterns and test transaction construction, see [Rust Testing](ckb://docs/scripts/rust-testing).
 
 ## Security Considerations
 
 ### Input Validation
 
-```rust
-// Always validate syscall results
-pub fn secure_load_script_args() -> Result<Vec<u8>, Error> {
-    let script = load_script()?;
-    let args = script.args().raw_data();
-    
-    // Validate args length
-    if args.len() > 1024 {
-        return Err(Error::ArgsTooLong);
-    }
-    
-    if args.is_empty() {
-        return Err(Error::MissingArgs);
-    }
-    
-    Ok(args.to_vec())
-}
+Always validate syscall results before using them:
 
-// Prevent integer overflow
-pub fn safe_add_amounts(a: u128, b: u128) -> Result<u128, Error> {
-    a.checked_add(b).ok_or(Error::Overflow)
+```rust
+let script = load_script()?;
+let args = script.args().raw_data();
+
+if args.is_empty() || args.len() > 1024 {
+    return Err(Error::InvalidArgs);
 }
 ```
 
 ### Bounds Checking
 
+Use safe slicing to prevent out-of-bounds access:
+
 ```rust
-// Safe array access
 pub fn safe_slice(data: &[u8], start: usize, len: usize) -> Result<&[u8], Error> {
     if start.saturating_add(len) > data.len() {
         return Err(Error::OutOfBounds);
@@ -509,4 +348,4 @@ pub fn safe_slice(data: &[u8], start: usize, len: usize) -> Result<&[u8], Error>
 }
 ```
 
-Understanding CKB syscalls and sources is fundamental for effective script development. Use high-level functions when possible, implement proper error handling, and always validate external data to ensure secure and efficient scripts.
+For overflow-safe arithmetic and complete security patterns, see [Script Patterns](ckb://docs/scripts/patterns).

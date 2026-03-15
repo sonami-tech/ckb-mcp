@@ -183,7 +183,7 @@ mod tests {
 
 For improved debugging efficiency and AI-assisted development, implement granular error codes that provide specific information about each failure condition. Instead of generic errors like "InvalidTransaction" that could indicate multiple different problems, use precise error codes like "MultipleInputsNotAllowed" or "RequiredOutputMissing" that immediately identify the exact issue.
 
-**Reference**: See the [Granular Error Code Pattern](ckb://docs/scripts/rust-patterns#granular-error-code-pattern) for detailed implementation examples and best practices.
+**Reference**: See the [Granular Error Code Pattern](ckb://docs/scripts/patterns#granular-error-codes) for detailed implementation examples and best practices.
 
 ```rust
 // ❌ Generic error codes mask the root cause
