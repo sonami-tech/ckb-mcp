@@ -4,9 +4,9 @@ CoTA SDK JavaScript implementation guide with production-ready examples for NFT 
 
 ## Related Resources
 
-- [ckb://docs/protocols/cota-protocol](ckb://docs/protocols/cota-protocol) - Layer-1.5 account-based token management solution using Sparse Merkle Trees
-- [ckb://docs/patterns/cota-nft-development](ckb://docs/patterns/cota-nft-development) - Build cost-effective NFT applications using CoTA protocol
-- [ckb://docs/deployment/cota-infrastructure](ckb://docs/deployment/cota-infrastructure) - Comprehensive deployment guide for CoTA infrastructure
+- [ckb://docs/cota/protocol](ckb://docs/cota/protocol) - Layer-1.5 account-based token management solution using Sparse Merkle Trees
+- [ckb://docs/cota/development](ckb://docs/cota/development) - Build cost-effective NFT applications using CoTA protocol
+- [ckb://docs/cota/infrastructure](ckb://docs/cota/infrastructure) - Comprehensive deployment guide for CoTA infrastructure
 
 ## Complete CoTA SDK Implementation Guide
 

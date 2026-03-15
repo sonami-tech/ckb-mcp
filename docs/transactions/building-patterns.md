@@ -685,7 +685,7 @@ pub fn validate_transaction_capacity(tx: &TransactionView) -> TransactionResult<
     // Validate minimum capacity for each output
     // Use SDK's occupied_capacity() for accurate calculation
     // For capacity calculation details, see:
-    // ckb://docs/concepts-for-coding/cell-lifecycle
+    // ckb://docs/concepts/cell-lifecycle
     for (i, output) in tx.outputs().into_iter().enumerate() {
         let min_capacity = output.occupied_capacity(tx.outputs_data().get(i).unwrap_or(&Bytes::new()))?;
         let actual_capacity = output.capacity().unpack();

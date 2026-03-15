@@ -4,8 +4,8 @@ eXtensible User Defined Token protocol extending sUDT with modular extension cap
 
 ## Related Resources
 
-- [ckb://docs/patterns/token-creation-guide](ckb://docs/patterns/token-creation-guide) - Token creation patterns for CKB blockchain including xUDT
-- [ckb://docs/patterns/udt-tokens-guide](ckb://docs/patterns/udt-tokens-guide) - UDT token development patterns and best practices
+- [ckb://docs/tokens/token-creation](ckb://docs/tokens/token-creation) - Token creation patterns for CKB blockchain including xUDT
+- [ckb://docs/tokens/udt-overview](ckb://docs/tokens/udt-overview) - UDT token development patterns and best practices
 
 xUDT (eXtensible User Defined Token) extends sUDT with modular extension capabilities for advanced token features.
 

@@ -4,9 +4,9 @@ Spore SDK reference with TypeScript examples for digital object creation, manage
 
 ## Related Resources
 
-- [ckb://docs/protocols/spore-protocol](ckb://docs/protocols/spore-protocol) - Core protocol specification for Spore digital objects on CKB blockchain
-- [ckb://docs/patterns/spore-development](ckb://docs/patterns/spore-development) - Development patterns for building applications with the Spore Protocol
-- [ckb://docs/protocols/spore-digital-objects](ckb://docs/protocols/spore-digital-objects) - Spore digital objects protocol specification
+- [ckb://docs/spore/protocol](ckb://docs/spore/protocol) - Core protocol specification for Spore digital objects on CKB blockchain
+- [ckb://docs/spore/development](ckb://docs/spore/development) - Development patterns for building applications with the Spore Protocol
+- [ckb://docs/spore/digital-objects](ckb://docs/spore/digital-objects) - Spore digital objects protocol specification
 
 Examples of using the Spore SDK for building applications with the Spore Protocol on CKB.
 

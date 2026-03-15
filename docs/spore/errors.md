@@ -4,10 +4,10 @@ Spore protocol error debugging guide covering cluster validation failures, NFT m
 
 ## Related Resources
 
-- Protocol Spec: ckb://docs/protocols/spore-protocol
-- Development Guide: ckb://docs/patterns/spore-development  
-- SDK Examples: ckb://docs/api-reference/spore-sdk-examples
-- Digital Objects: ckb://docs/protocols/spore-digital-objects
+- Protocol Spec: ckb://docs/spore/protocol
+- Development Guide: ckb://docs/spore/development  
+- SDK Examples: ckb://docs/spore/sdk-examples
+- Digital Objects: ckb://docs/spore/digital-objects
 
 ## Common Spore Errors
 

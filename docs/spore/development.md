@@ -4,9 +4,9 @@ Development patterns for building applications with the Spore Protocol on CKB. C
 
 ## Related Resources
 
-- [ckb://docs/protocols/spore-protocol](ckb://docs/protocols/spore-protocol) - Core protocol specification for Spore digital objects on CKB blockchain
-- [ckb://docs/api-reference/spore-sdk-examples](ckb://docs/api-reference/spore-sdk-examples) - Spore SDK reference with TypeScript examples for digital object creation
-- [ckb://docs/protocols/spore-digital-objects](ckb://docs/protocols/spore-digital-objects) - Spore digital objects protocol specification
+- [ckb://docs/spore/protocol](ckb://docs/spore/protocol) - Core protocol specification for Spore digital objects on CKB blockchain
+- [ckb://docs/spore/sdk-examples](ckb://docs/spore/sdk-examples) - Spore SDK reference with TypeScript examples for digital object creation
+- [ckb://docs/spore/digital-objects](ckb://docs/spore/digital-objects) - Spore digital objects protocol specification
 
 Common development patterns and best practices for building applications with the Spore Protocol on CKB.
 

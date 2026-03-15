@@ -4,9 +4,9 @@ Complete Ethereum wallet integration example for Omnilock showing MetaMask conne
 
 ## Related Resources
 
-- Omnilock Protocol: ckb://docs/protocols/omnilock-protocol
-- Omnilock Development: ckb://docs/patterns/omnilock-development
-- Troubleshooting: ckb://docs/troubleshooting/omnilock-errors
+- Omnilock Protocol: ckb://docs/omnilock/protocol
+- Omnilock Development: ckb://docs/omnilock/development
+- Troubleshooting: ckb://docs/omnilock/errors
 
 ## Complete Ethereum Wallet Example
 

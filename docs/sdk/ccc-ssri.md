@@ -5,7 +5,7 @@ Guide to Script-Sourced Rich Information (SSRI) framework in the CCC SDK. Shows 
 ## Related Resources
 
 - [ckb://docs/protocols/ssri](ckb://docs/protocols/ssri) - Extension protocol enabling CKB scripts to provide rich information through off-chain execution
-- [ckb://docs/patterns/ssri-implementation-guide](ckb://docs/patterns/ssri-implementation-guide) - Implementation guide for Script-Sourced Rich Information in CKB smart contracts
+- [ckb://docs/transactions/ssri-implementation](ckb://docs/transactions/ssri-implementation) - Implementation guide for Script-Sourced Rich Information in CKB smart contracts
 - [ckb://docs/tools/ssri-server](ckb://docs/tools/ssri-server) - Comprehensive integration guide for SSRI server enabling off-chain CKB script execution
 
 ## Overview

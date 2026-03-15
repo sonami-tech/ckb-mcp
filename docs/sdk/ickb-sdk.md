@@ -4,10 +4,10 @@ iCKB SDK reference with TypeScript examples for CKB-to-iCKB conversions, order m
 
 ## Related Resources
 
-- [ckb://docs/protocols/ickb-protocol](ckb://docs/protocols/ickb-protocol) - Revolutionary liquidity protocol tokenizing NervosDAO deposits
-- [ckb://docs/patterns/ickb-development](ckb://docs/patterns/ickb-development) - Build applications with iCKB liquid staking protocol for enhanced CKB yield
-- [ckb://docs/patterns/ickb-liquidity-patterns](ckb://docs/patterns/ickb-liquidity-patterns) - Advanced iCKB liquidity management with automated rebalancing algorithms
-- [ckb://docs/troubleshooting/ickb-debugging](ckb://docs/troubleshooting/ickb-debugging) - Specialized debugging guide for iCKB protocol development
+- [ckb://docs/ickb/protocol](ckb://docs/ickb/protocol) - Revolutionary liquidity protocol tokenizing NervosDAO deposits
+- [ckb://docs/ickb/development](ckb://docs/ickb/development) - Build applications with iCKB liquid staking protocol for enhanced CKB yield
+- [ckb://docs/ickb/liquidity](ckb://docs/ickb/liquidity) - Advanced iCKB liquidity management with automated rebalancing algorithms
+- [ckb://docs/ickb/debugging](ckb://docs/ickb/debugging) - Specialized debugging guide for iCKB protocol development
 
 Examples of using the iCKB SDK for building applications with the iCKB protocol on CKB.
 

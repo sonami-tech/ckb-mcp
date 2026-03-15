@@ -4,9 +4,9 @@ Common Omnilock script errors and solutions. Covers signature verification failu
 
 ## Related Resources
 
-- Protocol Spec: ckb://docs/protocols/omnilock-protocol
-- Development Guide: ckb://docs/patterns/omnilock-development
-- API Examples: ckb://docs/api-reference/omnilock-api-examples
+- Protocol Spec: ckb://docs/omnilock/protocol
+- Development Guide: ckb://docs/omnilock/development
+- API Examples: ckb://docs/omnilock/api-examples
 
 ## Common Errors
 
