@@ -4,15 +4,17 @@ CKB Documentation Description Verification Script
 
 This script verifies that all markdown files in the docs/ directory have proper
 Description sections that are suitable for both document introductions and MCP
-resource descriptions.
+resource descriptions. Also validates cross-reference URIs against the MCP
+resource registry.
 
 Usage:
     python3 utils/verify_descriptions.py [--verbose] [--docs-path PATH]
 
 Requirements:
-    - All markdown files must have a "## Description" section after the main title
+    - All markdown files must start with "## Description" (no # Title heading)
     - Descriptions must be under 1024 bytes
     - Descriptions should be action-oriented and highlight practical value
+    - All ckb://docs/ cross-reference URIs must exist in the resource registry
 """
 
 import os
@@ -24,12 +26,23 @@ from pathlib import Path
 from typing import List, Tuple, Optional
 
 
+def extract_known_uris(project_root: Path) -> set:
+    """Extract all known ckb://docs/ URIs from resources.rs."""
+    resources_path = project_root / "crates" / "ckb-ai-mcp" / "src" / "docs" / "resources.rs"
+    if not resources_path.exists():
+        return set()
+    content = resources_path.read_text(encoding='utf-8')
+    return set(re.findall(r'"(ckb://docs/[^"]+)"', content))
+
+
 class DescriptionVerifier:
-    def __init__(self, docs_path: str, verbose: bool = False):
+    def __init__(self, docs_path: str, verbose: bool = False, known_uris: Optional[set] = None):
         self.docs_path = Path(docs_path)
         self.verbose = verbose
         self.errors = []
         self.warnings = []
+        self.known_uris = known_uris or set()
+        self.xref_errors = []
     
     def log_verbose(self, message: str):
         """Log verbose output if enabled."""
@@ -52,9 +65,12 @@ class DescriptionVerifier:
         
         self.log_verbose(f"Checking {filepath.relative_to(self.docs_path.parent)}")
         
-        # Check for main title
-        if not content.strip().startswith('#'):
-            self.errors.append(f"{filepath.relative_to(self.docs_path.parent)}: No main title found")
+        # Check that file starts with ## Description (no # Title heading)
+        stripped = content.strip()
+        if stripped.startswith('# ') and not stripped.startswith('## '):
+            self.errors.append(f"{filepath.relative_to(self.docs_path.parent)}: Starts with '# Title' heading — should start with '## Description'")
+        if not stripped.startswith('## Description'):
+            self.errors.append(f"{filepath.relative_to(self.docs_path.parent)}: Does not start with '## Description'")
             return False, None
         
         # Find Description section using regex
@@ -87,7 +103,15 @@ class DescriptionVerifier:
         
         if not description_text.endswith('.'):
             self.warnings.append(f"{filepath.relative_to(self.docs_path.parent)}: Description doesn't end with period")
-        
+
+        # Validate cross-reference URIs
+        if self.known_uris:
+            xrefs = re.findall(r'ckb://docs/[a-zA-Z0-9/_-]+', content)
+            rel_path = filepath.relative_to(self.docs_path.parent)
+            for uri in xrefs:
+                if uri not in self.known_uris:
+                    self.xref_errors.append(f"{rel_path}: broken cross-reference '{uri}'")
+
         self.log_verbose(f"  ✓ Valid description ({byte_length} bytes)")
         return True, byte_length
     
@@ -135,13 +159,19 @@ class DescriptionVerifier:
             for warning in self.warnings:
                 print(f"  ⚠️  {warning}")
         
-        if self.errors:
-            print(f"\nERRORS ({len(self.errors)}):")
-            for error in self.errors:
-                print(f"  ❌ {error}")
+        if self.xref_errors:
+            print(f"\nCROSS-REFERENCE ERRORS ({len(self.xref_errors)}):")
+            for error in self.xref_errors:
+                print(f"  🔗 {error}")
+
+        if self.errors or self.xref_errors:
+            if self.errors:
+                print(f"\nERRORS ({len(self.errors)}):")
+                for error in self.errors:
+                    print(f"  ❌ {error}")
             return False
-        
-        print(f"\n✅ All {len(md_files)} files have valid descriptions!")
+
+        print(f"\n✅ All {len(md_files)} files have valid descriptions and cross-references!")
         return True
 
 
@@ -179,7 +209,13 @@ Examples:
         # Try relative to current directory
         docs_path = Path(args.docs_path)
     
-    verifier = DescriptionVerifier(docs_path, args.verbose)
+    known_uris = extract_known_uris(script_dir)
+    if known_uris:
+        print(f"Loaded {len(known_uris)} known URIs from resources.rs")
+    else:
+        print("Warning: Could not load URIs from resources.rs, skipping cross-reference validation")
+
+    verifier = DescriptionVerifier(docs_path, args.verbose, known_uris)
     success = verifier.verify_all_files()
     
     sys.exit(0 if success else 1)

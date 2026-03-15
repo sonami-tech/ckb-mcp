@@ -204,9 +204,9 @@ Documentation is served via the ckb-ai-mcp server with URI scheme `ckb://docs/`.
 
 ### Documentation Format Requirements
 
-**IMPORTANT**: All markdown documentation files MUST include a `## Description` section immediately after the main title. This section should:
+**IMPORTANT**: All markdown documentation files MUST start with a `## Description` section. This section should:
 
-- Be placed right after the `# Title` heading
+- Be the first line of the file (no `# Title` heading — the server reads names from `resources.rs`)
 - Contain a description under 1,024 characters
 - Serve dual purpose: document introduction AND MCP resource description
 - Use action-oriented language highlighting practical value
@@ -223,8 +223,6 @@ Documentation is served via the ckb-ai-mcp server with URI scheme `ckb://docs/`.
 
 Example format:
 ```markdown
-# Document Title
-
 ## Description
 
 Token creation patterns for CKB blockchain. Production-ready Rust code for fungible tokens with owner-controlled minting/burning. Token amount encoding (u128 as 16 bytes), conservation validation logic, and multi-cell token operations.
