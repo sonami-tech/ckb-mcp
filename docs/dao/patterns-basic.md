@@ -1,5 +1,3 @@
-# DAO Basic Patterns
-
 ## Description
 
 Nervos DAO deposit and withdrawal phase 1 patterns. Rust transaction building for CKB staking with ckb-sdk. TypeScript frontend integration using CCC connector. DAO type script setup, deposit cell creation with 8 zero bytes data, withdrawal request with epoch markers, and header dependency management.

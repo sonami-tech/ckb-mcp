@@ -1,5 +1,3 @@
-# DAO Advanced Patterns
-
 ## Description
 
 Nervos DAO withdrawal phase 2 completion, interest calculation, and SDK integration. Compensation formula using accumulation rate (AR) from block headers. iCKB liquidity integration, DAO analytics and monitoring, APY tracking across epochs. Testing patterns for full DAO lifecycle verification.

@@ -1,5 +1,3 @@
-# System Scripts
-
 ## Description
 
 CKB core system script implementations with modern Rust reference code. secp256k1 signature verification (Bitcoin-compatible), Blake160 hashing, multi-signature support with threshold requirements, and Type ID pattern for unique type script identification. Includes script group processing, witness parsing, and public key recovery.

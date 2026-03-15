@@ -1,5 +1,3 @@
-# CKB Rust SDK Basic Operations
-
 ## Description
 
 CKB Rust SDK transaction building fundamentals. Simple CKB transfers using CapacityTransferBuilder and SecpSighashUnlocker. UDT token transfers with UdtTransferBuilder. Complete code with RPC client setup, cell dependency resolution, capacity balancing, and witness generation. Based on ckb-sdk-rust v5.x implementations.
@@ -276,4 +274,4 @@ pub fn create_placeholder_witness() -> WitnessArgs {
 ## Related Documentation
 
 - [Rust SDK Advanced Operations](ckb://docs/sdk/rust-sdk-advanced) - Multi-signature, Omnilock, and DAO operations
-- [Lock Value Relationships](ckb://docs/concepts/lock-value-relationships) - Address and lock script generation from private keys
+- [Lock Value Relationships](ckb://docs/concepts/lock-values) - Address and lock script generation from private keys

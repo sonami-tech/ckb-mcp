@@ -1,5 +1,3 @@
-# Cell Model
-
 ## Description
 
 A Cell is a single piece of state stored on the blockchain, governed by scripts (smart contracts) that dictate the rules under which it can be changed. This mechanism is the foundation of all programmable functionality on CKB, including things such as tokens, NFTs, and DeFi. CKB generalizes Bitcoin's UTXO model with cells containing capacity, lock scripts, type scripts, and arbitrary data. Covers cell structure, state management, transaction model, conservation rules, programming patterns, parallel processing, deterministic execution, and deposit-based storage economics where 1 CKB equals 1 byte of storage.
@@ -36,7 +34,7 @@ CKB uses a **deposit-based storage model**:
 - Common types: Secp256k1 signatures, multi-sig, time locks
 - Runs when cell is used as transaction input
 
-For a detailed understanding of how lock scripts are generated from private keys and the complete transformation chain (Private Key → Public Key → Lock Arg → Lock Script → Lock Hash → Address), see the [Lock Value Relationships](ckb://docs/concepts/lock-value-relationships) guide.
+For a detailed understanding of how lock scripts are generated from private keys and the complete transformation chain (Private Key → Public Key → Lock Arg → Lock Script → Lock Hash → Address), see the [Lock Value Relationships](ckb://docs/concepts/lock-values) guide.
 
 ### Type Script (Optional)
 - Validates the data stored in the cell

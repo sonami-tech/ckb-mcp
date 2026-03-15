@@ -1,5 +1,3 @@
-# Lumos SDK Patterns
-
 ## Description
 
 Lumos JavaScript/TypeScript SDK patterns for CKB development (legacy reference). Transaction building with TransactionSkeleton, cell collection with async iterators, UDT transfers, and multi-signature support. Lumos is in maintenance mode; use CCC SDK for new projects. Sparse Merkle Tree patterns for state management included: basic SMT operations, CKB script integration for state validation, and performance optimization with batching and parallel proof generation.

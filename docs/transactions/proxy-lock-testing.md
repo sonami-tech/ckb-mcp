@@ -1,5 +1,3 @@
-# Proxy Lock Testing with Multiple Identity Patterns
-
 ## Description
 
 Testing proxy lock authorization with multiple distinct lock identities using ALWAYS_SUCCESS differentiation. Deploy same ALWAYS_SUCCESS binary multiple times with different arguments to generate unique script hashes. Complete Rust code for testing owner_lock, delegate_lock, and fallback_lock scenarios without signature verification complexity. Hash generation patterns, transaction building helpers, and authorization validation examples.

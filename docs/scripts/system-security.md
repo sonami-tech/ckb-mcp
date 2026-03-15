@@ -1,5 +1,3 @@
-# System Script Security
-
 ## Description
 
 Security patterns, testing frameworks, and best practices for CKB system scripts. Error handling with comprehensive error types, input/output balance validation, witness format verification, replay attack prevention. Includes testing framework with cycle measurement, signature verification tests, and multisig test patterns.

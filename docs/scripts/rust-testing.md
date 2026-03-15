@@ -1,5 +1,3 @@
-# CKB Rust Script Testing and Security
-
 ## Description
 
 Testing frameworks and security patterns for CKB script development. Unit test setup with ckb-tool, TestContext utilities, and integration test examples for UDT validation. Performance optimization: memory-efficient streaming, const generics for fixed buffers, syscall batching. Security best practices: input validation, bounds checking, checksum verification, safe arithmetic with checked_add. Authorization patterns with permission flags. Debug output with syscalls::debug and error context macros.

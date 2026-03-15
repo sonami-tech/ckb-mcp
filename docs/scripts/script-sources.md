@@ -1,5 +1,3 @@
-# Script Source Patterns: Group Sources vs Manual Matching
-
 ## Description
 
 CKB script source patterns explaining the critical difference between group sources (GroupInput/GroupOutput) and manual script matching. Group sources reflect script execution context not script presence. Lock scripts only execute on inputs, making Source::GroupOutput return zero even when outputs have the same lock. Complete Rust patterns for correctly counting and validating cells with matching scripts using manual hash comparison.

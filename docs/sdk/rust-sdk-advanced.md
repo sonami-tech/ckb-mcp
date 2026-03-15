@@ -1,5 +1,3 @@
-# CKB Rust SDK Advanced Operations
-
 ## Description
 
 Advanced CKB Rust SDK patterns for multi-signature transactions, Omnilock cross-chain integration, and Nervos DAO operations. MultisigConfig and SecpMultisigUnlocker for m-of-n signatures. OmniLockConfig for Ethereum-compatible addresses. DaoDepositBuilder, DaoPrepareBuilder, and DaoWithdrawBuilder for DAO lifecycle. Error handling and transaction validation patterns.
@@ -401,4 +399,4 @@ pub fn create_placeholder_witness() -> WitnessArgs {
 ## Related Documentation
 
 - [Rust SDK Basic Operations](ckb://docs/sdk/rust-sdk-basic) - Simple transfers and UDT operations
-- [Lock Value Relationships](ckb://docs/concepts/lock-value-relationships) - Address and lock script generation
+- [Lock Value Relationships](ckb://docs/concepts/lock-values) - Address and lock script generation

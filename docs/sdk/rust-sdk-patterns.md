@@ -1,5 +1,3 @@
-# Rust SDK Patterns
-
 ## Description
 
 CKB Rust SDK patterns for transaction building, cell collection, multi-signature operations, and DAO interactions. SDK setup and configuration for mainnet/testnet/devnet. Cell management with lock scripts and UDT cells. Advanced transaction operations including transfers, Omnilock integration, and Anyone-Can-Pay. Nervos DAO deposit/withdrawal handling with compensation calculation. Error handling patterns and network abstraction.

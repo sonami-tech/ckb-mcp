@@ -1,5 +1,3 @@
-# Token Script Hashes
-
 ## Description
 
 Code hashes, type IDs, and cell dependencies for CKB token scripts on mainnet and testnet. SUDT (Simple User Defined Token) and xUDT (Extensible User Defined Token) deployment information. Args format, transaction hashes, and output indices for token type scripts.

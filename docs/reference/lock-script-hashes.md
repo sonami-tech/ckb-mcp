@@ -1,5 +1,3 @@
-# Lock Script Hashes
-
 ## Description
 
 Code hashes, type IDs, and cell dependencies for CKB lock scripts on mainnet and testnet. Omnilock (universal cross-chain lock), ACP (Anyone-Can-Pay), PW Lock (deprecated), JoyID (WebAuthn/passkey authentication), and Nostr Lock (schnorr signature verification). Args format and deployment transaction hashes.

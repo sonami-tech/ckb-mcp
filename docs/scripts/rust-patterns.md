@@ -1,5 +1,3 @@
-# CKB Rust Script Development Patterns
-
 ## Description
 
 Rust patterns for CKB script development. Project structure, Cargo.toml configuration for RISC-V targets, entry point macros, error handling with granular error codes. UDT (User Defined Token) implementation with owner mode and conservation rules. State machine pattern for counter contracts. Lock script signature verification with secp256k1. JSON cell data validation. Multi-cell aggregation with nonce ordering. Advanced witness parsing, versioned script arguments, time-based logic with since fields, and Molecule serialization integration.

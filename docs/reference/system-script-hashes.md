@@ -1,5 +1,3 @@
-# System Script Hashes
-
 ## Description
 
 Code hashes, type IDs, and cell dependencies for CKB system scripts on mainnet and testnet. Genesis block transactions, SECP256K1/blake160 lock script, SECP256K1/blake160 multisig lock script, NervosDAO type script, and quantum-resistant lock script. Deployment transaction hashes and output indices for each script.

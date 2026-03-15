@@ -1,5 +1,3 @@
-# Protocol Script Hashes
-
 ## Description
 
 Code hashes, type IDs, and cell dependencies for CKB protocol scripts on mainnet and testnet. Spore (NFT/digital objects), Cluster, CoTA (compact token aggregator), CKBFS (file storage), iCKB (NervosDAO liquidity), RGB++ (Bitcoin interoperability), BTC Time Lock, and special purpose scripts (Type ID, Always Success, Zero Lock, proxy locks).
