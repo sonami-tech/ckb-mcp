@@ -279,7 +279,7 @@ impl CkbMcpServer {
 				Ok(call_result)
 			}
 			Err(e) => {
-				self.config.stats.record_error();
+				self.config.stats.record_error(name, &e.to_string());
 				Ok(CallToolResult::error(vec![Content::text(e.to_string())]))
 			}
 		}
@@ -331,7 +331,7 @@ impl CkbMcpServer {
 					Ok(result)
 				}
 				Err(e) => {
-					self.config.stats.record_error();
+					self.config.stats.record_error(uri, &e.to_string());
 					Err(ErrorData::invalid_params(e.to_string(), None))
 				}
 			}
@@ -388,7 +388,7 @@ impl CkbMcpServer {
 					Ok(result)
 				}
 				Err(e) => {
-					self.config.stats.record_error();
+					self.config.stats.record_error(name, &e.to_string());
 					Err(ErrorData::invalid_params(e.to_string(), None))
 				}
 			}

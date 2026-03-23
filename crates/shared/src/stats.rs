@@ -16,6 +16,8 @@ const TOOL_LAST_CALLED: TableDefinition<&str, u64> = TableDefinition::new("tool_
 const RESOURCE_READS: TableDefinition<&str, u64> = TableDefinition::new("resource_reads");
 const RESOURCE_LAST_READ: TableDefinition<&str, u64> = TableDefinition::new("resource_last_read");
 const METADATA: TableDefinition<&str, u64> = TableDefinition::new("metadata");
+const ERROR_COUNTS: TableDefinition<&str, u64> = TableDefinition::new("error_counts");
+const ERROR_LAST_SEEN: TableDefinition<&str, u64> = TableDefinition::new("error_last_seen");
 
 /// Entry for a tool or resource in the stats.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -37,6 +39,7 @@ pub struct StatsSnapshot {
 	pub total_errors: u64,
 	pub tool_calls: Vec<StatsEntry>,
 	pub resource_reads: Vec<StatsEntry>,
+	pub error_summaries: Vec<StatsEntry>,
 }
 
 /// Persistent statistics tracker using redb.
@@ -72,6 +75,8 @@ impl Stats {
 			let _ = write_txn.open_table(RESOURCE_READS);
 			let _ = write_txn.open_table(RESOURCE_LAST_READ);
 			let _ = write_txn.open_table(METADATA);
+			let _ = write_txn.open_table(ERROR_COUNTS);
+			let _ = write_txn.open_table(ERROR_LAST_SEEN);
 		}
 
 		write_txn
@@ -186,32 +191,76 @@ impl Stats {
 		Ok(())
 	}
 
-	/// Record an error.
-	pub fn record_error(&self) {
-		if let Err(e) = self.record_error_inner() {
+	/// Build a summary key from source name and error message.
+	/// Truncates the message to prevent unbounded key growth in the database.
+	fn error_summary_key(source: &str, error_msg: &str) -> String {
+		let max_msg_len = 120;
+		let truncated = if error_msg.len() > max_msg_len {
+			let end = error_msg
+				.char_indices()
+				.take_while(|(i, _)| *i < max_msg_len)
+				.last()
+				.map(|(i, c)| i + c.len_utf8())
+				.unwrap_or(max_msg_len);
+			format!("{}...", &error_msg[..end])
+		} else {
+			error_msg.to_string()
+		};
+		format!("{}: {}", source, truncated)
+	}
+
+	/// Record an error with source and message for per-error tracking.
+	pub fn record_error(&self, source: &str, error_msg: &str) {
+		if let Err(e) = self.record_error_inner(source, error_msg) {
 			error!("Failed to record error: {}", e);
 		}
 	}
 
-	fn record_error_inner(&self) -> Result<()> {
+	fn record_error_inner(&self, source: &str, error_msg: &str) -> Result<()> {
 		let write_txn = self
 			.db
 			.begin_write()
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to begin transaction: {}", e)))?;
 
 		{
-			let mut table = write_txn
+			// Increment aggregate error count.
+			let mut meta_table = write_txn
 				.open_table(METADATA)
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to open table: {}", e)))?;
 
-			let current = table
+			let current = meta_table
 				.get("errors")
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to read: {}", e)))?
 				.map(|v| v.value())
 				.unwrap_or(0);
 
-			table
+			meta_table
 				.insert("errors", current + 1)
+				.map_err(|e| CkbMcpError::Internal(format!("Failed to insert: {}", e)))?;
+
+			// Increment per-error summary count.
+			let key = Self::error_summary_key(source, error_msg);
+
+			let mut count_table = write_txn
+				.open_table(ERROR_COUNTS)
+				.map_err(|e| CkbMcpError::Internal(format!("Failed to open table: {}", e)))?;
+
+			let current_count = count_table
+				.get(key.as_str())
+				.map_err(|e| CkbMcpError::Internal(format!("Failed to read: {}", e)))?
+				.map(|v| v.value())
+				.unwrap_or(0);
+
+			count_table
+				.insert(key.as_str(), current_count + 1)
+				.map_err(|e| CkbMcpError::Internal(format!("Failed to insert: {}", e)))?;
+
+			let mut last_table = write_txn
+				.open_table(ERROR_LAST_SEEN)
+				.map_err(|e| CkbMcpError::Internal(format!("Failed to open table: {}", e)))?;
+
+			last_table
+				.insert(key.as_str(), Self::now())
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to insert: {}", e)))?;
 		}
 
@@ -219,6 +268,7 @@ impl Stats {
 			.commit()
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to commit: {}", e)))?;
 
+		debug!("Recorded error: {} - {}", source, error_msg);
 		Ok(())
 	}
 
@@ -301,9 +351,38 @@ impl Stats {
 			0
 		};
 
+		// Read error summaries
+		let mut error_summaries = Vec::new();
+
+		if let Ok(table) = read_txn.open_table(ERROR_COUNTS) {
+			if let Ok(last_table) = read_txn.open_table(ERROR_LAST_SEEN) {
+				if let Ok(iter) = table.iter() {
+					for entry in iter.flatten() {
+						let (key, count) = entry;
+						let name = key.value().to_string();
+						let count = count.value();
+
+						let last_called = last_table
+							.get(name.as_str())
+							.ok()
+							.flatten()
+							.map(|v| v.value())
+							.unwrap_or(0);
+
+						error_summaries.push(StatsEntry {
+							name,
+							count,
+							last_called,
+						});
+					}
+				}
+			}
+		}
+
 		// Sort by count descending
 		tool_calls.sort_by(|a, b| b.count.cmp(&a.count));
 		resource_reads.sort_by(|a, b| b.count.cmp(&a.count));
+		error_summaries.sort_by(|a, b| b.count.cmp(&a.count));
 
 		let now = Self::now();
 		let uptime_seconds = now.saturating_sub(self.start_time);
@@ -317,6 +396,7 @@ impl Stats {
 			total_errors,
 			tool_calls,
 			resource_reads,
+			error_summaries,
 		})
 	}
 
@@ -388,6 +468,23 @@ impl Stats {
 					ago
 				));
 			}
+			output.push('\n');
+		}
+
+		// Top errors
+		if !snapshot.error_summaries.is_empty() {
+			output.push_str("Top Errors:\n");
+			let now = Self::now();
+			for (i, entry) in snapshot.error_summaries.iter().take(10).enumerate() {
+				let ago = Self::format_ago(now.saturating_sub(entry.last_called));
+				output.push_str(&format!(
+					"  {}. {} - {} errors (last: {})\n",
+					i + 1,
+					entry.name,
+					entry.count,
+					ago
+				));
+			}
 		}
 
 		Ok(output)
@@ -445,6 +542,26 @@ impl Stats {
 			snapshot.total_errors
 		));
 
+		// Error summaries
+		if !snapshot.error_summaries.is_empty() {
+			output.push_str(
+				"# HELP ckb_mcp_error_summary_total Error count by source and message\n",
+			);
+			output.push_str("# TYPE ckb_mcp_error_summary_total counter\n");
+			for entry in snapshot.error_summaries.iter().take(10) {
+				let label = entry
+					.name
+					.replace('\\', "\\\\")
+					.replace('"', "\\\"")
+					.replace('\n', "\\n");
+				output.push_str(&format!(
+					"ckb_mcp_error_summary_total{{error=\"{}\"}} {}\n",
+					label, entry.count
+				));
+			}
+			output.push('\n');
+		}
+
 		// Uptime
 		output.push_str("# HELP ckb_mcp_uptime_seconds Server uptime in seconds\n");
 		output.push_str("# TYPE ckb_mcp_uptime_seconds gauge\n");
@@ -487,7 +604,7 @@ mod tests {
 		stats.record_tool_call("get_block");
 		stats.record_tool_call("get_transaction");
 		stats.record_resource_read("concepts/cell-model");
-		stats.record_error();
+		stats.record_error("get_block", "Connection refused");
 
 		// Get snapshot
 		let snapshot = stats.get_snapshot().unwrap();
@@ -498,6 +615,12 @@ mod tests {
 		assert_eq!(snapshot.tool_calls.len(), 2);
 		assert_eq!(snapshot.tool_calls[0].name, "get_block");
 		assert_eq!(snapshot.tool_calls[0].count, 2);
+		assert_eq!(snapshot.error_summaries.len(), 1);
+		assert_eq!(
+			snapshot.error_summaries[0].name,
+			"get_block: Connection refused"
+		);
+		assert_eq!(snapshot.error_summaries[0].count, 1);
 	}
 
 	#[test]
@@ -529,11 +652,14 @@ mod tests {
 
 		let stats = Stats::open(&db_path).unwrap();
 		stats.record_tool_call("get_block");
+		stats.record_error("get_block", "CKB RPC error: timeout");
 
 		// Test human format without version
 		let human = stats.format_human(None).unwrap();
 		assert!(human.contains("CKB MCP Server Stats"));
 		assert!(human.contains("get_block"));
+		assert!(human.contains("Top Errors:"));
+		assert!(human.contains("get_block: CKB RPC error: timeout"));
 
 		// Test human format with version
 		let human_v = stats.format_human(Some("1.5.0")).unwrap();
@@ -542,6 +668,7 @@ mod tests {
 		// Test JSON format without version
 		let json = stats.format_json(None).unwrap();
 		assert!(json.contains("\"total_tool_calls\""));
+		assert!(json.contains("\"error_summaries\""));
 		assert!(!json.contains("\"version\""));
 
 		// Test JSON format with version
@@ -551,10 +678,81 @@ mod tests {
 		// Test Prometheus format without version
 		let prom = stats.format_prometheus(None).unwrap();
 		assert!(prom.contains("ckb_mcp_tool_calls_total"));
+		assert!(prom.contains("ckb_mcp_error_summary_total"));
 		assert!(!prom.contains("ckb_mcp_info"));
 
 		// Test Prometheus format with version
 		let prom_v = stats.format_prometheus(Some("1.5.0")).unwrap();
 		assert!(prom_v.contains("ckb_mcp_info{version=\"1.5.0\"} 1"));
+	}
+
+	#[test]
+	fn test_stats_error_summaries() {
+		let dir = tempdir().unwrap();
+		let db_path = dir.path().join("test_error_summaries.redb");
+
+		let stats = Stats::open(&db_path).unwrap();
+
+		// Record multiple errors with same source+message
+		stats.record_error("rpc_get_block", "Connection refused");
+		stats.record_error("rpc_get_block", "Connection refused");
+		stats.record_error("rpc_get_block", "Connection refused");
+
+		// Record different error for same source
+		stats.record_error("rpc_get_block", "Timeout");
+
+		// Record error for different source
+		stats.record_error("dev_deploy", "Insufficient balance");
+
+		let snapshot = stats.get_snapshot().unwrap();
+
+		assert_eq!(snapshot.total_errors, 5);
+		assert_eq!(snapshot.error_summaries.len(), 3);
+
+		// Sorted by count descending
+		assert_eq!(snapshot.error_summaries[0].count, 3);
+		assert!(snapshot.error_summaries[0]
+			.name
+			.contains("Connection refused"));
+		assert_eq!(snapshot.error_summaries[1].count, 1);
+		assert_eq!(snapshot.error_summaries[2].count, 1);
+	}
+
+	#[test]
+	fn test_stats_error_truncation() {
+		let dir = tempdir().unwrap();
+		let db_path = dir.path().join("test_error_truncation.redb");
+
+		let stats = Stats::open(&db_path).unwrap();
+
+		let long_msg = "x".repeat(300);
+		stats.record_error("some_tool", &long_msg);
+
+		let snapshot = stats.get_snapshot().unwrap();
+		assert_eq!(snapshot.error_summaries.len(), 1);
+		assert!(snapshot.error_summaries[0].name.len() < 150);
+		assert!(snapshot.error_summaries[0].name.ends_with("..."));
+	}
+
+	#[test]
+	fn test_stats_error_persistence() {
+		let dir = tempdir().unwrap();
+		let db_path = dir.path().join("test_error_persist.redb");
+
+		{
+			let stats = Stats::open(&db_path).unwrap();
+			stats.record_error("tool_a", "Some error");
+			stats.record_error("tool_a", "Some error");
+		}
+
+		{
+			let stats = Stats::open(&db_path).unwrap();
+			stats.record_error("tool_a", "Some error");
+
+			let snapshot = stats.get_snapshot().unwrap();
+			assert_eq!(snapshot.total_errors, 3);
+			assert_eq!(snapshot.error_summaries.len(), 1);
+			assert_eq!(snapshot.error_summaries[0].count, 3);
+		}
 	}
 }
