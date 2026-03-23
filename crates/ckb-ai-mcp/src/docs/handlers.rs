@@ -130,11 +130,10 @@ impl DocsHandlers {
 
 	/// Extract the Description section from a markdown document.
 	fn extract_description(content: &str) -> Option<String> {
-		let lines: Vec<&str> = content.lines().collect();
 		let mut in_description = false;
 		let mut description_lines = Vec::new();
 
-		for line in lines.iter() {
+		for line in content.lines() {
 			// Look for ## Description header.
 			if line.trim() == "## Description" {
 				in_description = true;

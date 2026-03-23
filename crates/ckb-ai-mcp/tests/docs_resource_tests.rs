@@ -1,6 +1,6 @@
 //! Documentation resource tests for ckb-ai-mcp unified server.
 //!
-//! Tests the 89 documentation resources served via resources/list and resources/read.
+//! Tests the documentation resources served via resources/list and resources/read.
 
 mod common;
 
@@ -150,116 +150,6 @@ async fn test_resources_list_uris_are_unique() {
 // =============================================================================
 
 #[tokio::test]
-async fn test_read_resource_ai_quick_reference() {
-	let ctx = TestContext::new();
-
-	let result = ctx
-		.read_resource("ckb://docs/quickstart/ai-quick-reference")
-		.await
-		.expect("Should read ai-quick-reference");
-
-	let contents = result["contents"].as_array().expect("Should have contents");
-	assert!(!contents.is_empty(), "Should have content");
-
-	let text = contents[0]["text"].as_str().expect("Should have text");
-	assert!(!text.is_empty(), "Content should not be empty");
-	assert!(
-		text.contains("CKB") || text.contains("Nervos"),
-		"Should contain CKB-related content"
-	);
-}
-
-#[tokio::test]
-async fn test_read_resource_cell_model() {
-	let ctx = TestContext::new();
-
-	let result = ctx
-		.read_resource("ckb://docs/concepts/cell-model")
-		.await
-		.expect("Should read cell-model");
-
-	let contents = result["contents"].as_array().expect("Should have contents");
-	let text = contents[0]["text"].as_str().expect("Should have text");
-
-	assert!(
-		text.contains("cell") || text.contains("Cell"),
-		"Should contain cell content"
-	);
-}
-
-#[tokio::test]
-async fn test_read_resource_token_creation() {
-	let ctx = TestContext::new();
-
-	let result = ctx
-		.read_resource("ckb://docs/tokens/token-creation")
-		.await
-		.expect("Should read token-creation");
-
-	let contents = result["contents"].as_array().expect("Should have contents");
-	let text = contents[0]["text"].as_str().expect("Should have text");
-
-	assert!(
-		text.contains("token") || text.contains("Token") || text.contains("UDT"),
-		"Should contain token content"
-	);
-}
-
-#[tokio::test]
-async fn test_read_resource_programming_model() {
-	let ctx = TestContext::new();
-
-	let result = ctx
-		.read_resource("ckb://docs/concepts/programming-model")
-		.await
-		.expect("Should read programming-model");
-
-	let contents = result["contents"].as_array().expect("Should have contents");
-	let text = contents[0]["text"].as_str().expect("Should have text");
-
-	assert!(
-		text.contains("UTXO") || text.contains("cell") || text.contains("transaction"),
-		"Should contain CKB programming model content"
-	);
-}
-
-#[tokio::test]
-async fn test_read_resource_patterns() {
-	let ctx = TestContext::new();
-
-	let result = ctx
-		.read_resource("ckb://docs/scripts/patterns")
-		.await
-		.expect("Should read patterns");
-
-	let contents = result["contents"].as_array().expect("Should have contents");
-	let text = contents[0]["text"].as_str().expect("Should have text");
-
-	assert!(
-		text.contains("script") || text.contains("Script") || text.contains("pattern"),
-		"Should contain script pattern content"
-	);
-}
-
-#[tokio::test]
-async fn test_read_resource_getting_started() {
-	let ctx = TestContext::new();
-
-	let result = ctx
-		.read_resource("ckb://docs/quickstart/getting-started")
-		.await
-		.expect("Should read getting-started");
-
-	let contents = result["contents"].as_array().expect("Should have contents");
-	let text = contents[0]["text"].as_str().expect("Should have text");
-
-	assert!(
-		text.contains("CCC") || text.contains("SDK") || text.contains("Rust"),
-		"Should contain getting-started content"
-	);
-}
-
-#[tokio::test]
 async fn test_read_resource_invalid_uri() {
 	let ctx = TestContext::new();
 
@@ -336,12 +226,23 @@ async fn test_resources_include_all_categories() {
 }
 
 // =============================================================================
-// All Resources Readable Test
+// Comprehensive Resource Validation
 // =============================================================================
 
-/// Verify every registered resource can be read with non-empty content.
+/// Domain-relevant keywords that should appear in any CKB documentation.
+const DOMAIN_KEYWORDS: &[&str] = &[
+	"CKB", "ckb", "cell", "Cell", "script", "Script", "transaction", "Transaction",
+	"token", "Token", "lock", "Lock", "type", "capacity", "Nervos", "blockchain",
+	"UTXO", "hash", "block", "witness", "deploy", "Rust", "SDK", "UDT", "xUDT",
+	"sUDT", "Spore", "Omnilock", "DAO", "iCKB", "CoTA", "RGB", "SSRI", "CoBuild",
+	"molecule", "Molecule", "RISC-V", "syscall", "args", "code_hash", "hash_type",
+	"def ", "import ", "class ", // Python file markers
+];
+
+/// Verify every registered resource is readable, has relevant content, and
+/// starts with a Description section. Reads each resource exactly once.
 #[tokio::test]
-async fn test_all_resources_are_readable() {
+async fn test_all_resources_content_validation() {
 	let ctx = TestContext::new();
 
 	let list_result = ctx
@@ -361,37 +262,83 @@ async fn test_all_resources_are_readable() {
 		"Should have at least 85 URIs to test"
 	);
 
-	let mut failures: Vec<String> = Vec::new();
+	let mut read_failures: Vec<String> = Vec::new();
+	let mut keyword_failures: Vec<String> = Vec::new();
+	let mut description_failures: Vec<String> = Vec::new();
 
 	for uri in &all_uris {
 		match ctx.read_resource(uri).await {
 			Ok(value) => {
 				let contents = value["contents"].as_array();
 				if contents.is_none() || contents.unwrap().is_empty() {
-					failures.push(format!("{}: empty contents", uri));
-				} else {
-					let text = contents.unwrap()[0]["text"].as_str().unwrap_or("");
-					if text.is_empty() {
-						failures.push(format!("{}: empty text", uri));
-					}
+					read_failures.push(format!("{}: empty contents", uri));
+					continue;
+				}
+
+				let text = contents.unwrap()[0]["text"].as_str().unwrap_or("");
+				if text.is_empty() {
+					read_failures.push(format!("{}: empty text", uri));
+					continue;
+				}
+
+				// Check for CKB-relevant keywords.
+				let has_keyword = DOMAIN_KEYWORDS.iter().any(|kw| text.contains(kw));
+				if !has_keyword {
+					keyword_failures.push(format!(
+						"{}: no CKB-relevant keywords found (first 100 chars: {:?})",
+						uri,
+						&text[..text.len().min(100)]
+					));
+				}
+
+				// Check for ## Description header (skip Python files).
+				let is_python = uri.contains("/examples/calculate_file_hashes")
+					|| uri.contains("/examples/consolidate_cells");
+				if !is_python && !text.trim_start().starts_with("## Description") {
+					description_failures.push(format!(
+						"{}: does not start with '## Description'",
+						uri
+					));
 				}
 			}
 			Err(e) => {
-				failures.push(format!("{}: read failed: {}", uri, e));
+				read_failures.push(format!("{}: read failed: {}", uri, e));
 			}
 		}
 	}
 
+	let mut all_failures = Vec::new();
+	if !read_failures.is_empty() {
+		all_failures.push(format!(
+			"Read failures ({}):\n  {}",
+			read_failures.len(),
+			read_failures.join("\n  ")
+		));
+	}
+	if !keyword_failures.is_empty() {
+		all_failures.push(format!(
+			"Missing CKB-relevant content ({}):\n  {}",
+			keyword_failures.len(),
+			keyword_failures.join("\n  ")
+		));
+	}
+	if !description_failures.is_empty() {
+		all_failures.push(format!(
+			"Missing '## Description' header ({}):\n  {}",
+			description_failures.len(),
+			description_failures.join("\n  ")
+		));
+	}
+
 	assert!(
-		failures.is_empty(),
-		"Failed resources ({}/{}):\n  {}",
-		failures.len(),
-		all_uris.len(),
-		failures.join("\n  ")
+		all_failures.is_empty(),
+		"Resource validation failures ({} total):\n{}",
+		read_failures.len() + keyword_failures.len() + description_failures.len(),
+		all_failures.join("\n\n")
 	);
 }
 
-/// Verify every resource has a description that contains meaningful words.
+/// Verify every resource has a description with at least 10 words.
 ///
 /// Descriptions are the primary search vector for AI discovery. They should
 /// contain substantive keywords, not just boilerplate.
@@ -412,7 +359,6 @@ async fn test_all_descriptions_contain_substantive_keywords() {
 		let uri = resource["uri"].as_str().unwrap_or("unknown");
 		let description = resource["description"].as_str().unwrap_or("");
 
-		// Description should have at least 10 words for meaningful search matching.
 		let word_count = description.split_whitespace().count();
 		if word_count < 10 {
 			failures.push(format!(
@@ -425,109 +371,6 @@ async fn test_all_descriptions_contain_substantive_keywords() {
 	assert!(
 		failures.is_empty(),
 		"Resources with insufficient descriptions ({}):\n  {}",
-		failures.len(),
-		failures.join("\n  ")
-	);
-}
-
-/// Verify all resource content contains CKB-relevant keywords.
-///
-/// Every documentation resource should contain at least one domain-relevant
-/// keyword to ensure it has substantive CKB development content.
-#[tokio::test]
-async fn test_all_resources_have_relevant_content() {
-	let ctx = TestContext::new();
-
-	let list_result = ctx
-		.list_resources()
-		.await
-		.expect("resources/list should succeed");
-
-	let resources = list_result["resources"].as_array().unwrap();
-
-	// Domain-relevant keywords that should appear in any CKB documentation.
-	let domain_keywords = [
-		"CKB", "ckb", "cell", "Cell", "script", "Script", "transaction", "Transaction",
-		"token", "Token", "lock", "Lock", "type", "capacity", "Nervos", "blockchain",
-		"UTXO", "hash", "block", "witness", "deploy", "Rust", "SDK", "UDT", "xUDT",
-		"sUDT", "Spore", "Omnilock", "DAO", "iCKB", "CoTA", "RGB", "SSRI", "CoBuild",
-		"molecule", "Molecule", "RISC-V", "syscall", "args", "code_hash", "hash_type",
-		"def ", "import ", "class ",  // Python file markers
-	];
-
-	let mut failures: Vec<String> = Vec::new();
-
-	for resource in resources {
-		let uri = resource["uri"].as_str().unwrap_or("unknown");
-
-		if let Ok(value) = ctx.read_resource(uri).await {
-			if let Some(contents) = value["contents"].as_array() {
-				if let Some(text) = contents.first().and_then(|c| c["text"].as_str()) {
-					let has_keyword = domain_keywords
-						.iter()
-						.any(|kw| text.contains(kw));
-
-					if !has_keyword {
-						failures.push(format!(
-							"{}: no CKB-relevant keywords found (first 100 chars: {:?})",
-							uri,
-							&text[..text.len().min(100)]
-						));
-					}
-				}
-			}
-		}
-	}
-
-	assert!(
-		failures.is_empty(),
-		"Resources without CKB-relevant content ({}):\n  {}",
-		failures.len(),
-		failures.join("\n  ")
-	);
-}
-
-/// Verify all resource content starts with a Description section.
-#[tokio::test]
-async fn test_all_resources_start_with_description() {
-	let ctx = TestContext::new();
-
-	let list_result = ctx
-		.list_resources()
-		.await
-		.expect("resources/list should succeed");
-
-	let resources = list_result["resources"].as_array().unwrap();
-
-	let mut failures: Vec<String> = Vec::new();
-
-	for resource in resources {
-		let uri = resource["uri"].as_str().unwrap_or("unknown");
-
-		// Skip Python files — they don't follow markdown format.
-		if uri.contains("/examples/calculate_file_hashes")
-			|| uri.contains("/examples/consolidate_cells")
-		{
-			continue;
-		}
-
-		if let Ok(value) = ctx.read_resource(uri).await {
-			if let Some(contents) = value["contents"].as_array() {
-				if let Some(text) = contents.first().and_then(|c| c["text"].as_str()) {
-					if !text.trim_start().starts_with("## Description") {
-						failures.push(format!(
-							"{}: does not start with '## Description'",
-							uri
-						));
-					}
-				}
-			}
-		}
-	}
-
-	assert!(
-		failures.is_empty(),
-		"Resources missing '## Description' header ({}):\n  {}",
 		failures.len(),
 		failures.join("\n  ")
 	);

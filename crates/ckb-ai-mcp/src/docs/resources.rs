@@ -35,10 +35,10 @@ const fn make_resource(
 	name: &'static str,
 	file_path: &'static str,
 ) -> DocResource {
-	let mime_type = if matches!(
-		file_path.as_bytes().last(),
-		Some(b'y') // ends with .py
-	) {
+	let bytes = file_path.as_bytes();
+	let len = bytes.len();
+	let mime_type = if len >= 3 && bytes[len - 3] == b'.' && bytes[len - 2] == b'p' && bytes[len - 1] == b'y'
+	{
 		"text/x-python"
 	} else {
 		"text/markdown"
