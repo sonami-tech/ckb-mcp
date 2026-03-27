@@ -37,7 +37,11 @@ pub async fn jsonrpc_handler(
 	debug!("JSON-RPC request: method={}", request.method);
 
 	// Create CkbMcpServer instance for handling the request.
-	let server = CkbMcpServer::new_with_handlers(state.config.clone(), state.dev_handlers.clone());
+	let server = CkbMcpServer::new_with_handlers(
+		state.config.clone(),
+		state.dev_handlers.clone(),
+		state.docs_handlers.clone(),
+	);
 
 	// Route to appropriate handler.
 	let result = route_method(&server, &request.method, &request.params).await;

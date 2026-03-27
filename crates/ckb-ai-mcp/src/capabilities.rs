@@ -25,15 +25,37 @@ use crate::search::{SEARCH_TOOLS, SearchHandlers};
 pub struct CkbMcpServerFactory {
 	config: ServerConfig,
 	dev_handlers: Option<Arc<DevHandlers>>,
+	docs_handlers: Option<Arc<DocsHandlers>>,
 }
 
 impl CkbMcpServerFactory {
-	/// Create a new factory with shared dev handlers.
+	/// Create a new factory with shared dev and docs handlers.
 	pub fn new(config: ServerConfig, dev_handlers: Option<Arc<DevHandlers>>) -> Self {
+		let docs_handlers = if config.args.docs_enabled() {
+			match DocsHandlers::new(config.args.docs_path.clone()) {
+				Ok(handlers) => {
+					info!("Docs handlers created from {:?}", config.args.docs_path);
+					Some(Arc::new(handlers))
+				}
+				Err(e) => {
+					tracing::error!("Failed to create docs handlers: {}", e);
+					None
+				}
+			}
+		} else {
+			None
+		};
+
 		Self {
 			config,
 			dev_handlers,
+			docs_handlers,
 		}
+	}
+
+	/// Get shared docs handlers for use by other endpoints.
+	pub fn docs_handlers(&self) -> Option<Arc<DocsHandlers>> {
+		self.docs_handlers.clone()
 	}
 
 	/// Create a new CkbMcpServer instance.
@@ -41,6 +63,7 @@ impl CkbMcpServerFactory {
 		Ok(CkbMcpServer::new_with_handlers(
 			self.config.clone(),
 			self.dev_handlers.clone(),
+			self.docs_handlers.clone(),
 		))
 	}
 }
@@ -58,9 +81,12 @@ pub struct CkbMcpServer {
 }
 
 impl CkbMcpServer {
-	/// Create a new CKB MCP server instance with pre-built dev handlers.
-	/// This is the preferred constructor when dev handlers are shared (e.g., with HTTP endpoints).
-	pub fn new_with_handlers(config: ServerConfig, dev_handlers: Option<Arc<DevHandlers>>) -> Self {
+	/// Create a new CKB MCP server instance with pre-built shared handlers.
+	pub fn new_with_handlers(
+		config: ServerConfig,
+		dev_handlers: Option<Arc<DevHandlers>>,
+		docs_handlers: Option<Arc<DocsHandlers>>,
+	) -> Self {
 		info!("Creating new CKB MCP server instance");
 
 		// Create RPC handlers if RPC tools are enabled.
@@ -107,22 +133,6 @@ impl CkbMcpServer {
 			None
 		};
 
-		// Create docs handlers if docs are enabled.
-		let docs_handlers = if config.args.docs_enabled() {
-			match DocsHandlers::new(config.args.docs_path.clone()) {
-				Ok(handlers) => {
-					info!("Docs handlers created from {:?}", config.args.docs_path);
-					Some(Arc::new(handlers))
-				}
-				Err(e) => {
-					tracing::error!("Failed to create docs handlers: {}", e);
-					None
-				}
-			}
-		} else {
-			None
-		};
-
 		// Create CKB composite handlers if RPC or tools are enabled.
 		let ckb_handlers = if config.args.rpc_enabled() || config.args.tools_enabled() {
 			match CkbRpcClient::new(&config.args.ckb_rpc) {
@@ -164,7 +174,7 @@ impl CkbMcpServer {
 	/// Creates dev handlers internally. Use `new_with_handlers` to share handlers.
 	#[allow(dead_code)]
 	pub fn new(config: ServerConfig) -> Self {
-		Self::new_with_handlers(config, None)
+		Self::new_with_handlers(config, None, None)
 	}
 
 	// =========================================================================

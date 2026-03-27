@@ -7,11 +7,14 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use rmcp::transport::streamable_http_server::StreamableHttpService;
-use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
+use rmcp::transport::streamable_http_server::session::local::{
+	LocalSessionManager, SessionConfig,
+};
 use serde::Serialize;
 use shared::ckb_client::CkbRpcClient;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -28,6 +31,7 @@ use crate::middleware::DeferLoadingLayer;
 pub struct AppState {
 	pub config: ServerConfig,
 	pub dev_handlers: Option<Arc<DevHandlers>>,
+	pub docs_handlers: Option<Arc<crate::docs::DocsHandlers>>,
 }
 
 /// Response from the file upload endpoint.
@@ -76,10 +80,20 @@ pub async fn run(addr: SocketAddr, config: ServerConfig) -> Result<()> {
 	let state = AppState {
 		config: config.clone(),
 		dev_handlers,
+		docs_handlers: factory.docs_handlers(),
 	};
+
+	let session_manager = LocalSessionManager {
+		session_config: SessionConfig {
+			channel_capacity: SessionConfig::DEFAULT_CHANNEL_CAPACITY,
+			keep_alive: Some(Duration::from_secs(300)),
+		},
+		..Default::default()
+	};
+
 	let mcp_service = StreamableHttpService::new(
 		move || factory.create(),
-		LocalSessionManager::default().into(),
+		session_manager.into(),
 		Default::default(),
 	);
 
