@@ -7,14 +7,11 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use rmcp::transport::streamable_http_server::StreamableHttpService;
-use rmcp::transport::streamable_http_server::session::local::{
-	LocalSessionManager, SessionConfig,
-};
+use rmcp::transport::streamable_http_server::session::local::{LocalSessionManager, SessionConfig};
 use serde::Serialize;
 use shared::ckb_client::CkbRpcClient;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::time::Duration;
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -83,13 +80,7 @@ pub async fn run(addr: SocketAddr, config: ServerConfig) -> Result<()> {
 		docs_handlers: factory.docs_handlers(),
 	};
 
-	let session_manager = LocalSessionManager {
-		session_config: SessionConfig {
-			channel_capacity: SessionConfig::DEFAULT_CHANNEL_CAPACITY,
-			keep_alive: Some(Duration::from_secs(300)),
-		},
-		..Default::default()
-	};
+	let session_manager = create_session_manager();
 
 	let mcp_service = StreamableHttpService::new(
 		move || factory.create(),
@@ -135,6 +126,18 @@ pub async fn run(addr: SocketAddr, config: ServerConfig) -> Result<()> {
 
 	info!("Server shutdown complete");
 	Ok(())
+}
+
+fn create_session_manager() -> LocalSessionManager {
+	LocalSessionManager {
+		session_config: SessionConfig {
+			channel_capacity: SessionConfig::DEFAULT_CHANNEL_CAPACITY,
+			// Do not expire normal MCP client sessions while the app is idle.
+			// Codex and Claude Code reuse Mcp-Session-Id across user turns.
+			keep_alive: None,
+		},
+		..Default::default()
+	}
 }
 
 /// Health check endpoint.
@@ -286,4 +289,168 @@ async fn upload_file_handler(
 		data_size: result.data_size,
 		capacity: result.capacity,
 	}))
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::capabilities::CkbMcpServer;
+	use crate::docs::DocsHandlers;
+	use axum::body::Body;
+	use axum::http::{Method, Request};
+	use rmcp::model::{
+		CallToolRequestMethod, CallToolRequestParams, ClientCapabilities, ClientJsonRpcMessage,
+		ClientNotification, ClientRequest, Implementation, InitializeRequestParams,
+		InitializedNotification, JsonObject, NumberOrString, ProtocolVersion,
+	};
+	use rmcp::transport::streamable_http_server::StreamableHttpService;
+	use rmcp::transport::streamable_http_server::session::local::SessionConfig;
+	use serde_json::json;
+	use std::path::PathBuf;
+	use std::time::Duration;
+	use tower::Service;
+
+	#[test]
+	fn mcp_sessions_do_not_expire_while_client_is_idle() {
+		let session_manager = create_session_manager();
+
+		assert_eq!(session_manager.session_config.keep_alive, None);
+	}
+
+	#[tokio::test]
+	async fn expired_mcp_session_rejects_reused_session_id() {
+		let session_manager = LocalSessionManager {
+			session_config: SessionConfig {
+				channel_capacity: SessionConfig::DEFAULT_CHANNEL_CAPACITY,
+				keep_alive: Some(Duration::from_millis(20)),
+			},
+			..Default::default()
+		};
+		let mut service: StreamableHttpService<CkbMcpServer, LocalSessionManager> =
+			StreamableHttpService::new(
+				|| Ok(test_mcp_server()),
+				session_manager.into(),
+				Default::default(),
+			);
+
+		let init_response = service
+			.call(mcp_post_request(initialize_message(), None))
+			.await
+			.expect("initialize request should return a response");
+		assert_eq!(init_response.status(), StatusCode::OK);
+		let session_id = init_response
+			.headers()
+			.get("mcp-session-id")
+			.expect("initialize response should include session id")
+			.to_str()
+			.expect("session id should be valid")
+			.to_string();
+
+		let initialized_response = service
+			.call(mcp_post_request(initialized_message(), Some(&session_id)))
+			.await
+			.expect("initialized notification should return a response");
+		assert_eq!(initialized_response.status(), StatusCode::ACCEPTED);
+
+		tokio::time::sleep(Duration::from_millis(80)).await;
+
+		let stale_response = service
+			.call(mcp_post_request(
+				search_resources_message(),
+				Some(&session_id),
+			))
+			.await
+			.expect("stale session request should return a response");
+
+		assert_eq!(stale_response.status(), StatusCode::UNAUTHORIZED);
+	}
+
+	fn test_mcp_server() -> CkbMcpServer {
+		let dir = tempfile::tempdir().expect("tempdir should be created");
+		let stats = Arc::new(
+			shared::stats::Stats::open(dir.path().join("stats.redb")).expect("stats should open"),
+		);
+		let docs_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs");
+		let docs_handlers =
+			Arc::new(DocsHandlers::new(docs_path.clone()).expect("docs handlers should load docs"));
+		let config = ServerConfig {
+			args: crate::Args {
+				port: 0,
+				host: "127.0.0.1".to_string(),
+				ckb_rpc: "http://127.0.0.1:8114".to_string(),
+				private_key: "0x6109170b275a09ad54877b82f7d9930f88cab5717d484fb4741c9f0c0571c078"
+					.to_string(),
+				docs_path,
+				stats_db: "unused.redb".into(),
+				log_level: "error".to_string(),
+				docs_only: true,
+				rpc_only: false,
+				tools_only: false,
+				no_prompts: false,
+			},
+			stats,
+		};
+
+		CkbMcpServer::new_with_handlers(config, None, Some(docs_handlers))
+	}
+
+	fn mcp_post_request(message: ClientJsonRpcMessage, session_id: Option<&str>) -> Request<Body> {
+		let body = serde_json::to_vec(&message).expect("message should serialize");
+		let mut builder = Request::builder()
+			.method(Method::POST)
+			.uri("/mcp")
+			.header("accept", "application/json, text/event-stream")
+			.header("content-type", "application/json");
+
+		if let Some(session_id) = session_id {
+			builder = builder.header("mcp-session-id", session_id);
+		}
+
+		builder
+			.body(Body::from(body))
+			.expect("request should be built")
+	}
+
+	fn initialize_message() -> ClientJsonRpcMessage {
+		ClientJsonRpcMessage::request(
+			ClientRequest::InitializeRequest(rmcp::model::Request::new(InitializeRequestParams {
+				meta: None,
+				protocol_version: ProtocolVersion::V_2025_06_18,
+				capabilities: ClientCapabilities::default(),
+				client_info: Implementation {
+					name: "idle-session-test".to_string(),
+					title: None,
+					version: "0.0.0".to_string(),
+					icons: None,
+					website_url: None,
+				},
+			})),
+			NumberOrString::Number(1),
+		)
+	}
+
+	fn initialized_message() -> ClientJsonRpcMessage {
+		ClientJsonRpcMessage::notification(ClientNotification::InitializedNotification(
+			InitializedNotification::default(),
+		))
+	}
+
+	fn search_resources_message() -> ClientJsonRpcMessage {
+		let mut arguments = JsonObject::new();
+		arguments.insert("query".to_string(), json!("cell"));
+
+		ClientJsonRpcMessage::request(
+			ClientRequest::CallToolRequest(rmcp::model::Request {
+				method: CallToolRequestMethod,
+				params: CallToolRequestParams {
+					meta: None,
+					name: "search_resources".into(),
+					arguments: Some(arguments),
+					task: None,
+				},
+				extensions: Default::default(),
+			}),
+			NumberOrString::Number(2),
+		)
+	}
 }
