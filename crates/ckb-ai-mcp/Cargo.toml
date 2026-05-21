@@ -1,6 +1,6 @@
 [package]
 name = "ckb-ai-mcp"
-version = "1.6.1"
+version = "1.6.2"
 edition = "2024"
 description = "Unified MCP server for CKB blockchain development"
 license = "MIT"
@@ -52,4 +52,5 @@ uuid = { version = "1.18", features = ["v4"] }
 shared = { path = "../shared" }
 
 [dev-dependencies]
+tempfile = { workspace = true }
 tokio-test = "0.4"

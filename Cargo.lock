@@ -362,7 +362,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-ai-mcp"
-version = "1.6.1"
+version = "1.6.2"
 dependencies = [
  "anyhow",
  "axum",
@@ -382,6 +382,7 @@ dependencies = [
  "serde",
  "serde_json",
  "shared",
+ "tempfile",
  "thiserror 2.0.18",
  "tokio",
  "tokio-test",

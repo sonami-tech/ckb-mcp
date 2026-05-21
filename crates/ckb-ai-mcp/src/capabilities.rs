@@ -534,3 +534,65 @@ impl ServerHandler for CkbMcpServer {
 		self.get_prompt_internal(&request.name, args)
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use std::path::PathBuf;
+	use std::sync::Arc;
+	use tempfile::tempdir;
+
+	fn docs_path() -> PathBuf {
+		PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs")
+	}
+
+	fn docs_only_config(stats: Arc<shared::stats::Stats>, docs_path: PathBuf) -> ServerConfig {
+		ServerConfig {
+			args: crate::Args {
+				port: 0,
+				host: "127.0.0.1".to_string(),
+				ckb_rpc: "http://127.0.0.1:8114".to_string(),
+				private_key: "0x6109170b275a09ad54877b82f7d9930f88cab5717d484fb4741c9f0c0571c078"
+					.to_string(),
+				docs_path,
+				stats_db: "unused.redb".into(),
+				log_level: "error".to_string(),
+				docs_only: true,
+				rpc_only: false,
+				tools_only: false,
+				no_prompts: false,
+			},
+			stats,
+		}
+	}
+
+	#[test]
+	fn read_resource_records_successful_reads() {
+		let dir = tempdir().unwrap();
+		let stats = Arc::new(
+			shared::stats::Stats::open(dir.path().join("stats.redb")).expect("stats should open"),
+		);
+		let docs_path = docs_path();
+		let docs_handlers =
+			Arc::new(DocsHandlers::new(docs_path.clone()).expect("docs handlers should load docs"));
+		let server = CkbMcpServer::new_with_handlers(
+			docs_only_config(stats.clone(), docs_path),
+			None,
+			Some(docs_handlers),
+		);
+		let uri = "ckb://docs/concepts/cell-model";
+
+		server
+			.read_resource_internal(uri)
+			.expect("resource read should succeed");
+		server
+			.read_resource_internal(uri)
+			.expect("second resource read should succeed");
+
+		let snapshot = stats.get_snapshot().expect("stats snapshot should load");
+		assert_eq!(snapshot.total_resource_reads, 2);
+		assert_eq!(snapshot.resource_reads.len(), 1);
+		assert_eq!(snapshot.resource_reads[0].name, uri);
+		assert_eq!(snapshot.resource_reads[0].count, 2);
+	}
+}

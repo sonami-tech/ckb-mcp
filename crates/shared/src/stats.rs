@@ -15,9 +15,13 @@ const TOOL_CALLS: TableDefinition<&str, u64> = TableDefinition::new("tool_calls"
 const TOOL_LAST_CALLED: TableDefinition<&str, u64> = TableDefinition::new("tool_last_called");
 const RESOURCE_READS: TableDefinition<&str, u64> = TableDefinition::new("resource_reads");
 const RESOURCE_LAST_READ: TableDefinition<&str, u64> = TableDefinition::new("resource_last_read");
+const RECENT_RESOURCE_READS: TableDefinition<u64, &str> =
+	TableDefinition::new("recent_resource_reads");
 const METADATA: TableDefinition<&str, u64> = TableDefinition::new("metadata");
 const ERROR_COUNTS: TableDefinition<&str, u64> = TableDefinition::new("error_counts");
 const ERROR_LAST_SEEN: TableDefinition<&str, u64> = TableDefinition::new("error_last_seen");
+const RECENT_RESOURCE_READ_SEQ: &str = "recent_resource_read_seq";
+const RECENT_RESOURCE_READ_LIMIT: u64 = 100;
 
 /// Entry for a tool or resource in the stats.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,6 +29,30 @@ pub struct StatsEntry {
 	pub name: String,
 	pub count: u64,
 	pub last_called: u64,
+}
+
+/// Individual recent resource read entry.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecentStatsEntry {
+	pub name: String,
+	pub timestamp: u64,
+	#[serde(skip)]
+	sequence: u64,
+}
+
+impl RecentStatsEntry {
+	fn encode(&self) -> String {
+		format!("{}\t{}", self.timestamp, self.name)
+	}
+
+	fn decode(sequence: u64, value: &str) -> Option<Self> {
+		let (timestamp, name) = value.split_once('\t')?;
+		Some(Self {
+			name: name.to_string(),
+			timestamp: timestamp.parse().ok()?,
+			sequence,
+		})
+	}
 }
 
 /// Snapshot of all statistics.
@@ -39,6 +67,7 @@ pub struct StatsSnapshot {
 	pub total_errors: u64,
 	pub tool_calls: Vec<StatsEntry>,
 	pub resource_reads: Vec<StatsEntry>,
+	pub recent_resource_reads: Vec<RecentStatsEntry>,
 	pub error_summaries: Vec<StatsEntry>,
 }
 
@@ -74,6 +103,7 @@ impl Stats {
 			let _ = write_txn.open_table(TOOL_LAST_CALLED);
 			let _ = write_txn.open_table(RESOURCE_READS);
 			let _ = write_txn.open_table(RESOURCE_LAST_READ);
+			let _ = write_txn.open_table(RECENT_RESOURCE_READS);
 			let _ = write_txn.open_table(METADATA);
 			let _ = write_txn.open_table(ERROR_COUNTS);
 			let _ = write_txn.open_table(ERROR_LAST_SEEN);
@@ -154,6 +184,7 @@ impl Stats {
 	}
 
 	fn record_resource_read_inner(&self, uri: &str) -> Result<()> {
+		let now = Self::now();
 		let write_txn = self
 			.db
 			.begin_write()
@@ -179,8 +210,44 @@ impl Stats {
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to open table: {}", e)))?;
 
 			last_table
-				.insert(uri, Self::now())
+				.insert(uri, now)
 				.map_err(|e| CkbMcpError::Internal(format!("Failed to insert: {}", e)))?;
+
+			let mut meta_table = write_txn
+				.open_table(METADATA)
+				.map_err(|e| CkbMcpError::Internal(format!("Failed to open table: {}", e)))?;
+
+			let seq = meta_table
+				.get(RECENT_RESOURCE_READ_SEQ)
+				.map_err(|e| CkbMcpError::Internal(format!("Failed to read: {}", e)))?
+				.map(|v| v.value())
+				.unwrap_or(0)
+				.saturating_add(1);
+
+			meta_table
+				.insert(RECENT_RESOURCE_READ_SEQ, seq)
+				.map_err(|e| CkbMcpError::Internal(format!("Failed to insert: {}", e)))?;
+
+			let recent_entry = RecentStatsEntry {
+				name: uri.to_string(),
+				timestamp: now,
+				sequence: seq,
+			}
+			.encode();
+
+			let mut recent_table = write_txn
+				.open_table(RECENT_RESOURCE_READS)
+				.map_err(|e| CkbMcpError::Internal(format!("Failed to open table: {}", e)))?;
+
+			recent_table
+				.insert(seq, recent_entry.as_str())
+				.map_err(|e| CkbMcpError::Internal(format!("Failed to insert: {}", e)))?;
+
+			if seq > RECENT_RESOURCE_READ_LIMIT {
+				recent_table
+					.remove(seq - RECENT_RESOURCE_READ_LIMIT)
+					.map_err(|e| CkbMcpError::Internal(format!("Failed to remove: {}", e)))?;
+			}
 		}
 
 		write_txn
@@ -351,6 +418,20 @@ impl Stats {
 			0
 		};
 
+		// Read recent resource reads
+		let mut recent_resource_reads = Vec::new();
+
+		if let Ok(table) = read_txn.open_table(RECENT_RESOURCE_READS) {
+			if let Ok(iter) = table.iter() {
+				for entry in iter.flatten() {
+					let (seq, value) = entry;
+					if let Some(entry) = RecentStatsEntry::decode(seq.value(), value.value()) {
+						recent_resource_reads.push(entry);
+					}
+				}
+			}
+		}
+
 		// Read error summaries
 		let mut error_summaries = Vec::new();
 
@@ -381,7 +462,13 @@ impl Stats {
 
 		// Sort by count descending
 		tool_calls.sort_by(|a, b| b.count.cmp(&a.count));
-		resource_reads.sort_by(|a, b| b.count.cmp(&a.count));
+		resource_reads.sort_by(|a, b| {
+			b.count
+				.cmp(&a.count)
+				.then_with(|| b.last_called.cmp(&a.last_called))
+				.then_with(|| a.name.cmp(&b.name))
+		});
+		recent_resource_reads.sort_by(|a, b| b.sequence.cmp(&a.sequence));
 		error_summaries.sort_by(|a, b| b.count.cmp(&a.count));
 
 		let now = Self::now();
@@ -396,6 +483,7 @@ impl Stats {
 			total_errors,
 			tool_calls,
 			resource_reads,
+			recent_resource_reads,
 			error_summaries,
 		})
 	}
@@ -467,6 +555,18 @@ impl Stats {
 					entry.count,
 					ago
 				));
+			}
+			output.push('\n');
+		}
+
+		// Recent resource read requests
+		if !snapshot.recent_resource_reads.is_empty() {
+			output.push_str("Recent Requests:\n");
+			let now = Self::now();
+			for (i, entry) in snapshot.recent_resource_reads.iter().take(10).enumerate() {
+				let ago = Self::format_ago(now.saturating_sub(entry.timestamp));
+				let name = entry.name.replace("ckb-dev-context://", "");
+				output.push_str(&format!("  {}. {} - {}\n", i + 1, name, ago));
 			}
 			output.push('\n');
 		}
@@ -544,9 +644,8 @@ impl Stats {
 
 		// Error summaries
 		if !snapshot.error_summaries.is_empty() {
-			output.push_str(
-				"# HELP ckb_mcp_error_summary_total Error count by source and message\n",
-			);
+			output
+				.push_str("# HELP ckb_mcp_error_summary_total Error count by source and message\n");
 			output.push_str("# TYPE ckb_mcp_error_summary_total counter\n");
 			for entry in snapshot.error_summaries.iter().take(10) {
 				let label = entry
@@ -621,6 +720,79 @@ mod tests {
 			"get_block: Connection refused"
 		);
 		assert_eq!(snapshot.error_summaries[0].count, 1);
+	}
+
+	#[test]
+	fn test_resource_reads_sort_by_count_then_recency() {
+		let dir = tempdir().unwrap();
+		let db_path = dir.path().join("test_resource_sorting.redb");
+
+		let stats = Stats::open(&db_path).unwrap();
+
+		stats.record_resource_read("ckb://docs/older");
+		std::thread::sleep(std::time::Duration::from_secs(1));
+		stats.record_resource_read("ckb://docs/newer");
+		stats.record_resource_read("ckb://docs/top");
+		stats.record_resource_read("ckb://docs/top");
+
+		let snapshot = stats.get_snapshot().unwrap();
+		assert_eq!(snapshot.resource_reads[0].name, "ckb://docs/top");
+		assert_eq!(snapshot.resource_reads[0].count, 2);
+		assert_eq!(snapshot.resource_reads[1].name, "ckb://docs/newer");
+		assert_eq!(snapshot.resource_reads[2].name, "ckb://docs/older");
+	}
+
+	#[test]
+	fn test_recent_resource_reads_keep_request_order_and_duplicates() {
+		let dir = tempdir().unwrap();
+		let db_path = dir.path().join("test_recent_resource_reads.redb");
+
+		let stats = Stats::open(&db_path).unwrap();
+
+		stats.record_resource_read("ckb://docs/first");
+		stats.record_resource_read("ckb://docs/second");
+		stats.record_resource_read("ckb://docs/second");
+
+		let snapshot = stats.get_snapshot().unwrap();
+		let names: Vec<&str> = snapshot
+			.recent_resource_reads
+			.iter()
+			.map(|entry| entry.name.as_str())
+			.collect();
+
+		assert_eq!(
+			names,
+			vec!["ckb://docs/second", "ckb://docs/second", "ckb://docs/first"]
+		);
+	}
+
+	#[test]
+	fn test_human_stats_show_recent_requests_after_top_resources() {
+		let dir = tempdir().unwrap();
+		let db_path = dir.path().join("test_recent_requests_human.redb");
+
+		let stats = Stats::open(&db_path).unwrap();
+
+		for i in 0..12 {
+			stats.record_resource_read(&format!("ckb://docs/request-{}", i));
+		}
+
+		let human = stats.format_human(None).unwrap();
+		let top_index = human
+			.find("Top Resources:")
+			.expect("human stats should include top resources");
+		let recent_index = human
+			.find("Recent Requests:")
+			.expect("human stats should include recent requests");
+
+		assert!(
+			recent_index > top_index,
+			"Recent Requests should render below Top Resources"
+		);
+		assert!(human.contains("1. ckb://docs/request-11 - "));
+		assert!(human.contains("10. ckb://docs/request-2 - "));
+		assert!(!human.contains("11. ckb://docs/request-1 - "));
+		assert!(human.contains("ago"));
 	}
 
 	#[test]
