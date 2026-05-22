@@ -6,8 +6,10 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use rmcp::transport::streamable_http_server::StreamableHttpService;
-use rmcp::transport::streamable_http_server::session::local::{LocalSessionManager, SessionConfig};
+use rmcp::transport::streamable_http_server::session::never::NeverSessionManager;
+use rmcp::transport::streamable_http_server::{
+	StreamableHttpServerConfig, StreamableHttpService,
+};
 use serde::Serialize;
 use shared::ckb_client::CkbRpcClient;
 use std::net::SocketAddr;
@@ -80,12 +82,12 @@ pub async fn run(addr: SocketAddr, config: ServerConfig) -> Result<()> {
 		docs_handlers: factory.docs_handlers(),
 	};
 
-	let session_manager = create_session_manager();
+	let session_manager = NeverSessionManager::default();
 
 	let mcp_service = StreamableHttpService::new(
 		move || factory.create(),
 		session_manager.into(),
-		Default::default(),
+		create_streamable_http_config(),
 	);
 
 	// Wrap MCP service with DeferLoadingLayer to inject defer_loading property.
@@ -128,14 +130,12 @@ pub async fn run(addr: SocketAddr, config: ServerConfig) -> Result<()> {
 	Ok(())
 }
 
-fn create_session_manager() -> LocalSessionManager {
-	LocalSessionManager {
-		session_config: SessionConfig {
-			channel_capacity: SessionConfig::DEFAULT_CHANNEL_CAPACITY,
-			// Do not expire normal MCP client sessions while the app is idle.
-			// Codex and Claude Code reuse Mcp-Session-Id across user turns.
-			keep_alive: None,
-		},
+fn create_streamable_http_config() -> StreamableHttpServerConfig {
+	StreamableHttpServerConfig {
+		// Stateless mode avoids issuing Mcp-Session-Id values. Codex and Claude Code
+		// both reuse session IDs, so in-memory server sessions can go stale after
+		// idle time, deploys, restarts, or routing changes.
+		stateful_mode: false,
 		..Default::default()
 	}
 }
@@ -300,21 +300,65 @@ mod tests {
 	use axum::http::{Method, Request};
 	use rmcp::model::{
 		CallToolRequestMethod, CallToolRequestParams, ClientCapabilities, ClientJsonRpcMessage,
-		ClientNotification, ClientRequest, Implementation, InitializeRequestParams,
-		InitializedNotification, JsonObject, NumberOrString, ProtocolVersion,
+		ClientRequest, Implementation, InitializeRequestParams, JsonObject, NumberOrString,
+		ProtocolVersion,
 	};
 	use rmcp::transport::streamable_http_server::StreamableHttpService;
-	use rmcp::transport::streamable_http_server::session::local::SessionConfig;
+	use rmcp::transport::streamable_http_server::session::local::{
+		LocalSessionManager, SessionConfig,
+	};
 	use serde_json::json;
 	use std::path::PathBuf;
 	use std::time::Duration;
 	use tower::Service;
 
 	#[test]
-	fn mcp_sessions_do_not_expire_while_client_is_idle() {
-		let session_manager = create_session_manager();
+	fn mcp_http_transport_is_stateless() {
+		let config = create_streamable_http_config();
 
-		assert_eq!(session_manager.session_config.keep_alive, None);
+		assert!(!config.stateful_mode);
+	}
+
+	#[tokio::test]
+	async fn stateless_mcp_does_not_issue_session_ids() {
+		let mut service: StreamableHttpService<CkbMcpServer, NeverSessionManager> =
+			StreamableHttpService::new(
+				|| Ok(test_mcp_server()),
+				NeverSessionManager::default().into(),
+				create_streamable_http_config(),
+			);
+
+		let init_response = service
+			.call(mcp_post_request(initialize_message(), None))
+			.await
+			.expect("initialize request should return a response");
+
+		assert_eq!(init_response.status(), StatusCode::OK);
+		assert!(
+			init_response.headers().get("mcp-session-id").is_none(),
+			"stateless responses must not give clients a session id to reuse"
+		);
+	}
+
+	#[tokio::test]
+	async fn stateless_mcp_handles_tool_calls_without_session_ids() {
+		let mut service: StreamableHttpService<CkbMcpServer, NeverSessionManager> =
+			StreamableHttpService::new(
+				|| Ok(test_mcp_server()),
+				NeverSessionManager::default().into(),
+				create_streamable_http_config(),
+			);
+
+		let response = service
+			.call(mcp_post_request(search_resources_message(), None))
+			.await
+			.expect("tool call should return a response");
+
+		assert_eq!(response.status(), StatusCode::OK);
+		assert!(
+			response.headers().get("mcp-session-id").is_none(),
+			"stateless tool responses must not give clients a session id to reuse"
+		);
 	}
 
 	#[tokio::test]
@@ -345,12 +389,6 @@ mod tests {
 			.to_str()
 			.expect("session id should be valid")
 			.to_string();
-
-		let initialized_response = service
-			.call(mcp_post_request(initialized_message(), Some(&session_id)))
-			.await
-			.expect("initialized notification should return a response");
-		assert_eq!(initialized_response.status(), StatusCode::ACCEPTED);
 
 		tokio::time::sleep(Duration::from_millis(80)).await;
 
@@ -427,12 +465,6 @@ mod tests {
 			})),
 			NumberOrString::Number(1),
 		)
-	}
-
-	fn initialized_message() -> ClientJsonRpcMessage {
-		ClientJsonRpcMessage::notification(ClientNotification::InitializedNotification(
-			InitializedNotification::default(),
-		))
 	}
 
 	fn search_resources_message() -> ClientJsonRpcMessage {
