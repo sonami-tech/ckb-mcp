@@ -199,7 +199,11 @@ impl DevHandlers {
 			CkbMcpError::InvalidParameter(format!("Invalid private key hex: {}", e))
 		})?;
 
-		SecretKey::from_slice(&key_bytes)
+		let key_bytes: [u8; 32] = key_bytes.try_into().map_err(|_| {
+			CkbMcpError::InvalidParameter("Invalid private key: expected 32 bytes".to_string())
+		})?;
+
+		SecretKey::from_byte_array(key_bytes)
 			.map_err(|e| CkbMcpError::InvalidParameter(format!("Invalid private key: {}", e)))
 	}
 
@@ -480,7 +484,10 @@ impl DevHandlers {
 		let key_bytes = hex::decode(key_hex).map_err(|e| {
 			CkbMcpError::InvalidParameter(format!("Invalid private key hex: {}", e))
 		})?;
-		let secret_key = SecretKey::from_slice(&key_bytes)
+		let key_bytes: [u8; 32] = key_bytes.try_into().map_err(|_| {
+			CkbMcpError::InvalidParameter("Invalid private key: expected 32 bytes".to_string())
+		})?;
+		let secret_key = SecretKey::from_byte_array(key_bytes)
 			.map_err(|e| CkbMcpError::InvalidParameter(format!("Invalid private key: {}", e)))?;
 
 		let secp = secp256k1::Secp256k1::new();

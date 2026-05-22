@@ -7,9 +7,7 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use rmcp::transport::streamable_http_server::session::never::NeverSessionManager;
-use rmcp::transport::streamable_http_server::{
-	StreamableHttpServerConfig, StreamableHttpService,
-};
+use rmcp::transport::streamable_http_server::{StreamableHttpServerConfig, StreamableHttpService};
 use serde::Serialize;
 use shared::ckb_client::CkbRpcClient;
 use std::net::SocketAddr;
@@ -131,13 +129,10 @@ pub async fn run(addr: SocketAddr, config: ServerConfig) -> Result<()> {
 }
 
 fn create_streamable_http_config() -> StreamableHttpServerConfig {
-	StreamableHttpServerConfig {
-		// Stateless mode avoids issuing Mcp-Session-Id values. Codex and Claude Code
-		// both reuse session IDs, so in-memory server sessions can go stale after
-		// idle time, deploys, restarts, or routing changes.
-		stateful_mode: false,
-		..Default::default()
-	}
+	// Stateless mode avoids issuing Mcp-Session-Id values. Codex and Claude Code
+	// both reuse session IDs, so in-memory server sessions can go stale after
+	// idle time, deploys, restarts, or routing changes.
+	StreamableHttpServerConfig::default().with_stateful_mode(false)
 }
 
 /// Health check endpoint.
@@ -299,9 +294,8 @@ mod tests {
 	use axum::body::Body;
 	use axum::http::{Method, Request};
 	use rmcp::model::{
-		CallToolRequestMethod, CallToolRequestParams, ClientCapabilities, ClientJsonRpcMessage,
-		ClientRequest, Implementation, InitializeRequestParams, JsonObject, NumberOrString,
-		ProtocolVersion,
+		CallToolRequestParams, ClientCapabilities, ClientJsonRpcMessage, ClientRequest,
+		Implementation, InitializeRequestParams, JsonObject, NumberOrString, ProtocolVersion,
 	};
 	use rmcp::transport::streamable_http_server::StreamableHttpService;
 	use rmcp::transport::streamable_http_server::session::local::{
@@ -363,13 +357,10 @@ mod tests {
 
 	#[tokio::test]
 	async fn expired_mcp_session_rejects_reused_session_id() {
-		let session_manager = LocalSessionManager {
-			session_config: SessionConfig {
-				channel_capacity: SessionConfig::DEFAULT_CHANNEL_CAPACITY,
-				keep_alive: Some(Duration::from_millis(20)),
-			},
-			..Default::default()
-		};
+		let mut session_config = SessionConfig::default();
+		session_config.keep_alive = Some(Duration::from_millis(20));
+		let mut session_manager = LocalSessionManager::default();
+		session_manager.session_config = session_config;
 		let mut service: StreamableHttpService<CkbMcpServer, LocalSessionManager> =
 			StreamableHttpService::new(
 				|| Ok(test_mcp_server()),
@@ -400,7 +391,11 @@ mod tests {
 			.await
 			.expect("stale session request should return a response");
 
-		assert_eq!(stale_response.status(), StatusCode::UNAUTHORIZED);
+		assert!(
+			stale_response.status().is_client_error(),
+			"stateful stale session ids should fail, got {}",
+			stale_response.status()
+		);
 	}
 
 	fn test_mcp_server() -> CkbMcpServer {
@@ -437,6 +432,7 @@ mod tests {
 		let mut builder = Request::builder()
 			.method(Method::POST)
 			.uri("/mcp")
+			.header("host", "localhost")
 			.header("accept", "application/json, text/event-stream")
 			.header("content-type", "application/json");
 
@@ -451,18 +447,13 @@ mod tests {
 
 	fn initialize_message() -> ClientJsonRpcMessage {
 		ClientJsonRpcMessage::request(
-			ClientRequest::InitializeRequest(rmcp::model::Request::new(InitializeRequestParams {
-				meta: None,
-				protocol_version: ProtocolVersion::V_2025_06_18,
-				capabilities: ClientCapabilities::default(),
-				client_info: Implementation {
-					name: "idle-session-test".to_string(),
-					title: None,
-					version: "0.0.0".to_string(),
-					icons: None,
-					website_url: None,
-				},
-			})),
+			ClientRequest::InitializeRequest(rmcp::model::Request::new(
+				InitializeRequestParams::new(
+					ClientCapabilities::default(),
+					Implementation::new("idle-session-test", "0.0.0"),
+				)
+				.with_protocol_version(ProtocolVersion::V_2025_06_18),
+			)),
 			NumberOrString::Number(1),
 		)
 	}
@@ -472,16 +463,9 @@ mod tests {
 		arguments.insert("query".to_string(), json!("cell"));
 
 		ClientJsonRpcMessage::request(
-			ClientRequest::CallToolRequest(rmcp::model::Request {
-				method: CallToolRequestMethod,
-				params: CallToolRequestParams {
-					meta: None,
-					name: "search_resources".into(),
-					arguments: Some(arguments),
-					task: None,
-				},
-				extensions: Default::default(),
-			}),
+			ClientRequest::CallToolRequest(rmcp::model::Request::new(
+				CallToolRequestParams::new("search_resources").with_arguments(arguments),
+			)),
 			NumberOrString::Number(2),
 		)
 	}

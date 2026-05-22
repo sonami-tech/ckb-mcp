@@ -15,24 +15,16 @@ fn make_prompt(
 		Some(
 			arguments
 				.into_iter()
-				.map(|(name, desc, required)| PromptArgument {
-					name: name.to_string(),
-					title: None,
-					description: Some(desc.to_string()),
-					required: Some(required),
+				.map(|(name, desc, required)| {
+					PromptArgument::new(name)
+						.with_description(desc)
+						.with_required(required)
 				})
 				.collect(),
 		)
 	};
 
-	Prompt {
-		name: name.to_string(),
-		title: None,
-		description: Some(description.to_string()),
-		arguments: args,
-		icons: None,
-		meta: None,
-	}
+	Prompt::new(name, Some(description), args)
 }
 
 /// Available workflow prompts.

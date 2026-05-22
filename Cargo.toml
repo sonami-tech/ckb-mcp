@@ -7,7 +7,7 @@ members = [
 
 [workspace.dependencies]
 # Async runtime and HTTP server
-tokio = { version = "1.44", features = ["full"] }
+tokio = { version = "1.52", features = ["full"] }
 axum = { version = "0.8", features = ["multipart"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["cors", "trace"] }
@@ -25,22 +25,22 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # CLI
-clap = { version = "4.5", features = ["derive"] }
+clap = { version = "4.6", features = ["derive"] }
 
 # HTTP client for CKB RPC
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.13", features = ["json"] }
 
 # Async streams
 tokio-stream = { version = "0.1", features = ["sync"] }
 
 # Random number generation
-rand = "0.9"
+rand = "0.10"
 
 # Embedded key-value database for stats persistence
-redb = "2.4"
+redb = "4.1"
 
 # Testing utilities
-tempfile = "3.17"
+tempfile = "3.27"
 
 # Workspace crates
 shared = { path = "crates/shared" }

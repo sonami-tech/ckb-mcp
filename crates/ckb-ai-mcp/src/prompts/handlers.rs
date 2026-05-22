@@ -121,13 +121,14 @@ Use the `deploy_script` prompt for deployment guidance.
 After implementing your script, use the `deploy_script` prompt to deploy it to the blockchain."#
 		);
 
-		Ok(GetPromptResult {
-			description: Some(format!(
-				"Workflow for creating a {} script named '{}'",
-				script_type, script_name
-			)),
-			messages: vec![PromptMessage::new_text(PromptMessageRole::User, content)],
-		})
+		Ok(GetPromptResult::new(vec![PromptMessage::new_text(
+			PromptMessageRole::User,
+			content,
+		)])
+		.with_description(format!(
+			"Workflow for creating a {} script named '{}'",
+			script_type, script_name
+		)))
 	}
 
 	/// Generate the deploy_script workflow prompt.
@@ -241,10 +242,11 @@ Use `dev_generate_lock_info` or create the script structure:
 			}
 		);
 
-		Ok(GetPromptResult {
-			description: Some(format!("Workflow for deploying a script to {}", network)),
-			messages: vec![PromptMessage::new_text(PromptMessageRole::User, content)],
-		})
+		Ok(GetPromptResult::new(vec![PromptMessage::new_text(
+			PromptMessageRole::User,
+			content,
+		)])
+		.with_description(format!("Workflow for deploying a script to {}", network)))
 	}
 
 	/// Generate the query_blockchain workflow prompt.
@@ -421,13 +423,14 @@ Scripts are identified by:
 			tools.join("\n- ")
 		);
 
-		Ok(GetPromptResult {
-			description: Some(format!(
-				"Workflow for querying {} data from CKB",
-				query_type
-			)),
-			messages: vec![PromptMessage::new_text(PromptMessageRole::User, content)],
-		})
+		Ok(GetPromptResult::new(vec![PromptMessage::new_text(
+			PromptMessageRole::User,
+			content,
+		)])
+		.with_description(format!(
+			"Workflow for querying {} data from CKB",
+			query_type
+		)))
 	}
 
 	/// Generate the transfer_ckb workflow prompt.
@@ -541,13 +544,14 @@ Monitor for confirmation using `rpc_get_transaction`.
 			}
 		);
 
-		Ok(GetPromptResult {
-			description: Some(format!(
-				"Workflow for transferring {} {}",
-				amount, token_type
-			)),
-			messages: vec![PromptMessage::new_text(PromptMessageRole::User, content)],
-		})
+		Ok(GetPromptResult::new(vec![PromptMessage::new_text(
+			PromptMessageRole::User,
+			content,
+		)])
+		.with_description(format!(
+			"Workflow for transferring {} {}",
+			amount, token_type
+		)))
 	}
 }
 

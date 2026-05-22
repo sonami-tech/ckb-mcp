@@ -2,7 +2,7 @@ use crate::{
 	error::{CkbMcpError, Result},
 	types::{JsonRpcRequest, JsonRpcResponse},
 };
-use rand::Rng;
+use rand::RngExt;
 use reqwest::Client;
 use serde_json::Value;
 use tracing::{debug, error};

@@ -98,29 +98,32 @@ pub fn make_tool_with_output_schema(
 	hints: ToolHints,
 	output_schema: Option<serde_json::Value>,
 ) -> Tool {
-	Tool {
-		name: name.into(),
-		description: Some(description.into()),
-		input_schema: input_schema
+	let tool = Tool::new(
+		name,
+		description,
+		input_schema
 			.as_object()
 			.expect("input_schema must be a JSON object")
-			.clone()
-			.into(),
-		annotations: Some(
-			ToolAnnotations::new()
-				.read_only(hints.read_only)
-				.destructive(hints.destructive)
-				.idempotent(hints.idempotent)
-				.open_world(hints.open_world),
-		),
-		output_schema: output_schema.map(|s| {
-			s.as_object()
+			.clone(),
+	)
+	.with_title(title)
+	.with_annotations(
+		ToolAnnotations::new()
+			.read_only(hints.read_only)
+			.destructive(hints.destructive)
+			.idempotent(hints.idempotent)
+			.open_world(hints.open_world),
+	);
+
+	if let Some(output_schema) = output_schema {
+		tool.with_raw_output_schema(
+			output_schema
+				.as_object()
 				.expect("output_schema must be a JSON object")
 				.clone()
-				.into()
-		}),
-		title: Some(title.to_string()),
-		icons: None,
-		meta: None,
+				.into(),
+		)
+	} else {
+		tool
 	}
 }

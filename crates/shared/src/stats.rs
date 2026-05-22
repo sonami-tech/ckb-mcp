@@ -4,7 +4,7 @@
 //! helping identify which tools and resources are most frequently used.
 
 use crate::error::{CkbMcpError, Result};
-use redb::{Database, ReadableTable, TableDefinition};
+use redb::{Database, ReadableDatabase, ReadableTable, TableDefinition};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};

@@ -460,25 +460,16 @@ impl ServerHandler for CkbMcpServer {
 			ServerCapabilities::builder().build()
 		};
 
-		ServerInfo {
-			protocol_version: ProtocolVersion::V_2025_06_18,
-			capabilities,
-			server_info: Implementation {
-				name: "ckb-ai-mcp".to_string(),
-				version: env!("CARGO_PKG_VERSION").to_string(),
-				title: None,
-				website_url: None,
-				icons: None,
-			},
-			instructions: Some(
+		ServerInfo::new(capabilities)
+			.with_protocol_version(ProtocolVersion::V_2025_06_18)
+			.with_server_info(Implementation::new("ckb-ai-mcp", env!("CARGO_PKG_VERSION")))
+			.with_instructions(
 				"CKB blockchain development server providing RPC queries, development tools, \
 				 documentation, and guided workflows for building CKB smart contracts and applications.\n\n\
 				 Tool Discovery: This server uses deferred loading. The 'search_tools' and 'search_resources' \
 				 tools are always available. Use them to discover relevant tools before calling them. \
-				 Other tools are loaded on-demand when invoked."
-					.to_string(),
-			),
-		}
+				 Other tools are loaded on-demand when invoked.",
+			)
 	}
 
 	async fn list_tools(

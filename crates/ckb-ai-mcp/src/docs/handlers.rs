@@ -112,9 +112,10 @@ impl DocsHandlers {
 	/// Read a specific documentation resource.
 	pub fn read_resource(&self, uri: &str) -> Result<ReadResourceResult> {
 		if let Some(cached) = self.content_cache.get(uri) {
-			Ok(ReadResourceResult {
-				contents: vec![ResourceContents::text(&cached.content, uri)],
-			})
+			Ok(ReadResourceResult::new(vec![ResourceContents::text(
+				&cached.content,
+				uri,
+			)]))
 		} else {
 			Err(CkbMcpError::NotFound(format!(
 				"Resource not found: {}",
