@@ -115,3 +115,18 @@
 [submodule "resources/lock-value-relationships-demo"]
 	path = resources/lock-value-relationships-demo
 	url = https://github.com/sonami-tech/lock-value-relationships-demo.git
+[submodule "resources/fiber"]
+	path = resources/fiber
+	url = https://github.com/nervosnetwork/fiber.git
+[submodule "resources/fiber-scripts"]
+	path = resources/fiber-scripts
+	url = https://github.com/nervosnetwork/fiber-scripts.git
+[submodule "resources/ckb-fiber-docker"]
+	path = resources/ckb-fiber-docker
+	url = https://github.com/Flouse/ckb-fiber-docker.git
+[submodule "resources/ckb-fiber-testnet-demo"]
+	path = resources/ckb-fiber-testnet-demo
+	url = https://github.com/gpBlockchain/ckb-fiber-testnet-demo.git
+[submodule "resources/fiber-latch"]
+	path = resources/fiber-latch
+	url = https://github.com/Ticoworld/fiber-latch.git
