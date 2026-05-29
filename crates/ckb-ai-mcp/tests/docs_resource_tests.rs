@@ -131,10 +131,7 @@ async fn test_resources_list_uris_are_unique() {
 
 	let resources = result["resources"].as_array().unwrap();
 
-	let uris: Vec<&str> = resources
-		.iter()
-		.filter_map(|r| r["uri"].as_str())
-		.collect();
+	let uris: Vec<&str> = resources.iter().filter_map(|r| r["uri"].as_str()).collect();
 
 	let unique: HashSet<&str> = uris.iter().copied().collect();
 	assert_eq!(
@@ -231,12 +228,50 @@ async fn test_resources_include_all_categories() {
 
 /// Domain-relevant keywords that should appear in any CKB documentation.
 const DOMAIN_KEYWORDS: &[&str] = &[
-	"CKB", "ckb", "cell", "Cell", "script", "Script", "transaction", "Transaction",
-	"token", "Token", "lock", "Lock", "type", "capacity", "Nervos", "blockchain",
-	"UTXO", "hash", "block", "witness", "deploy", "Rust", "SDK", "UDT", "xUDT",
-	"sUDT", "Spore", "Omnilock", "DAO", "iCKB", "CoTA", "RGB", "SSRI", "CoBuild",
-	"molecule", "Molecule", "RISC-V", "syscall", "args", "code_hash", "hash_type",
-	"def ", "import ", "class ", // Python file markers
+	"CKB",
+	"ckb",
+	"cell",
+	"Cell",
+	"script",
+	"Script",
+	"transaction",
+	"Transaction",
+	"token",
+	"Token",
+	"lock",
+	"Lock",
+	"type",
+	"capacity",
+	"Nervos",
+	"blockchain",
+	"UTXO",
+	"hash",
+	"block",
+	"witness",
+	"deploy",
+	"Rust",
+	"SDK",
+	"UDT",
+	"xUDT",
+	"sUDT",
+	"Spore",
+	"Omnilock",
+	"DAO",
+	"iCKB",
+	"CoTA",
+	"RGB",
+	"SSRI",
+	"CoBuild",
+	"molecule",
+	"Molecule",
+	"RISC-V",
+	"syscall",
+	"args",
+	"code_hash",
+	"hash_type",
+	"def ",
+	"import ",
+	"class ", // Python file markers
 ];
 
 /// Verify every registered resource is readable, has relevant content, and
@@ -252,15 +287,9 @@ async fn test_all_resources_content_validation() {
 
 	let resources = list_result["resources"].as_array().unwrap();
 
-	let all_uris: Vec<&str> = resources
-		.iter()
-		.filter_map(|r| r["uri"].as_str())
-		.collect();
+	let all_uris: Vec<&str> = resources.iter().filter_map(|r| r["uri"].as_str()).collect();
 
-	assert!(
-		all_uris.len() >= 85,
-		"Should have at least 85 URIs to test"
-	);
+	assert!(all_uris.len() >= 85, "Should have at least 85 URIs to test");
 
 	let mut read_failures: Vec<String> = Vec::new();
 	let mut keyword_failures: Vec<String> = Vec::new();
@@ -295,10 +324,8 @@ async fn test_all_resources_content_validation() {
 				let is_python = uri.contains("/examples/calculate_file_hashes")
 					|| uri.contains("/examples/consolidate_cells");
 				if !is_python && !text.trim_start().starts_with("## Description") {
-					description_failures.push(format!(
-						"{}: does not start with '## Description'",
-						uri
-					));
+					description_failures
+						.push(format!("{}: does not start with '## Description'", uri));
 				}
 			}
 			Err(e) => {

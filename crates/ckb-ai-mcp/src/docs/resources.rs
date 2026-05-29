@@ -37,12 +37,12 @@ const fn make_resource(
 ) -> DocResource {
 	let bytes = file_path.as_bytes();
 	let len = bytes.len();
-	let mime_type = if len >= 3 && bytes[len - 3] == b'.' && bytes[len - 2] == b'p' && bytes[len - 1] == b'y'
-	{
-		"text/x-python"
-	} else {
-		"text/markdown"
-	};
+	let mime_type =
+		if len >= 3 && bytes[len - 3] == b'.' && bytes[len - 2] == b'p' && bytes[len - 1] == b'y' {
+			"text/x-python"
+		} else {
+			"text/markdown"
+		};
 
 	DocResource {
 		uri,

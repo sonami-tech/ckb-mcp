@@ -520,10 +520,7 @@ async fn test_search_resources_finds_programming_model() {
 	let ctx = TestContext::new();
 
 	let result = ctx
-		.call_tool(
-			"search_resources",
-			json!({"query": "programming model"}),
-		)
+		.call_tool("search_resources", json!({"query": "programming model"}))
 		.await
 		.expect("search_resources should succeed");
 
@@ -576,10 +573,7 @@ async fn test_search_resources_finds_getting_started() {
 	let ctx = TestContext::new();
 
 	let result = ctx
-		.call_tool(
-			"search_resources",
-			json!({"query": "getting started"}),
-		)
+		.call_tool("search_resources", json!({"query": "getting started"}))
 		.await
 		.expect("search_resources should succeed");
 
@@ -596,10 +590,7 @@ async fn test_search_resources_finds_getting_started() {
 			.unwrap_or(false)
 	});
 
-	assert!(
-		has_getting_started,
-		"Should find getting-started resource"
-	);
+	assert!(has_getting_started, "Should find getting-started resource");
 }
 
 #[tokio::test]
@@ -632,10 +623,7 @@ async fn test_search_resources_finds_reference() {
 	let ctx = TestContext::new();
 
 	let result = ctx
-		.call_tool(
-			"search_resources",
-			json!({"query": "script hashes"}),
-		)
+		.call_tool("search_resources", json!({"query": "script hashes"}))
 		.await
 		.expect("search_resources should succeed");
 

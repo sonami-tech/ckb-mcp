@@ -461,15 +461,15 @@ impl Stats {
 		}
 
 		// Sort by count descending
-		tool_calls.sort_by(|a, b| b.count.cmp(&a.count));
+		tool_calls.sort_by_key(|b| std::cmp::Reverse(b.count));
 		resource_reads.sort_by(|a, b| {
 			b.count
 				.cmp(&a.count)
 				.then_with(|| b.last_called.cmp(&a.last_called))
 				.then_with(|| a.name.cmp(&b.name))
 		});
-		recent_resource_reads.sort_by(|a, b| b.sequence.cmp(&a.sequence));
-		error_summaries.sort_by(|a, b| b.count.cmp(&a.count));
+		recent_resource_reads.sort_by_key(|b| std::cmp::Reverse(b.sequence));
+		error_summaries.sort_by_key(|b| std::cmp::Reverse(b.count));
 
 		let now = Self::now();
 		let uptime_seconds = now.saturating_sub(self.start_time);
