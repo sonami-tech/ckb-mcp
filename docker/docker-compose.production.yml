@@ -7,9 +7,15 @@ services:
     container_name: ckb-mcp-production
     ports:
       - "3112:3112"  # Unified MCP server
-    # Override the image CMD to enable the Host-header guard (DNS-rebinding
-    # protection) for this internet-facing deployment. Must reproduce the
-    # image's default args, then append --enforce-hosts / --allowed-hosts.
+    # Override the image CMD for this internet-facing deployment. Must reproduce
+    # the image's default args, then append the production-specific flags:
+    #   --enforce-hosts / --allowed-hosts : Host-header guard (DNS-rebinding).
+    #   --no-reset-stats-on-incompatible  : do NOT silently wipe the stats DB if
+    #     it is incompatible/corrupt; fail startup and preserve it for manual
+    #     inspection instead. NOTE: with `restart: unless-stopped` below, an
+    #     incompatible stats DB will crash-loop the container until an operator
+    #     removes /app/data/ckb-ai-mcp-stats.redb (or drops this flag). This is
+    #     the intended trade: loud failure + data preserved over a silent reset.
     command:
       - /bin/sh
       - -c
@@ -21,6 +27,7 @@ services:
         --stats-db /app/data/ckb-ai-mcp-stats.redb
         --enforce-hosts
         --allowed-hosts mcp.ckbdev.com,localhost,127.0.0.1,::1
+        --no-reset-stats-on-incompatible
     environment:
       - RUST_LOG=info
       - CKB_RPC_URL=${CKB_RPC_URL:-http://127.0.0.1:8114}
