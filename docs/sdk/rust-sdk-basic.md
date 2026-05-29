@@ -39,6 +39,9 @@ pub async fn transfer_ckb(
     amount: HumanCapacity,
 ) -> Result<H256, Box<dyn std::error::Error>> {
     // 1. Setup RPC client and components
+    // ckb-sdk-rust 5.1.0 (on the ckb 1.0 crates) also offers
+    // CkbRpcClient::new_with_timeout(ckb_rpc_url, Duration::from_secs(90))?
+    // for a configurable RPC timeout instead of the default.
     let mut ckb_client = CkbRpcClient::new(ckb_rpc_url);
     let cell_dep_resolver = {
         let genesis_block = ckb_client.get_block_by_number(0.into())?.unwrap();

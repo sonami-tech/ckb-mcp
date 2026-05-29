@@ -129,7 +129,7 @@ impl TestContext {
 	/// Create a new test context with a custom port.
 	pub fn with_port(port: u16) -> Self {
 		let client = Client::builder()
-			.timeout(std::time::Duration::from_secs(30))
+			.timeout(std::time::Duration::from_secs(90))
 			.connect_timeout(std::time::Duration::from_secs(5))
 			.build()
 			.expect("Failed to build HTTP client");

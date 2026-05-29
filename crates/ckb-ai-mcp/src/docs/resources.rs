@@ -1,6 +1,6 @@
 //! Documentation resource definitions.
 //!
-//! This module defines all 89 documentation resources with the new URI scheme:
+//! This module defines all 98 documentation resources with the new URI scheme:
 //! `ckb://docs/` instead of `ckb-dev-context://`
 
 use rmcp::model::{Annotated, RawResource, Resource};
@@ -538,6 +538,54 @@ impl DocResourceDefinitions {
 				"ckb://docs/examples/dob-development",
 				"DOB Development",
 				"examples/dob-development.md",
+			),
+			// =================================================================
+			// fiber/ - 9 files
+			// =================================================================
+			make_resource(
+				"ckb://docs/fiber/overview",
+				"Fiber Network Overview",
+				"fiber/overview.md",
+			),
+			make_resource(
+				"ckb://docs/fiber/node-setup",
+				"Fiber Node Setup",
+				"fiber/node-setup.md",
+			),
+			make_resource(
+				"ckb://docs/fiber/rpc-reference",
+				"Fiber RPC Reference",
+				"fiber/rpc-reference.md",
+			),
+			make_resource(
+				"ckb://docs/fiber/channels",
+				"Fiber Channels",
+				"fiber/channels.md",
+			),
+			make_resource(
+				"ckb://docs/fiber/invoices-and-payments",
+				"Fiber Invoices and Payments",
+				"fiber/invoices-and-payments.md",
+			),
+			make_resource(
+				"ckb://docs/fiber/routing-and-graph",
+				"Fiber Routing and Graph",
+				"fiber/routing-and-graph.md",
+			),
+			make_resource(
+				"ckb://docs/fiber/on-chain-scripts",
+				"Fiber On-Chain Scripts",
+				"fiber/on-chain-scripts.md",
+			),
+			make_resource(
+				"ckb://docs/fiber/udt-channels",
+				"Fiber UDT Channels",
+				"fiber/udt-channels.md",
+			),
+			make_resource(
+				"ckb://docs/fiber/cross-chain-hub",
+				"Fiber Cross-Chain Hub",
+				"fiber/cross-chain-hub.md",
 			),
 		]
 	}

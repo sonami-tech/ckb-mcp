@@ -72,6 +72,7 @@ Comprehensive directory of CKB ecosystem projects, tools, and resources organize
   - Website: https://www.fiber.world/
   - GitHub: https://github.com/nervosnetwork/fiber
   - **Use Case**: Scalable payments, Lightning-like functionality
+  - **Docs**: [ckb://docs/fiber/overview](ckb://docs/fiber/overview)
 
 ## Production dApps and Examples
 

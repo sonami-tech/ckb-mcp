@@ -747,3 +747,40 @@ impl DevHandlers {
 		})
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use serde_json::json;
+
+	fn test_handlers() -> DevHandlers {
+		DevHandlers {
+			ckb_client: CkbRpcClient::new("http://127.0.0.1:8114").expect("client should build"),
+			ckb_rpc_url: "http://127.0.0.1:8114".to_string(),
+			private_key: "0x6109170b275a09ad54877b82f7d9930f88cab5717d484fb4741c9f0c0571c078"
+				.to_string(),
+			network_type: ckb_sdk::NetworkType::Testnet,
+			sighash_cell_dep: None,
+		}
+	}
+
+	#[test]
+	fn generate_lock_info_rejects_wrong_length_private_key() {
+		let handlers = test_handlers();
+
+		for private_key in [
+			format!("0x{}", "11".repeat(31)),
+			format!("0x{}", "11".repeat(33)),
+		] {
+			let err = handlers
+				.handle_generate_lock_info(&json!({ "private_key": private_key }))
+				.expect_err("wrong-length private keys should fail validation");
+
+			assert!(
+				err.to_string()
+					.contains("Invalid private key: expected 32 bytes"),
+				"wrong-length private keys should return a clear validation error"
+			);
+		}
+	}
+}

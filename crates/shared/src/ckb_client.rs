@@ -22,11 +22,11 @@ impl CkbRpcClient {
 	/// Create a new CKB RPC client with the given URL.
 	///
 	/// Configures HTTP client with reasonable timeouts:
-	/// - Request timeout: 30 seconds
+	/// - Request timeout: 90 seconds
 	/// - Connection timeout: 5 seconds
 	pub fn new(url: impl Into<String>) -> Result<Self> {
 		let client = Client::builder()
-			.timeout(std::time::Duration::from_secs(30))
+			.timeout(std::time::Duration::from_secs(90))
 			.connect_timeout(std::time::Duration::from_secs(5))
 			.build()
 			.map_err(|e| CkbMcpError::Internal(format!("Failed to build HTTP client: {}", e)))?;

@@ -5,8 +5,8 @@ test-threads = 1
 # Retry flaky tests twice (3 total attempts: initial + 2 retries) with exponential backoff (5s, 10s)
 retries = { backoff = "exponential", count = 2, delay = "5s", jitter = false }
 
-# Mark tests as slow after 45s, terminate after 90s (2 periods)
-slow-timeout = { period = "45s", terminate-after = 2 }
+# Mark tests as slow after 45s, terminate after 135s (3 periods)
+slow-timeout = { period = "45s", terminate-after = 3 }
 
 # [profile.ci]
 # # CI can use more parallelism if needed

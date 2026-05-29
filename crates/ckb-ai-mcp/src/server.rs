@@ -291,8 +291,11 @@ mod tests {
 	use super::*;
 	use crate::capabilities::CkbMcpServer;
 	use crate::docs::DocsHandlers;
+	use axum::Router;
 	use axum::body::Body;
 	use axum::http::{Method, Request};
+	use axum::routing::get;
+	use http_body_util::BodyExt;
 	use rmcp::model::{
 		CallToolRequestParams, ClientCapabilities, ClientJsonRpcMessage, ClientRequest,
 		Implementation, InitializeRequestParams, JsonObject, NumberOrString, ProtocolVersion,
@@ -398,6 +401,55 @@ mod tests {
 		);
 	}
 
+	#[tokio::test]
+	async fn stats_route_serves_top_resources_and_recent_requests() {
+		let dir = tempfile::tempdir().expect("tempdir should be created");
+		let stats = Arc::new(
+			shared::stats::Stats::open(dir.path().join("stats.redb")).expect("stats should open"),
+		);
+		stats.record_resource_read("ckb://docs/older");
+		stats.record_resource_read("ckb://docs/newer");
+		stats.record_resource_read("ckb://docs/newer");
+
+		let state = Arc::new(AppState {
+			config: test_server_config(stats),
+			dev_handlers: None,
+			docs_handlers: None,
+		});
+		let mut app = Router::new()
+			.route("/stats", get(stats_handler))
+			.with_state(state);
+
+		let response = app
+			.call(
+				Request::builder()
+					.method(Method::GET)
+					.uri("/stats")
+					.body(Body::empty())
+					.expect("request should be built"),
+			)
+			.await
+			.expect("/stats should return a response");
+
+		assert_eq!(response.status(), StatusCode::OK);
+		let body = response
+			.into_body()
+			.collect()
+			.await
+			.expect("stats body should collect")
+			.to_bytes();
+		let body = String::from_utf8(body.to_vec()).expect("stats body should be utf-8");
+
+		assert!(body.contains("CKB MCP Server Stats (v"));
+		assert!(body.contains("Total Resource Reads: 3"));
+		assert!(body.contains("Top Resources:"));
+		assert!(body.contains("1. ckb://docs/newer - 2 reads"));
+		assert!(body.contains("Recent Requests:"));
+		assert!(body.contains("1. ckb://docs/newer - "));
+		assert!(body.contains("2. ckb://docs/newer - "));
+		assert!(body.contains("3. ckb://docs/older - "));
+	}
+
 	fn test_mcp_server() -> CkbMcpServer {
 		let dir = tempfile::tempdir().expect("tempdir should be created");
 		let stats = Arc::new(
@@ -406,7 +458,15 @@ mod tests {
 		let docs_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs");
 		let docs_handlers =
 			Arc::new(DocsHandlers::new(docs_path.clone()).expect("docs handlers should load docs"));
-		let config = ServerConfig {
+		let config = test_server_config(stats);
+
+		CkbMcpServer::new_with_handlers(config, None, Some(docs_handlers))
+	}
+
+	fn test_server_config(stats: Arc<shared::stats::Stats>) -> ServerConfig {
+		let docs_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs");
+
+		ServerConfig {
 			args: crate::Args {
 				port: 0,
 				host: "127.0.0.1".to_string(),
@@ -422,9 +482,7 @@ mod tests {
 				no_prompts: false,
 			},
 			stats,
-		};
-
-		CkbMcpServer::new_with_handlers(config, None, Some(docs_handlers))
+		}
 	}
 
 	fn mcp_post_request(message: ClientJsonRpcMessage, session_id: Option<&str>) -> Request<Body> {
