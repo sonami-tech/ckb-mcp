@@ -377,7 +377,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-ai-mcp"
-version = "1.6.10"
+version = "1.6.11"
 dependencies = [
  "anyhow",
  "axum",

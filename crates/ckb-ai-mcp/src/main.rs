@@ -91,6 +91,15 @@ pub struct Args {
 	/// --enforce-hosts is set.
 	#[arg(long, value_delimiter = ',', default_value = "localhost,127.0.0.1,::1")]
 	pub allowed_hosts: Vec<String>,
+
+	/// Do not auto-reset the stats database when it is incompatible or corrupt.
+	///
+	/// By default an unreadable stats database (e.g. after a redb format
+	/// upgrade, or file corruption) is deleted and recreated, since it holds
+	/// only telemetry. Set this to keep the file and fail startup instead, so
+	/// it can be inspected or migrated manually.
+	#[arg(long, default_value = "false")]
+	pub no_reset_stats_on_incompatible: bool,
 }
 
 impl Args {
@@ -169,9 +178,16 @@ async fn main() -> Result<()> {
 		info!("CKB RPC: Not required (docs-only mode)");
 	}
 
-	// Initialize stats database.
+	// Initialize stats database. An incompatible/corrupt file is reset by
+	// default (telemetry only); --no-reset-stats-on-incompatible keeps it and
+	// fails startup instead.
 	info!("Stats database: {:?}", args.stats_db);
-	let stats = shared::stats::Stats::open(&args.stats_db)?;
+	let on_incompatible = if args.no_reset_stats_on_incompatible {
+		shared::stats::OnIncompatible::Fail
+	} else {
+		shared::stats::OnIncompatible::Reset
+	};
+	let stats = shared::stats::Stats::open_with_policy(&args.stats_db, on_incompatible)?;
 	let stats = Arc::new(stats);
 
 	let config = ServerConfig {

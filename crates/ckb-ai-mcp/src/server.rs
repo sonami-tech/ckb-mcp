@@ -502,9 +502,9 @@ mod tests {
 		assert!(body.contains("Top Resources:"));
 		assert!(body.contains("1. ckb://docs/newer - 2 reads"));
 		assert!(body.contains("Recent Requests:"));
-		assert!(body.contains("1. ckb://docs/newer - "));
-		assert!(body.contains("2. ckb://docs/newer - "));
-		assert!(body.contains("3. ckb://docs/older - "));
+		assert!(body.contains("1. [resource] ckb://docs/newer - "));
+		assert!(body.contains("2. [resource] ckb://docs/newer - "));
+		assert!(body.contains("3. [resource] ckb://docs/older - "));
 	}
 
 	fn test_mcp_server() -> CkbMcpServer {
@@ -549,6 +549,7 @@ mod tests {
 				"127.0.0.1".to_string(),
 				"::1".to_string(),
 			],
+			no_reset_stats_on_incompatible: false,
 		}
 	}
 

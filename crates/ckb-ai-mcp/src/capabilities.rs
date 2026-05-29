@@ -204,6 +204,8 @@ impl CkbMcpServer {
 			tools.extend(SEARCH_TOOLS.iter().cloned());
 		}
 
+		self.config.stats.record_request("list", "tools/list");
+
 		Ok(ListToolsResult {
 			tools,
 			next_cursor: None,
@@ -289,7 +291,7 @@ impl CkbMcpServer {
 				Ok(call_result)
 			}
 			Err(e) => {
-				self.config.stats.record_error(name, &e.to_string());
+				self.config.stats.record_error("tool", name, &e.to_string());
 				Ok(CallToolResult::error(vec![Content::text(e.to_string())]))
 			}
 		}
@@ -311,6 +313,8 @@ impl CkbMcpServer {
 				None,
 			));
 		};
+
+		self.config.stats.record_request("list", "resources/list");
 
 		Ok(ListResourcesResult {
 			resources,
@@ -341,7 +345,9 @@ impl CkbMcpServer {
 					Ok(result)
 				}
 				Err(e) => {
-					self.config.stats.record_error(uri, &e.to_string());
+					self.config
+						.stats
+						.record_error("resource", uri, &e.to_string());
 					Err(ErrorData::invalid_params(e.to_string(), None))
 				}
 			}
@@ -360,6 +366,8 @@ impl CkbMcpServer {
 		if !self.config.args.prompts_enabled() {
 			return Err(ErrorData::invalid_params("Prompts are disabled", None));
 		}
+
+		self.config.stats.record_request("list", "prompts/list");
 
 		Ok(ListPromptsResult {
 			prompts: PROMPTS.iter().cloned().collect(),
@@ -398,7 +406,9 @@ impl CkbMcpServer {
 					Ok(result)
 				}
 				Err(e) => {
-					self.config.stats.record_error(name, &e.to_string());
+					self.config
+						.stats
+						.record_error("prompt", name, &e.to_string());
 					Err(ErrorData::invalid_params(e.to_string(), None))
 				}
 			}
@@ -558,6 +568,7 @@ mod tests {
 					"127.0.0.1".to_string(),
 					"::1".to_string(),
 				],
+				no_reset_stats_on_incompatible: false,
 			},
 			stats,
 		}
