@@ -15,9 +15,9 @@ use std::sync::Arc;
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
-use crate::ServerConfig;
+use crate::{Args, ServerConfig};
 use crate::capabilities::CkbMcpServerFactory;
 use crate::dev::DevHandlers;
 use crate::jsonrpc::jsonrpc_handler;
@@ -48,6 +48,20 @@ struct UploadError {
 
 /// Run the MCP server.
 pub async fn run(addr: SocketAddr, config: ServerConfig) -> Result<()> {
+	// Make the host-guard posture loud. The guard is off by default; when the
+	// server also binds a non-loopback interface it is reachable from the
+	// network with no Host validation, so surface that rather than letting it
+	// pass silently.
+	if !config.args.enforce_hosts && !addr.ip().is_loopback() {
+		warn!(
+			host = %addr.ip(),
+			"Host-header guard is DISABLED while listening on a non-loopback \
+			 address. Inbound requests are accepted regardless of Host header. \
+			 Enable --enforce-hosts (with --allowed-hosts) for internet-facing \
+			 deployments."
+		);
+	}
+
 	// Create dev handlers if tools are enabled.
 	let dev_handlers = if config.args.tools_enabled() {
 		match CkbRpcClient::new(&config.args.ckb_rpc) {
@@ -85,7 +99,7 @@ pub async fn run(addr: SocketAddr, config: ServerConfig) -> Result<()> {
 	let mcp_service = StreamableHttpService::new(
 		move || factory.create(),
 		session_manager.into(),
-		create_streamable_http_config(),
+		create_streamable_http_config(&config.args),
 	);
 
 	// Wrap MCP service with DeferLoadingLayer to inject defer_loading property.
@@ -128,11 +142,22 @@ pub async fn run(addr: SocketAddr, config: ServerConfig) -> Result<()> {
 	Ok(())
 }
 
-fn create_streamable_http_config() -> StreamableHttpServerConfig {
+fn create_streamable_http_config(args: &Args) -> StreamableHttpServerConfig {
 	// Stateless mode avoids issuing Mcp-Session-Id values. Codex and Claude Code
 	// both reuse session IDs, so in-memory server sessions can go stale after
 	// idle time, deploys, restarts, or routing changes.
-	StreamableHttpServerConfig::default().with_stateful_mode(false)
+	let config = StreamableHttpServerConfig::default().with_stateful_mode(false);
+
+	// rmcp defaults the DNS-rebinding guard ON (loopback-only). This server is
+	// run both locally and as a public deployment, so the guard is opt-in here:
+	// off by default, enabled via --enforce-hosts with an explicit --allowed-hosts
+	// list. Disabling explicitly (rather than leaving the default) keeps the open
+	// posture intentional and visible in code.
+	if args.enforce_hosts {
+		config.with_allowed_hosts(args.allowed_hosts.clone())
+	} else {
+		config.disable_allowed_hosts()
+	}
 }
 
 /// Health check endpoint.
@@ -311,9 +336,41 @@ mod tests {
 
 	#[test]
 	fn mcp_http_transport_is_stateless() {
-		let config = create_streamable_http_config();
+		let config = create_streamable_http_config(&test_args());
 
 		assert!(!config.stateful_mode);
+	}
+
+	#[test]
+	fn host_guard_disabled_by_default() {
+		// Default (no --enforce-hosts): the DNS-rebinding guard must be off so
+		// the server accepts any Host header. This encodes the project's
+		// deliberate open-by-default posture; flipping the default back on would
+		// break local docker-run usage that relies on it.
+		let config = create_streamable_http_config(&test_args());
+
+		assert!(
+			config.allowed_hosts.is_empty(),
+			"without --enforce-hosts the allow-list must be empty (guard off)"
+		);
+	}
+
+	#[test]
+	fn host_guard_enforced_uses_allowed_hosts() {
+		// With --enforce-hosts, only the configured hosts are allowed. This is
+		// the control that protects internet-facing deployments, so the list
+		// must be exactly what the operator passed.
+		let mut args = test_args();
+		args.enforce_hosts = true;
+		args.allowed_hosts = vec!["mcp.ckbdev.com".to_string(), "localhost".to_string()];
+
+		let config = create_streamable_http_config(&args);
+
+		assert_eq!(
+			config.allowed_hosts,
+			vec!["mcp.ckbdev.com".to_string(), "localhost".to_string()],
+			"enforced allow-list must match the operator-supplied hosts"
+		);
 	}
 
 	#[tokio::test]
@@ -322,7 +379,7 @@ mod tests {
 			StreamableHttpService::new(
 				|| Ok(test_mcp_server()),
 				NeverSessionManager::default().into(),
-				create_streamable_http_config(),
+				create_streamable_http_config(&test_args()),
 			);
 
 		let init_response = service
@@ -343,7 +400,7 @@ mod tests {
 			StreamableHttpService::new(
 				|| Ok(test_mcp_server()),
 				NeverSessionManager::default().into(),
-				create_streamable_http_config(),
+				create_streamable_http_config(&test_args()),
 			);
 
 		let response = service
@@ -464,24 +521,34 @@ mod tests {
 	}
 
 	fn test_server_config(stats: Arc<shared::stats::Stats>) -> ServerConfig {
+		ServerConfig {
+			args: test_args(),
+			stats,
+		}
+	}
+
+	fn test_args() -> crate::Args {
 		let docs_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs");
 
-		ServerConfig {
-			args: crate::Args {
-				port: 0,
-				host: "127.0.0.1".to_string(),
-				ckb_rpc: "http://127.0.0.1:8114".to_string(),
-				private_key: "0x6109170b275a09ad54877b82f7d9930f88cab5717d484fb4741c9f0c0571c078"
-					.to_string(),
-				docs_path,
-				stats_db: "unused.redb".into(),
-				log_level: "error".to_string(),
-				docs_only: true,
-				rpc_only: false,
-				tools_only: false,
-				no_prompts: false,
-			},
-			stats,
+		crate::Args {
+			port: 0,
+			host: "127.0.0.1".to_string(),
+			ckb_rpc: "http://127.0.0.1:8114".to_string(),
+			private_key: "0x6109170b275a09ad54877b82f7d9930f88cab5717d484fb4741c9f0c0571c078"
+				.to_string(),
+			docs_path,
+			stats_db: "unused.redb".into(),
+			log_level: "error".to_string(),
+			docs_only: true,
+			rpc_only: false,
+			tools_only: false,
+			no_prompts: false,
+			enforce_hosts: false,
+			allowed_hosts: vec![
+				"localhost".to_string(),
+				"127.0.0.1".to_string(),
+				"::1".to_string(),
+			],
 		}
 	}
 

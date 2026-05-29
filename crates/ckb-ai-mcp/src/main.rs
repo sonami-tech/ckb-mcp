@@ -76,6 +76,21 @@ pub struct Args {
 	/// Disable prompts feature.
 	#[arg(long, default_value = "false")]
 	pub no_prompts: bool,
+
+	/// Enforce inbound Host-header validation (DNS-rebinding guard).
+	///
+	/// Off by default: any Host header is accepted. Enable for
+	/// internet-facing deployments and pair with --allowed-hosts.
+	#[arg(long, default_value = "false")]
+	pub enforce_hosts: bool,
+
+	/// Hosts allowed when --enforce-hosts is set (comma-separated).
+	///
+	/// Accepts hostnames or host:port authorities, e.g.
+	/// `mcp.example.com,localhost,127.0.0.1,::1`. Ignored unless
+	/// --enforce-hosts is set.
+	#[arg(long, value_delimiter = ',', default_value = "localhost,127.0.0.1,::1")]
+	pub allowed_hosts: Vec<String>,
 }
 
 impl Args {

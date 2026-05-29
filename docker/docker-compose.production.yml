@@ -7,6 +7,20 @@ services:
     container_name: ckb-mcp-production
     ports:
       - "3112:3112"  # Unified MCP server
+    # Override the image CMD to enable the Host-header guard (DNS-rebinding
+    # protection) for this internet-facing deployment. Must reproduce the
+    # image's default args, then append --enforce-hosts / --allowed-hosts.
+    command:
+      - /bin/sh
+      - -c
+      - >-
+        exec /usr/local/bin/ckb-ai-mcp
+        --host 0.0.0.0 --port 3112
+        --ckb-rpc ${CKB_RPC_URL:-http://127.0.0.1:8114}
+        --docs-path /app/docs
+        --stats-db /app/data/ckb-ai-mcp-stats.redb
+        --enforce-hosts
+        --allowed-hosts mcp.ckbdev.com,localhost,127.0.0.1,::1
     environment:
       - RUST_LOG=info
       - CKB_RPC_URL=${CKB_RPC_URL:-http://127.0.0.1:8114}

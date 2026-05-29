@@ -552,6 +552,12 @@ mod tests {
 				rpc_only: false,
 				tools_only: false,
 				no_prompts: false,
+				enforce_hosts: false,
+				allowed_hosts: vec![
+					"localhost".to_string(),
+					"127.0.0.1".to_string(),
+					"::1".to_string(),
+				],
 			},
 			stats,
 		}
