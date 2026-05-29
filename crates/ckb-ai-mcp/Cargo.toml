@@ -1,6 +1,6 @@
 [package]
 name = "ckb-ai-mcp"
-version = "1.6.8"
+version = "1.6.9"
 edition = "2024"
 description = "Unified MCP server for CKB blockchain development"
 license = "MIT"

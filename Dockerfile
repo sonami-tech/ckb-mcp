@@ -1,6 +1,6 @@
 # Multi-stage build for CKB MCP server
 # Stage 1: Build
-FROM rust:1.95-slim AS builder
+FROM rust:1.95-slim-trixie AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -17,7 +17,7 @@ COPY . .
 RUN cargo build --release -p ckb-ai-mcp
 
 # Stage 2: Runtime
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
