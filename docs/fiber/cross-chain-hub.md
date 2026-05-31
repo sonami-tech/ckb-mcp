@@ -82,7 +82,26 @@ The hub enforces a dependency between them (the BTC invoice's `min_final_cltv_ex
 
 ### Running CCH Standalone
 
-Since v0.8.0, the Cross-Chain Hub can run as its own process rather than inside the Fiber node. It connects to a Fiber node over HTTP RPC and subscribes to store changes via the `subscribe_store_changes` WebSocket (requires the `read("cch")` biscuit scope). Composition is controlled by the node's `services` array (see node-setup) — enabling or omitting `cch` determines whether the hub runs in-process. A standalone hub additionally needs a Bitcoin Lightning node (e.g. LND) for the Lightning leg. The exact standalone-CCH configuration keys (the `cch:` block, the remote Fiber RPC endpoint, and the LND connection) are not part of the shipped `config/testnet/config.yml`; consult `fnn --help` and the repo's `cross-chain-hub-separate` test fixtures (`tests/nodes/`) for the current schema rather than assuming key names.
+Since v0.8.0, the Cross-Chain Hub can run as its own process rather than inside the Fiber node. It connects to a Fiber node over HTTP RPC and subscribes to store changes via the `subscribe_store_changes` WebSocket (requires the `read("cch")` biscuit scope). **The Fiber node must have `pubsub` in its `rpc.enabled_modules` — it is NOT default** (`DEFAULT_ENABLED_MODULES` = `cch,channel,graph,payment,info,invoice,peer[,watchtower]`, no `pubsub`); without it `subscribe_store_changes` is not registered and the standalone hub cannot receive store events. Composition is controlled by the node's `services` array (see node-setup) — enabling or omitting `cch` determines whether the hub runs in-process. A standalone hub additionally needs a Bitcoin Lightning node (e.g. LND) for the Lightning leg. The `cch:` block is **not** in the shipped `config/testnet/config.yml`; its keys (source: `cch/config.rs`, each also settable via the env var shown):
+
+| Key | Env var | Default | Notes |
+|-----|---------|---------|-------|
+| `fiber_rpc_url` | `CCH_FIBER_RPC_URL` | — | **Standalone mode only:** the remote Fiber node's RPC URL. Set this to run CCH as a separate process |
+| `base_dir` | `CCH_BASE_DIR` | `$BASE_DIR/cch` | cch data dir |
+| `lnd_rpc_url` | `CCH_LND_RPC_URL` | `https://127.0.0.1:10009` | LND gRPC endpoint |
+| `lnd_cert_path` | `CCH_LND_CERT_PATH` | — | LND TLS cert |
+| `lnd_macaroon_path` | `CCH_LND_MACAROON_PATH` | — | LND auth macaroon |
+| `wrapped_btc_type_script_args` | `CCH_WRAPPED_BTC_TYPE_SCRIPT_ARGS` | — | args of the wrapped-BTC UDT type script |
+| `wrapped_btc_type_script` | — | — | full Script JSON; **`validate_standalone()` rejects startup if unset/unparseable**; takes precedence over `_args` |
+| `order_expiry_delta_seconds` | `CCH_ORDER_EXPIRY_DELTA_SECONDS` | (source default) | order relative expiry |
+| `base_fee_sats` | `CCH_BASE_FEE_SATS` | `0` | base fee per order |
+| `fee_rate_per_million_sats` | `CCH_FEE_RATE_PER_MILLION_SATS` | (source default) | proportional fee |
+| `btc_final_tlc_expiry_delta_blocks` | `CCH_BTC_FINAL_TLC_EXPIRY_DELTA_BLOCKS` | (source default) | BTC-leg final timelock (blocks) |
+| `ckb_final_tlc_expiry_delta_seconds` | `CCH_CKB_FINAL_TLC_EXPIRY_DELTA_SECONDS` | (source default) | CKB-leg final timelock (s) |
+| `min_outgoing_invoice_expiry_delta_seconds` | `CCH_MIN_OUTGOING_INVOICE_EXPIRY_DELTA_SECONDS` | (source default) | min outgoing invoice expiry |
+| `ignore_startup_failure` | — | `false` | continue if the hub fails to start |
+
+For a working end-to-end example see the `cross-chain-hub-separate` Bruno fixtures (`tests/nodes/`); treat `cch/config.rs` as the live source for key names and defaults.
 
 ### End-to-End and Examples
 

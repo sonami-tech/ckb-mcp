@@ -22,42 +22,44 @@ The Fiber locks are deployed as **type-id (upgradeable) scripts**. The deploymen
 
 **⚠️ The hex literals in the block below are illustrative and likely already stale.** Do not copy them — extract the current `code_hash`, type-id `args`, and ckb-auth `out_point` from the running node's live `config/testnet/config.yml`. The structure shown is what to read, not the values:
 
+Structural template only — every `0x…` below is a placeholder. Read the real values from the live config; do not copy these:
+
 ```yaml
 scripts:
   - name: FundingLock
     script:
-      code_hash: 0x6c67887fe201ee0c7853f1682c0b77c0e6214044c156c7558269390a8afa6d7c
+      code_hash: <FUNDING_LOCK_CODE_HASH from live config>
       hash_type: type            # Type-ID (upgradeable), NOT data
       args: 0x                   # per-channel args supplied at runtime
     cell_deps:
       - type_id:                 # reference the script CELL by its Type-ID, not a tx_hash
-          code_hash: 0x00000000000000000000000000000000000000000000000000545950455f4944  # "TYPE_ID"
+          code_hash: 0x00000000000000000000000000000000000000000000000000545950455f4944  # "TYPE_ID" (constant)
           hash_type: type
-          args: 0x3cb7c0304fe53f75bb5727e2484d0beae4bd99d979813c6fc97c3cca569f10f6
+          args: <FUNDING_LOCK_TYPE_ID_ARGS from live config>
       - cell_dep:                # the ckb-auth code cell (a plain out_point dep)
           out_point:
-            tx_hash: 0x12c569a258dd9c5bd99f632bb8314b1263b90921ba31496467580d6b79dd14a7  # ckb_auth
+            tx_hash: <CKB_AUTH_TX_HASH from live config>
             index: 0x0
           dep_type: code
   - name: CommitmentLock
     script:
-      code_hash: 0x740dee83f87c6f309824d8fd3fbdd3c8380ee6fc9acc90b1a748438afcdf81d8
+      code_hash: <COMMITMENT_LOCK_CODE_HASH from live config>
       hash_type: type
       args: 0x
     cell_deps:
       - type_id:
-          code_hash: 0x00000000000000000000000000000000000000000000000000545950455f4944
+          code_hash: 0x00000000000000000000000000000000000000000000000000545950455f4944  # "TYPE_ID" (constant)
           hash_type: type
-          args: 0xf7e458887495cf70dd30d1543cad47dc1dfe9d874177bf19291e4db478d5751b
+          args: <COMMITMENT_LOCK_TYPE_ID_ARGS from live config>
       - cell_dep:
           out_point:
-            tx_hash: 0x12c569a258dd9c5bd99f632bb8314b1263b90921ba31496467580d6b79dd14a7  # ckb_auth
+            tx_hash: <CKB_AUTH_TX_HASH from live config>
             index: 0x0
           dep_type: code
 ```
 
 Notes and warnings:
-- The lock `code_hash` + `hash_type: type` is the durable identity; the `type_id` cell-dep `args` (`0x3cb7c030…` funding, `0xf7e45888…` commitment) is the Type-ID that survives upgrades.
+- The lock `code_hash` + `hash_type: type` is the durable identity; the `type_id` cell-dep `args` is the Type-ID that survives upgrades. Read both live from config — they change on redeployment.
 - The only `tx_hash` here is the **ckb-auth code cell-dep**, referenced by out_point because auth is a stable dependency; even so, prefer reading it live from config.
 - The config file's own comment points at an older migration JSON — that comment is stale while the `cell_deps` are current. **Trust the code_hashes, not the comment.**
 - Mainnet (`config/mainnet/config.yml`) deploys via a 3-of-5 multisig; testnet is the development target.
@@ -100,8 +102,8 @@ Guards commitment-transaction outputs; supports revocation (penalty) and HTLC se
 **Preimage check** (this is why Fiber is HTLC, not PTLC): the contract requires `payment_hash == blake2b_256(preimage)[0..20]` (Blake2b) or `sha256(preimage)[0..20]` (Sha256). `PREIMAGE_LEN = 32`. There is no adaptor-signature / point-locked path.
 
 **Unlock paths:**
-- **Revocation** (selected when the witness's `unlock_count` byte is `0x00`): a penalty path verifying a Schnorr signature (auth id 7) over `blake2b_256(output ‖ output_data_len ‖ output_data ‖ args[0..28] ‖ new_version)`, requiring `new_version >= current_version` (the contract errors only when `current_version > new_version`). Lets a watchtower claim the whole balance if a revoked commitment is broadcast.
-- **Settlement**: HTLC resolution, signed with auth id 0 (Ckb/secp256k1). The settlement record is `[unlock_type][with_preimage flag][65-byte signature][optional 32-byte preimage]`; `unlock_type` sentinels `0xFE`/`0xFF` denote remote/local party settlement.
+- **Revocation** (penalty path; lets a watchtower claim the whole balance if a revoked commitment is broadcast). Witness layout: the contract first drains the 16-byte `EMPTY_WITNESS_ARGS` prefix (`[16,0,0,0, 16,0,0,0, 16,0,0,0, 16,0,0,0]`) and requires it to match exactly, then reads byte 0 as `unlock_count` — `0x00` selects revocation. The remaining bytes are `[new_version (8 bytes)][Schnorr signature]`. It verifies a Schnorr signature (auth id 7) over `blake2b_256(output ‖ (output_data_len as u32 LE, 4 bytes) ‖ output_data ‖ args[0..28] ‖ new_version)` where `output`/`output_data` are the first output cell, and requires `new_version >= current_version` (the contract errors only when `current_version > new_version`).
+- **Settlement**: HTLC resolution, signed with auth id 0 (Ckb/secp256k1). The per-HTLC settlement record is `[unlock_type][with_preimage flag][65-byte signature][optional 32-byte preimage]`. The `unlock_type` sentinels `0xFE`/`0xFF` (remote/local **party** settlement, the non-pending-HTLC close) carry an additional structured payload (pubkey hashes + u128 LE amounts at fixed offsets) beyond this record — **read `commitment-lock/src/main.rs` (the `0xFE`/`0xFF` branches) before constructing a party-settlement witness**; the layout above covers only the per-HTLC records.
 
 **Timelocks** (fractions of `delay_epoch`): preimage unlock allowed after **1/3**, expiry unlock after **2/3**, party/non-pending settlement after the **full** delay. Verification uses `spawn_cell` + `wait`.
 

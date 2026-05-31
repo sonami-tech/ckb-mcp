@@ -1,6 +1,6 @@
 ## Description
 
-UDT-funded Fiber channels and UDT invoices — Fiber's multi-asset feature beyond native CKB. Opening a channel with `funding_udt_type_script`, the `udt_whitelist` config requirement (an absent entry rejects the channel; a missing `auto_accept_amount` forces manual accept), and the rule that `udt_type_script` must be **byte-identical** (including args) across channel open, invoice, and payment or the transfer is silently rejected. UDT amounts are raw integer base units, not decimal display units. Routing fees on UDT channels are paid **in the UDT**, while on-chain transaction fees remain in CKB, and UDT channels reserve **more** than the 99-CKB CKB baseline. The testnet RUSD and mainnet USDI type scripts (verified from config and the public-node directory), with the caveat that mainnet public nodes hold no USDI yet. Same-asset path requirement for routing UDT payments. Worked open + invoice JSON using the current API.
+UDT-funded Fiber channels and UDT invoices — Fiber's multi-asset feature beyond native CKB. Opening a channel with `funding_udt_type_script`, the `udt_whitelist` config requirement (an absent entry rejects the channel; a missing `auto_accept_amount` forces manual accept), and the rule that `udt_type_script` must be **byte-identical** (including args) across channel open, invoice, and payment — a command-vs-invoice mismatch returns an explicit `"does not match the invoice"` error (not silent), a script with no matching channel fails as "no path found". UDT amounts are raw integer base units, not decimal display units. Routing fees on UDT channels are paid **in the UDT**, while on-chain transaction fees remain in CKB, and UDT channels reserve **more** than the 99-CKB CKB baseline. The testnet RUSD and mainnet USDI type scripts, with the caveat that mainnet public nodes hold no USDI yet. Same-asset path requirement for routing UDT payments. Worked open + invoice JSON using the current API.
 
 ## Related Resources
 
@@ -80,7 +80,7 @@ Add `udt_type_script` to `new_invoice` (matching the channel's `funding_udt_type
 
 ### The Three UDT Rules That Bite
 
-1. **Byte-identical type script everywhere.** The `udt_type_script` on the invoice/payment must match the channel's `funding_udt_type_script` exactly — same `code_hash`, `hash_type`, and `args` (including arg byte order). A mismatch causes a silent rejection / no-route.
+1. **Byte-identical type script everywhere.** The `udt_type_script` on the invoice/payment must match the channel's `funding_udt_type_script` exactly — same `code_hash`, `hash_type`, and `args` (including arg byte order). Two distinct failure modes: a command-vs-invoice mismatch returns an **explicit error** `"udt_type_script does not match the invoice"` (`send_payment` validation); a script with no matching channel in the graph fails as **"no path found"** during routing. It is not silent — handle both.
 2. **Raw base units, not decimals.** `amount` is the integer on-chain UDT amount, never a human-readable decimal. RUSD/USDI use their own base-unit scale; do not divide or format.
 3. **Fees are in the UDT.** Routing/TLC forwarding fees on a UDT channel are denominated in the UDT itself (`tlc_fee_proportional_millionths` applies to the UDT amount). Only the on-chain open/close transaction fees are in CKB. An assistant that assumes CKB fees on a UDT payment is wrong.
 
@@ -103,6 +103,7 @@ All `hash_type: type`. The **type scripts** above are stable identifiers. The pe
 |---------|-------|-----|
 | Node rejects the UDT channel | UDT not in `udt_whitelist` | Add the type script to the node config |
 | Channel stuck pending, never accepts | No `auto_accept_amount` for that UDT | Peer must `accept_channel`, or set the threshold |
-| Payment rejected / no route on a UDT invoice | `udt_type_script` not byte-identical to the channel | Match `code_hash`/`hash_type`/`args` exactly |
+| Error `"udt_type_script does not match the invoice"` | Payment-command script ≠ invoice script | Match `code_hash`/`hash_type`/`args` exactly |
+| "No path found" on a UDT invoice | No channel in the graph with that exact script | Open/route over a same-UDT channel; match the script byte-for-byte |
 | Amounts off by orders of magnitude | Decimal display units used | Use raw integer base units |
 | Fee accounting looks wrong | Assumed CKB fees | UDT routing fees are in the UDT; only on-chain fees are CKB |

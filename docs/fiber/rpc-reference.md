@@ -28,7 +28,8 @@ JSON-RPC 2.0 over HTTP (served by `jsonrpsee` on `hyper`) at `rpc.listening_addr
 | Pubkey | hex **without** `0x` (66 chars) | Input accepts optional `0x`; output never has it |
 | Hash256 | hex **with** `0x` (66 chars) | payment_hash, channel_id, preimage, chain_hash |
 | Duration (invoice `expiry`, CCH timestamps) | `"0x{seconds}"` | Seconds, hex |
-| Script / OutPoint / CellDep | CKB JSON object / `0x`+molecule bytes | Standard CKB conventions |
+| `Script` / `CellDep` | CKB JSON object | Standard CKB conventions |
+| `OutPoint` (e.g. every `channel_outpoint`) | `0x`+molecule hex string (`EntityHex`) | **Not** a `{ tx_hash, index }` JSON object. Every `channel_outpoint` field in these wire types — `HopHint`, `HopRequire`, `RouterHop`, `Channel`, `ChannelInfo`, `SessionRouteNode` — encodes the `OutPoint` as molecule-serialized `0x` hex |
 | `state_flags` | `"FLAG_A | FLAG_B"` | SCREAMING_SNAKE, ` | `-joined. The `state_flags` key is **absent** for `ChannelReady` (no flags payload) |
 | `custom_records` | `{ "0x{u32}": "0x{bytes}" }` | Keys 0..=65535; total value bytes ≤ 2048 |
 
@@ -36,7 +37,7 @@ Enum casing is in the overview tables. Status enums and `state_name` are PascalC
 
 ### Module and Method Index
 
-41 methods across the modules below. `dev` is compiled **only in debug builds** (absent on release nodes). `prof` requires the `pprof` feature; `watchtower` is feature-gated. `cch`, `pubsub`, and `biscuit` are non-WASM. Default-enabled RPC namespaces are `channel, payment, invoice, peer, graph, info, cch` (+ `watchtower` when built).
+41 methods across the modules below. `dev` is compiled **only in debug builds** (absent on release nodes). `prof` requires the `pprof` feature; `watchtower` is feature-gated. `cch`, `pubsub`, and `biscuit` are non-WASM. Default-enabled RPC namespaces are `channel, payment, invoice, peer, graph, info, cch` (+ `watchtower` when built). **`pubsub` is NOT default** — add it to `rpc.enabled_modules` or `subscribe_store_changes` is unavailable (needed by the standalone Cross-Chain Hub; see cross-chain-hub).
 
 | Module | Methods |
 |--------|---------|
@@ -51,6 +52,23 @@ Enum casing is in the overview tables. Status enums and `state_name` are PascalC
 | `dev` (debug only) | commitment_signed, add_tlc, remove_tlc, submit_commitment_transaction, check_channel_shutdown, sign_external_funding_tx |
 | `prof` (feat) | pprof |
 | `pubsub` | subscribe_store_changes (WebSocket subscription, not request/response) |
+
+### Biscuit Scopes (per-method auth)
+
+When `rpc.biscuit_public_key` is set, each method requires a scope. The rule is a `read(domain)`/`write(domain)` Datalog check (source: `rpc/biscuit.rs`). `write` does **not** imply `read`; domain names are **plural** where the module is plural. Default by pattern: queries need `read(domain)`, mutations need `write(domain)`, with `domain` = the module name below.
+
+| Domain | `read(domain)` methods | `write(domain)` methods |
+|--------|------------------------|--------------------------|
+| `channels` | list_channels | open_channel, accept_channel, abandon_channel, shutdown_channel, update_channel, submit_signed_funding_tx, add_tlc, remove_tlc, check_channel_shutdown, sign_external_funding_tx |
+| `payments` | get_payment, list_payments, build_router | send_payment, send_payment_with_router |
+| `invoices` | parse_invoice, get_invoice | new_invoice, cancel_invoice, settle_invoice |
+| `peers` | list_peers | connect_peer, disconnect_peer |
+| `graph` | graph_nodes, graph_channels | — |
+| `node` | node_info | — |
+| `cch` | receive_btc, get_cch_order, subscribe_store_changes | send_btc |
+| `watchtower` | — | all watchtower methods |
+
+**Exceptions that don't follow the module→domain pattern** (an AI will get these wrong without the list): `commitment_signed` → `write("messages")`; `submit_commitment_transaction` → `write("chain")`; `pprof` → `write("pprof")`. `biscuit.rs` is the live source — verify against it before issuing tokens.
 
 ## Peer Module
 
@@ -89,7 +107,7 @@ No params.
 | `tlc_min_value` | u128 | opt | 0 |
 | `tlc_fee_proportional_millionths` | u128 | opt | **1000** (0.1%) |
 | `max_tlc_value_in_flight` | u128 | opt | effectively `u128::MAX` if unset; immutable after open |
-| `max_tlc_number_in_flight` | u64 | opt | **125**; immutable after open |
+| `max_tlc_number_in_flight` | u64 | opt | **125** default; immutable after open. Hard cap **253** (`SYS_MAX_TLC_NUMBER_IN_FLIGHT`) — a higher value is rejected with `"Max TLC number in flight {} is greater than the system maximal value 253"` |
 
 Returns `temporary_channel_id`, **not** the final `channel_id` — poll `list_channels` for `ChannelReady`, where the real `channel_id` appears.
 
@@ -102,7 +120,7 @@ Only needed when the peer does not auto-accept.
 | `funding_amount` | u128 | **yes** | — |
 | `shutdown_script` | Script | opt | node sighash |
 | `max_tlc_value_in_flight` | u128 | opt | `u128::MAX`; immutable |
-| `max_tlc_number_in_flight` | u64 | opt | 125; immutable |
+| `max_tlc_number_in_flight` | u64 | opt | 125 default; immutable; hard cap 253 (see open_channel) |
 | `tlc_min_value` | u128 | opt | 0 |
 | `tlc_fee_proportional_millionths` | u128 | opt | 1000 |
 | `tlc_expiry_delta` | u64 ms | opt | **4h** (the node default; the wire-crate rustdoc/CLI help saying "1 day" is stale, like the "16h" invoice-min) |
@@ -199,6 +217,8 @@ Like `open_channel` but `shutdown_script` and `funding_lock_script` are **requir
 | `hop_hints` | [HopHint] | opt | reach a private last-hop channel (a hint, not a guarantee) |
 | `dry_run` | bool | opt | **true validates routability and returns the exact `fee` with no side effects** (the `routers` route array is only populated in debug builds; use `build_router` for an inspectable route) |
 
+`HopHint`: `{ pubkey, channel_outpoint, fee_rate, tlc_expiry_delta }`. `channel_outpoint` is `EntityHex` (see the encoding table — `0x` molecule hex, **not** `{ tx_hash, index }`); `fee_rate` and `tlc_expiry_delta` are `0x`-hex `u64`. Required to route to a private/one-way channel as the last hop.
+
 There is **no dedicated rebalance RPC** — rebalance via self-payment or build_router + send_payment_with_router.
 
 ### get_payment → `GetPaymentCommandResult`
@@ -208,12 +228,12 @@ There is **no dedicated rebalance RPC** — rebalance via self-payment or build_
 
 | Param | Type | Req | Default |
 |-------|------|-----|---------|
-| `hops_info` | [HopRequire] | **yes** | `{pubkey, channel_outpoint?}` list; excludes source; last = target. A **strong** restriction (must be honored, unlike hop_hints) |
+| `hops_info` | [HopRequire] | **yes** | `{pubkey, channel_outpoint?}` list (`channel_outpoint` is `EntityHex` `0x` hex, not an object); excludes source; last = target. A **strong** restriction (must be honored, unlike hop_hints) |
 | `amount` | u128 | opt | min routable `1` |
 | `udt_type_script` | Script | opt | none |
 | `final_tlc_expiry_delta` | u64 ms | opt | final-hop timelock |
 
-`RouterHop`: `target`, `channel_outpoint`, `amount_received`, `incoming_tlc_expiry`.
+`RouterHop`: `target`, `channel_outpoint` (`EntityHex` `0x` hex), `amount_received`, `incoming_tlc_expiry`.
 
 ### send_payment_with_router → `GetPaymentCommandResult`
 `router` ([RouterHop], required) + optional `payment_hash`, `invoice`, `custom_records`, `keysend`, `udt_type_script`, `dry_run`. Feed `router_hops` from `build_router` for deterministic replay.
@@ -225,6 +245,8 @@ There is **no dedicated rebalance RPC** — rebalance via self-payment or build_
 
 ### node_info → `NodeInfoResult`
 No params. Fields: `version`, `commit_hash`, **`pubkey`** (your own node id), `features`, `node_name?`, `addresses` (multiaddrs), `chain_hash`, `open_channel_auto_accept_min_ckb_funding_amount`, `auto_accept_channel_ckb_funding_amount`, `default_funding_lock_script`, `tlc_expiry_delta`, `tlc_min_value`, `tlc_fee_proportional_millionths`, `channel_count`, `pending_channel_count`, `peers_count`, `udt_cfg_infos`.
+
+`features` is a `[String]` of capability flags. Each is a base name + `_REQUIRED` or `_OPTIONAL` suffix. Base names (source: `fiber-types/src/protocol.rs`): `GOSSIP_QUERIES`, `BASIC_MPP`, `TRAMPOLINE_ROUTING`. Example: a node advertising MPP returns `"BASIC_MPP_OPTIONAL"` or `"BASIC_MPP_REQUIRED"` — check for the `BASIC_MPP` / `TRAMPOLINE_ROUTING` prefix to detect capability before sending `max_parts` / trampoline payments. `udt_cfg_infos` lists supported UDTs (each entry: name, the UDT `Script`, `auto_accept_amount?`, decimals); see node-setup's `udt_whitelist` for the shape.
 
 ## Graph Module
 
@@ -248,6 +270,8 @@ No params. Fields: `version`, `commit_hash`, **`pubkey`** (your own node id), `f
 
 `create_watch_channel`, `remove_watch_channel`, `update_revocation`, `update_pending_remote_settlement`, `update_local_settlement`, `create_preimage`, `remove_preimage` — all return `null`. A watchtower stores per-state revocation data so it can broadcast a penalty transaction if a counterparty publishes a revoked commitment. Requires the `write("watchtower")` scope.
 
+Example — `create_watch_channel` params: `{ channel_id: Hash256, funding_tx_lock: Script, remote_settlement_data: SettlementData }` (where `SettlementData` carries the per-commitment revocation keys/version). The other methods key off `channel_id` plus their respective settlement/preimage payloads. **For the exact param structs of all 7 methods, read `crates/fiber-lib/src/rpc/watchtower.rs`** (the `#[method]` declarations) — this is a niche operator-side surface, not transcribed in full here. On-chain penalty witness layout is in on-chain-scripts.
+
 ## Dev Module (debug builds only)
 
 `commitment_signed`, `add_tlc`, `remove_tlc`, `submit_commitment_transaction`, `check_channel_shutdown`, `sign_external_funding_tx`. Compiled with `#[cfg(debug_assertions)]` — **these methods do not exist on a release node.** Never write production code against them.
@@ -258,7 +282,7 @@ No params. Fields: `version`, `commit_hash`, **`pubkey`** (your own node id), `f
 
 ## Pubsub
 
-`subscribe_store_changes` is a **WebSocket subscription** (notification `store_changes`, unsubscribe `unsubscribe_store_changes`), used by a standalone Cross-Chain Hub. Requires the `read("cch")` scope. Not a request/response method.
+`subscribe_store_changes` is a **WebSocket subscription** (notification `store_changes`, unsubscribe `unsubscribe_store_changes`), used by a standalone Cross-Chain Hub. Requires the `read("cch")` scope. Not a request/response method. The notification payload is a `StoreChange` object — for its shape read `crates/fiber-lib/src/rpc/pubsub.rs` (the type is not transcribed here as it is an internal CCH-replication surface).
 
 ## Enums and Error Fields
 

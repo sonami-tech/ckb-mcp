@@ -17,14 +17,7 @@ Receiving a Fiber payment means generating an invoice; sending one means calling
 
 ### The Four Expiry Parameters (read this first)
 
-The single most common Fiber coding error is the expiry-parameter name. There are four similar names; only specific ones are real, and they live on different calls:
-
-| Name | Real? | Which call | Unit | Notes |
-|------|-------|-----------|------|-------|
-| `final_cltv` | **NO-OP** | (none) | — | Exists nowhere in Fiber; appears in the official public-nodes examples; **silently dropped** by the JSON parser. Copying it does nothing |
-| `final_expiry_delta` | yes | `new_invoice` | ms | Invoice final-hop timelock. **Release min 2h40m (`0x927c00`), max 14d, default = min** |
-| `final_tlc_expiry_delta` | yes | `send_payment` | ms | Payment-side final-hop timelock |
-| `min_final_cltv_expiry_delta` | yes | Bitcoin Lightning invoice (CCH only) | CLTV blocks | A BTC-side field; see cross-chain-hub |
+The single most common Fiber coding error is the expiry-parameter name. **For the four names and which call each belongs to, see the canonical table in [overview](ckb://docs/fiber/overview) ("The Four Expiry Parameters").** For invoices the relevant one is `final_expiry_delta` (on `new_invoice`); for payments it is `final_tlc_expiry_delta` (on `send_payment`). `final_cltv` is a no-op.
 
 **Release-vs-debug value trap:** the `0xDFFA0` (≈15 min) `final_expiry_delta` seen in the repo's Bruno e2e tests works only because those run against a debug build. On a release node the minimum is `0x927c00` (160 min) and smaller values are **rejected**. Use `0x927c00` or larger.
 
@@ -122,14 +115,15 @@ A payment is settled **only** when:
 
 ### Payment Failure Troubleshooting
 
-Inspect `get_payment(...).failed_error` (and `Channel.failure_detail` for channel-level issues):
+Inspect `get_payment(...).failed_error` (and `Channel.failure_detail` for channel-level issues). This table is **curated, not exhaustive** — the node emits many more validation strings (sourced in `rpc/invoice.rs`, `rpc/payment.rs`, `fiber/network.rs`); always handle an unknown `failed_error` gracefully rather than matching only these:
 
 | Symptom / error | Cause | Fix |
 |-----------------|-------|-----|
 | No route found, right after `ChannelReady` | Gossip graph not synced | Wait ~30 s and retry (see routing-and-graph) |
 | No route found, persistent | No path with capacity, or channel `enabled: false` | Check `graph_channels`; open/rebalance a channel; verify `enabled` |
-| Expiry too soon | `final_tlc_expiry_delta` / `tlc_expiry_limit` too small for the accumulated per-hop deltas | Raise the limit to cover the sum of each channel's `tlc_expiry_delta` along the path |
+| Error `"final_expiry_delta must be greater than or equal to {min}"` (on `new_invoice`) | Invoice `final_expiry_delta` below the release minimum | Use `0x927c00` (2h40m) or larger |
+| Expiry too soon (on `send_payment`) | `final_tlc_expiry_delta` / `tlc_expiry_limit` too small for the accumulated per-hop deltas | Raise the limit to cover the sum of each channel's `tlc_expiry_delta` along the path |
 | Fee cap too low | `max_fee_rate` / `max_fee_amount` below the route's cost | Raise the cap |
 | MPP / trampoline rejected at invoice creation | Issuing node lacks the feature | The node must enable MPP / trampoline; `allow_mpp` / `allow_trampoline_routing` are invoice params |
-| UDT payment rejected | `udt_type_script` not byte-identical to the channel's funding script | Match the script exactly (see udt-channels) |
+| Error `"udt_type_script does not match the invoice"` | Payment-command script ≠ invoice script | Match the script exactly (see udt-channels) |
 | Large payment fails, tiny one works | Insufficient outbound liquidity along the path | Use a smaller amount, `trampoline_hops`, or add liquidity |

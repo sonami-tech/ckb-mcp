@@ -76,8 +76,8 @@ The shipped `config/testnet/config.yml` carries only the testnet-necessary keys;
 
 ### Fund the Node
 
-- **Protocol minimum to open a channel: 100 CKB.** Each channel side reserves **99 CKB** (98 CKB occupied capacity + 1 CKB shutdown fee). See channels for the math.
-- **Public-node channels need ~499 CKB funding** (public nodes auto-accept at a 499-CKB minimum, leaving ~400 CKB usable). For self-funding budget ~561 CKB per node (funding + change cell + fee).
+- **The only protocol-level floor is the per-side reserve: 99 CKB** (98 CKB occupied capacity + 1 CKB shutdown fee) — below this a channel cell cannot exist. There is **no** hardcoded "100 CKB minimum" in the validation path; the 100 CKB figure is a *default auto-accept policy*, not a protocol constant (see next bullet). See channels for the math.
+- **A public node's auto-accept minimum is per-node policy, not a constant — query it, don't hardcode.** Read `open_channel_auto_accept_min_ckb_funding_amount` from that node's `node_info`. The source default is **100 CKB** (`DEFAULT_OPEN_CHANNEL_AUTO_ACCEPT_MIN_CKB_FUNDING_AMOUNT`), but public nodes set their own; many currently run **499 CKB** (leaving ~400 usable after the 99-CKB reserve). Budget funding + a change cell + fee. Never bake 499 into code or fixtures — it changes when a node reconfigures.
 - Testnet CKB faucet: `https://faucet.nervos.org`. Testnet RUSD faucet: `https://testnet0815.stablepp.xyz/faucet`.
 
 ### Inspect the Node

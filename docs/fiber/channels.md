@@ -68,7 +68,7 @@ Poll until the channel's `state.state_name == "ChannelReady"` (the funding tx mu
 
 ### Manual vs Auto-Accept
 
-If the peer enables auto-accept above a threshold (`open_channel_auto_accept_min_ckb_funding_amount`), the channel proceeds without the peer calling `accept_channel`. Otherwise the peer must `accept_channel(temporary_channel_id, funding_amount, …)`, which returns the final `channel_id`. Public Fiber nodes auto-accept CKB channels at a 499-CKB minimum and contribute ~250 CKB of inbound liquidity.
+If the peer enables auto-accept above a threshold (`open_channel_auto_accept_min_ckb_funding_amount`), the channel proceeds without the peer calling `accept_channel`. Otherwise the peer must `accept_channel(temporary_channel_id, funding_amount, …)`, which returns the final `channel_id`. That threshold is **per-node policy** — read it from the peer's `node_info` rather than assuming a value (source default 100 CKB; many public nodes currently set 499 CKB and contribute inbound liquidity).
 
 ### ChannelState and Flags
 
@@ -88,7 +88,7 @@ Key fields from `list_channels` (full list in rpc-reference): identity (`channel
 
 Each channel side reserves **99 CKB**: **98 CKB** of commitment-lock occupied capacity (`MIN_OCCUPIED_CAPACITY`) + **1 CKB** shutdown fee (`DEFAULT_MIN_SHUTDOWN_FEE`). So funding 499 CKB leaves ~400 CKB usable; `local_balance` will be less than `funding_amount`.
 
-- **Protocol minimum to open:** 100 CKB.
+- **Protocol floor to open:** the 99 CKB reserve above (a channel cell cannot hold less). The peer's **auto-accept** threshold is a separate, higher *policy* value read from `node_info` (source default 100 CKB, often 499) — not a protocol constant. Don't hardcode 100.
 - The reserve is driven by the **shutdown script** (a larger custom `shutdown_script` raises occupied capacity), not the funding lock.
 - **UDT channels reserve more than 99 CKB** — the cell carries an extra 16 bytes of UDT amount data plus the UDT type script.
 

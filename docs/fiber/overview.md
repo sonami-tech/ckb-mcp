@@ -138,6 +138,8 @@ The internal Rust name is `CkbHash`; the JSON wire value is `ckb_hash`.
 
 ### The Four Expiry Parameters (the #1 documentation trap)
 
+Canonical table (single source of truth; other files link here):
+
 | Name | Real? | Which call | Unit | Notes |
 |------|-------|-----------|------|-------|
 | `final_cltv` | **NO-OP** | (none) | — | Exists nowhere in Fiber; appears in the official public-nodes examples; silently dropped |
